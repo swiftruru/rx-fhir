@@ -9,6 +9,7 @@ import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
+import FormGuideCard from '../../../components/FormGuideCard'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
 import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
@@ -167,6 +168,9 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
         </Button>
       </div>
+
+      <FormGuideCard title={f('introTitle')} description={f('introHint')} />
+
       <div className="space-y-2">
         <Label>{f('presetsTitle')}</Label>
         <div className="flex flex-wrap gap-1.5">
@@ -181,7 +185,19 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
             </button>
           ))}
         </div>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('presetsHint')}</p>
       </div>
+
+      <FormGuideCard title={f('examplesTitle')} variant="examples">
+        <ul className="space-y-1 text-[11px] leading-relaxed text-muted-foreground">
+          {[f('example1'), f('example2')].map((example) => (
+            <li key={example} className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary/60" />
+              <span>{example}</span>
+            </li>
+          ))}
+        </ul>
+      </FormGuideCard>
 
       <div className="space-y-2">
         <Label>{f('codeSystem.label')}</Label>
@@ -194,17 +210,20 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
             <SelectItem value="nhi">{f('codeSystem.options.NHI')}</SelectItem>
           </SelectContent>
         </Select>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('codeSystem.hint')}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label htmlFor="med-code">{f('code.label')} *</Label>
           <Input id="med-code" placeholder={f('code.placeholder')} {...register('code')} className="font-mono" />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('code.hint')}</p>
           {errors.code && <p className="text-xs text-destructive">{errors.code.message}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="med-display">{f('name.label')} *</Label>
           <Input id="med-display" placeholder={f('name.placeholder')} {...register('display')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('name.hint')}</p>
           {errors.display && <p className="text-xs text-destructive">{errors.display.message}</p>}
         </div>
       </div>
@@ -221,6 +240,7 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
             ))}
           </SelectContent>
         </Select>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('form.hint')}</p>
         {errors.form && <p className="text-xs text-destructive">{errors.form.message}</p>}
       </div>
 

@@ -9,6 +9,7 @@ import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
+import FormGuideCard from '../../../components/FormGuideCard'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
 import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
@@ -175,6 +176,7 @@ export default function ObservationForm({ onSuccess }: Props): React.JSX.Element
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
         </Button>
       </div>
+      <FormGuideCard title={f('introTitle')} description={f('introHint')} />
       <div className="space-y-2">
         <Label>{f('presetsTitle')}</Label>
         <div className="flex flex-wrap gap-1.5">
@@ -211,6 +213,7 @@ export default function ObservationForm({ onSuccess }: Props): React.JSX.Element
         <div className="space-y-2">
           <Label htmlFor="obs-value">{f('value.label')} *</Label>
           <Input id="obs-value" type="number" step="any" placeholder={f('value.placeholder')} {...register('value')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('value.hint')}</p>
           {errors.value && <p className="text-xs text-destructive">{errors.value.message}</p>}
         </div>
         <div className="space-y-2">
@@ -220,6 +223,17 @@ export default function ObservationForm({ onSuccess }: Props): React.JSX.Element
           {errors.unit && <p className="text-xs text-destructive">{errors.unit.message}</p>}
         </div>
       </div>
+
+      <FormGuideCard title={f('examplesTitle')} variant="examples">
+        <ul className="space-y-1 text-[11px] leading-relaxed text-muted-foreground">
+          {[f('example1'), f('example2'), f('example3')].map((example) => (
+            <li key={example} className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary/60" />
+              <span>{example}</span>
+            </li>
+          ))}
+        </ul>
+      </FormGuideCard>
 
       <div className="space-y-2">
         <Label>{f('status.label')}</Label>

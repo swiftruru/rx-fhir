@@ -77,8 +77,7 @@ Step-by-step wizard to build and submit a FHIR Document Bundle:
 
 Current Creator capabilities:
 
-- Stepper-based workflow with per-step progress
-- Stepper-based workflow with per-step progress and completion summaries
+- Stepper-based workflow with per-step progress, sidebar completion summaries, and current-step header summaries
 - Form validation via `react-hook-form` + `zod`
 - Mock data fill for quick demos
 - Revisiting completed steps restores current resource values back into the form
@@ -89,10 +88,10 @@ Current Creator capabilities:
 - When an existing server-side resource is reused, the UI now shows an explicit reuse message instead of only a generic success state
 - Step success / reuse alerts now remain visible when you leave a completed step and come back later
 - Human-friendly FHIR `OperationOutcome` messages are shown first, with expandable raw error details for troubleshooting
-- Rich inline guidance is now included for higher-friction fields such as ICD-10, LOINC, medication route, and supplemental extensions
+- Most Creator forms now include consistent inline guide cards with examples and field-level hints for identifiers, encounter timing, ICD-10, LOINC, insurance, medication coding, medication route, and supplemental extensions
 - Live JSON preview of created resources
 - JSON preview now follows the active light / dark theme instead of staying fixed in a dark-only style
-- JSON preview now supports font-size switching, collapse-all, and filtering down to the latest created resource for demos
+- JSON preview now includes a compact toolbar with font-size switching, collapse, and all/latest-resource toggles for demos
 - Final submission now includes a structured prescription summary review card before bundle assembly
 - Composition-first, then document bundle submission
 - After a successful bundle submission, Creator can jump directly into Consumer, auto-run the query, and focus the newly created bundle

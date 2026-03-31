@@ -9,6 +9,7 @@ import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
+import FormGuideCard from '../../../components/FormGuideCard'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
 import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
@@ -225,6 +226,8 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
         </Alert>
       )}
 
+      <FormGuideCard title={f('introTitle')} description={f('introHint')} />
+
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label htmlFor="dose-val">{f('doseValue.label')} *</Label>
@@ -276,6 +279,7 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
         <div className="space-y-2">
           <Label htmlFor="duration">{f('durationDays.label')}</Label>
           <Input id="duration" type="number" placeholder={f('durationDays.placeholder')} {...register('durationDays')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('durationDays.hint')}</p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="note">{f('note.label')}</Label>
@@ -283,6 +287,17 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
           <p className="text-[11px] leading-relaxed text-muted-foreground">{f('note.hint')}</p>
         </div>
       </div>
+
+      <FormGuideCard title={f('examplesTitle')} variant="examples">
+        <ul className="space-y-1 text-[11px] leading-relaxed text-muted-foreground">
+          {[f('example1'), f('example2')].map((example) => (
+            <li key={example} className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary/60" />
+              <span>{example}</span>
+            </li>
+          ))}
+        </ul>
+      </FormGuideCard>
 
       {feedback && status !== 'loading' && (
         <Alert variant={feedback.outcome === 'reused' ? 'info' : 'success'}>

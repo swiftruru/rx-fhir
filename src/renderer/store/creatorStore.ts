@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { CreatedResources } from '../types/fhir.d'
 import type { ResourceKey } from '../types/fhir.d'
+import { RESOURCE_STEPS } from '../types/fhir.d'
 
 type CreatorDraftValues = Partial<Record<ResourceKey, Record<string, unknown>>>
 export type CreatorSaveOutcome = 'created' | 'reused'
@@ -18,11 +19,24 @@ interface PersistedCreatorState {
   resources: CreatedResources
   drafts: CreatorDraftValues
   feedbacks: CreatorResourceFeedbacks
+  lastUpdatedResourceKey?: ResourceKey
   draftSavedAt?: string
 }
 
 function hasPersistableWork(resources: CreatedResources, drafts: CreatorDraftValues): boolean {
   return Object.values(resources).some(Boolean) || Object.values(drafts).some((draft) => draft && Object.keys(draft).length > 0)
+}
+
+function inferLastUpdatedResourceKey(resources: CreatedResources, currentStep: number): ResourceKey | undefined {
+  const currentStepKey = RESOURCE_STEPS[currentStep]?.key
+  if (currentStepKey && resources[currentStepKey]) return currentStepKey
+
+  for (let index = RESOURCE_STEPS.length - 1; index >= 0; index -= 1) {
+    const key = RESOURCE_STEPS[index].key
+    if (resources[key]) return key
+  }
+
+  return undefined
 }
 
 interface CreatorState {
@@ -159,6 +173,7 @@ export const useCreatorStore = create<CreatorState>()(
             resources: {},
             drafts: {},
             feedbacks: {},
+            lastUpdatedResourceKey: undefined,
             draftSavedAt: undefined
           }
         }
@@ -168,6 +183,7 @@ export const useCreatorStore = create<CreatorState>()(
           resources: state.resources,
           drafts: state.drafts,
           feedbacks: state.feedbacks,
+          lastUpdatedResourceKey: state.lastUpdatedResourceKey,
           draftSavedAt: state.draftSavedAt
         }
       },
@@ -175,6 +191,9 @@ export const useCreatorStore = create<CreatorState>()(
         useCreatorStore.setState((current) => ({
           draftHydrated: true,
           draftRestored: !error && !!state && hasPersistableWork(state.resources, state.drafts),
+          lastUpdatedResourceKey:
+            state?.lastUpdatedResourceKey
+            ?? inferLastUpdatedResourceKey(state?.resources ?? {}, state?.currentStep ?? current.currentStep),
           draftRevision: current.draftRevision + 1
         }))
       }

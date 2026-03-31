@@ -23,12 +23,19 @@
     "stepBadge": "Step {{current}} / {{total}}",
     "showJson": "Show JSON Preview",
     "hideJson": "Hide JSON",
-    "jsonPanelTitle": "Created Resources JSON",
+    "jsonPanelTitle": "Resources JSON",
     "jsonShowingAll": "Showing all {{count}} resource(s)",
-    "jsonShowingLast": "Showing only the latest created resource: {{resource}}",
-    "jsonCollapseAll": "Collapse All",
-    "jsonShowLastOnly": "Latest Resource Only",
+    "jsonShowingLast": "Showing only the latest updated resource: {{resource}}",
+    "jsonStatusAll": "All {{count}}",
+    "jsonStatusLatest": "Latest: {{resource}}",
+    "jsonCollapseAll": "Collapse",
+    "jsonModeAll": "All",
+    "jsonModeLatest": "Latest",
+    "jsonShowLatestOnly": "Latest Updated Resource",
     "jsonShowAllResources": "Show All Resources",
+    "jsonShowAllHint": "Show all created resources",
+    "jsonShowLatestHint": "Show only the latest updated resource: {{resource}}",
+    "jsonShowLatestUnavailable": "No latest resource is available yet",
     "jsonFontSizes": {
       "sm": "S",
       "md": "M",
@@ -56,12 +63,18 @@
       "optional": " (optional)"
     },
     "organization": {
-      "name":       { "label": "Institution Name", "placeholder": "e.g. National Taiwan University Hospital", "required": "Institution name is required" },
-      "identifier": { "label": "Institution Code", "placeholder": "e.g. 0101020011",                          "required": "Institution code is required" },
+      "introTitle": "Organization Guidance",
+      "introHint": "Enter the healthcare organization responsible for this prescription. The organization code should ideally be a stable internal or institutional identifier.",
+      "examplesTitle": "Examples",
+      "example1": "National Taiwan University Hospital / NTUH001 / Hospital",
+      "example2": "Community Pharmacy / PHARM001 / Pharmacy",
+      "name":       { "label": "Institution Name", "placeholder": "e.g. National Taiwan University Hospital", "required": "Institution name is required", "hint": "Enter the formal organization name that clinicians and patients can recognize." },
+      "identifier": { "label": "Institution Code", "placeholder": "e.g. 0101020011",                          "required": "Institution code is required", "hint": "Use a stable code already used by your system or institution." },
       "type": {
         "label": "Institution Type",
         "placeholder": "Select type",
         "required": "Institution type is required",
+        "hint": "Choose the organization type that best matches the real setting, such as hospital, clinic, or pharmacy.",
         "options": {
           "hospital": "Hospital",
           "clinic":   "Clinic",
@@ -71,8 +84,13 @@
       "success": "Organization created! ID: {{id}}"
     },
     "patient": {
-      "familyName": { "label": "Family Name", "placeholder": "e.g. Wang",   "required": "Family name is required" },
-      "givenName":  { "label": "Given Name",  "placeholder": "e.g. Xiao Ming", "required": "Given name is required" },
+      "introTitle": "Patient Guidance",
+      "introHint": "The patient is the subject of the prescription. In this project, Patient.identifier is represented by the student ID.",
+      "examplesTitle": "Examples",
+      "example1": "Family Name: Wang / Given Name: Xiao Ming / Student ID: S1101001",
+      "example2": "If there is no separate medical record number, the student ID is used as the primary identifier here.",
+      "familyName": { "label": "Family Name", "placeholder": "e.g. Wang",   "required": "Family name is required", "hint": "Enter the family name portion of the patient's name." },
+      "givenName":  { "label": "Given Name",  "placeholder": "e.g. Xiao Ming", "required": "Given name is required", "hint": "Enter the given name portion of the patient's name." },
       "studentId": {
         "label":       "Student ID (Identifier)",
         "placeholder": "e.g. B12345678",
@@ -83,6 +101,7 @@
         "label": "Gender",
         "placeholder": "Select gender",
         "required": "Gender is required",
+        "hint": "Choose the value that best matches the patient's demographic record.",
         "options": {
           "male":    "Male",
           "female":  "Female",
@@ -90,42 +109,64 @@
           "unknown": "Unknown"
         }
       },
-      "birthDate": { "label": "Birth Date", "required": "Birth date is required" },
+      "birthDate": { "label": "Birth Date", "required": "Birth date is required", "hint": "Birth date helps distinguish patients and is also shown in the Consumer detail view." },
       "success": "Patient created! ID: {{id}}"
     },
     "practitioner": {
-      "familyName":    { "label": "Family Name",    "placeholder": "e.g. Lee",          "required": "Family name is required" },
-      "givenName":     { "label": "Given Name",     "placeholder": "e.g. Da Hua",       "required": "Given name is required" },
-      "licenseNumber": { "label": "License Number", "placeholder": "e.g. MD123456",     "required": "License number is required" },
-      "qualification": { "label": "Qualification",  "placeholder": "e.g. Internal Medicine Specialist", "required": "Qualification is required" },
+      "introTitle": "Practitioner Guidance",
+      "introHint": "Enter the prescribing clinician here. The license number is used as the main practitioner identifier.",
+      "examplesTitle": "Examples",
+      "example1": "Lee / Da Ren / MED20001 / General Practice",
+      "example2": "Qualification can be a readable specialty name, such as Internal Medicine or Family Medicine.",
+      "familyName":    { "label": "Family Name",    "placeholder": "e.g. Lee",          "required": "Family name is required", "hint": "Enter the practitioner's family name." },
+      "givenName":     { "label": "Given Name",     "placeholder": "e.g. Da Hua",       "required": "Given name is required", "hint": "Enter the practitioner's given name." },
+      "licenseNumber": { "label": "License Number", "placeholder": "e.g. MD123456",     "required": "License number is required", "hint": "Enter a license or registration number that identifies this practitioner." },
+      "qualification": { "label": "Qualification",  "placeholder": "e.g. Internal Medicine Specialist", "required": "Qualification is required", "hint": "Enter the specialty or qualification in human-readable form." },
       "success": "Practitioner created! ID: {{id}}"
     },
     "encounter": {
+      "introTitle": "Encounter Guidance",
+      "introHint": "Use this step to describe the care setting for the prescription. For a typical clinic visit, choose ambulatory and enter the actual start and end times.",
+      "examplesTitle": "Examples",
+      "example1": "Ambulatory / 2025-01-10 09:00 / 2025-01-10 09:30",
+      "example2": "If only the start time is known, you can enter the start time first and leave the end time empty.",
       "type": {
         "label": "Visit Type",
         "placeholder": "Select visit type",
         "required": "Visit type is required",
+        "hint": "Choose ambulatory, emergency, or inpatient based on the real care setting.",
         "options": {
           "ambulatory": "Ambulatory (Outpatient)",
           "emergency":  "Emergency",
           "inpatient":  "Inpatient"
         }
       },
-      "startDate":  { "label": "Visit Start Date", "required": "Visit date is required" },
-      "endDate":    { "label": "Visit End Date" },
+      "startDate":  { "label": "Visit Start Date", "required": "Visit date is required", "hint": "Enter the date and time when the visit or encounter started." },
+      "endDate":    { "label": "Visit End Date", "hint": "Enter the end time when known, or leave it blank if it is not available." },
       "patientInfo": "Associated Patient: {{name}} ({{id}})",
       "success": "Encounter created! ID: {{id}}"
     },
     "condition": {
+      "introTitle": "ICD-10 Guidance",
+      "introHint": "ICD-10 is the formal diagnosis classification. If you only know the diagnosis name, look up the matching code first and then enter it here.",
       "presetsTitle": "Common Diagnoses (Quick Select)",
       "presetsHint": "The presets above are only quick examples. Before submitting, confirm the ICD-10 diagnosis code against the actual chart.",
+      "examplesTitle": "Examples",
+      "example1": "J06.9 → Acute upper respiratory infection",
+      "example2": "I10 → Essential hypertension",
       "icdCode":       { "label": "ICD-10 Code",       "placeholder": "e.g. J06.9",                     "required": "ICD-10 code is required", "hint": "Enter a standard ICD-10 diagnosis code, such as J06.9, I10, or E11.9." },
       "diagnosisName": { "label": "Diagnosis Name",    "placeholder": "e.g. Acute upper respiratory infection", "required": "Diagnosis name is required", "hint": "Enter the diagnosis name that matches the ICD-10 code." },
       "success": "Condition created! ID: {{id}}"
     },
     "observation": {
+      "introTitle": "LOINC Guidance",
+      "introHint": "The LOINC code identifies what was measured, while the value and unit describe the actual result recorded for this visit.",
       "presetsTitle": "Common Lab Tests (Quick Select)",
       "presetsHint": "LOINC codes identify the lab or measurement item. Use standard codes whenever possible.",
+      "examplesTitle": "Common unit examples",
+      "example1": "Systolic / diastolic blood pressure → mmHg",
+      "example2": "Blood glucose / cholesterol → mg/dL",
+      "example3": "Body weight → kg",
       "presets": {
         "8867-4":  "Heart Rate",
         "8480-6":  "Systolic BP",
@@ -136,7 +177,7 @@
       },
       "loincCode": { "label": "LOINC Code",  "placeholder": "e.g. 8867-4",   "required": "LOINC code is required", "hint": "Enter a standard LOINC code, such as 8867-4 for heart rate or 8480-6 for systolic blood pressure." },
       "itemName":  { "label": "Item Name",   "placeholder": "e.g. Heart Rate","required": "Item name is required", "hint": "The item name should match the selected LOINC code." },
-      "value":     { "label": "Value",       "placeholder": "e.g. 80",        "required": "Value is required" },
+      "value":     { "label": "Value",       "placeholder": "e.g. 80",        "required": "Value is required", "hint": "Enter the measured result, such as 120 for blood pressure, 72 for heart rate, or 65 for body weight." },
       "unit":      { "label": "Unit",        "placeholder": "e.g. beats/min", "required": "Unit is required", "hint": "Use common clinical units such as mmHg, mg/dL, or kg." },
       "status": {
         "label": "Status",
@@ -149,23 +190,35 @@
       "success": "Observation created! ID: {{id}}"
     },
     "coverage": {
+      "introTitle": "Coverage Guidance",
+      "introHint": "Use this step to record the patient's insurance identity. For National Health Insurance, enter the card number or another insurance ID that identifies the coverage record.",
+      "examplesTitle": "Examples",
+      "example1": "National Health Insurance: choose National Health Insurance (NHI) and enter the NHI card number or coverage ID.",
+      "example2": "If there is a validity period, enter the expiry date. If there is no fixed end date, only the effective date is enough.",
       "type": {
         "label": "Insurance Type",
         "placeholder": "Select insurance type",
         "required": "Insurance type is required",
+        "hint": "Choose the insurance type most relevant to this visit, such as National Health Insurance or self-pay.",
         "options": {
           "EHCPOL":    "National Health Insurance (NHI)",
           "PAY":       "Self-pay",
           "PUBLICPOL": "Government Employee Insurance"
         }
       },
-      "insuranceId":   { "label": "NHI Card / Insurance ID", "placeholder": "e.g. A123456789", "required": "Insurance ID is required" },
-      "effectiveDate": { "label": "Effective Date", "required": "Effective date is required" },
-      "expiryDate":    { "label": "Expiry Date" },
+      "insuranceId":   { "label": "NHI Card / Insurance ID", "placeholder": "e.g. A123456789", "required": "Insurance ID is required", "hint": "Enter an insurance identifier, such as an NHI card number or member ID." },
+      "effectiveDate": { "label": "Effective Date", "required": "Effective date is required", "hint": "Use the date when the coverage becomes valid. If it is only relevant to this visit, the visit date is usually acceptable." },
+      "expiryDate":    { "label": "Expiry Date", "hint": "Leave this empty when the coverage has no explicit end date." },
       "success": "Coverage created! ID: {{id}}"
     },
     "medication": {
+      "introTitle": "Medication Guidance",
+      "introHint": "This step creates the medication master record. Decide whether you are using ATC or NHI drug codes first, then enter the matching code and name.",
       "presetsTitle": "Common Medications (Quick Select)",
+      "presetsHint": "The presets above are shortcuts for common examples. Confirm the actual medication and code before submitting.",
+      "examplesTitle": "Examples",
+      "example1": "ATC: N02BE01 / Acetaminophen / Tablet",
+      "example2": "Amoxicillin can use J01CA04, then choose the real dose form such as capsule or suspension.",
       "presets": {
         "N02BE01": "Acetaminophen",
         "J01CA04": "Amoxicillin",
@@ -175,17 +228,19 @@
       },
       "codeSystem": {
         "label": "Code System",
+        "hint": "Use ATC for general medication classification. Switch to NHI Drug Code when you have a Taiwan NHI medication code.",
         "options": {
           "ATC": "ATC Code (WHO)",
           "NHI": "NHI Drug Code"
         }
       },
-      "code": { "label": "Medication Code", "placeholder": "e.g. N02BE01",     "required": "Medication code is required" },
-      "name": { "label": "Medication Name", "placeholder": "e.g. Acetaminophen","required": "Medication name is required" },
+      "code": { "label": "Medication Code", "placeholder": "e.g. N02BE01",     "required": "Medication code is required", "hint": "Enter the medication code from the selected coding system, for example N02BE01 for ATC." },
+      "name": { "label": "Medication Name", "placeholder": "e.g. Acetaminophen","required": "Medication name is required", "hint": "Enter the medication name that clinicians or patients can recognize." },
       "form": {
         "label": "Dose Form",
         "placeholder": "Select dose form",
         "required": "Dose form is required",
+        "hint": "Choose the real dosage form used in practice, such as tablet, capsule, or injection.",
         "options": {
           "TAB": "Tablet",
           "CAP": "Capsule",
@@ -199,6 +254,11 @@
     "medicationRequest": {
       "medicationPreview": "Medication: ",
       "missingMedication": "Please complete Step 8 (Medication) before creating a prescription.",
+      "introTitle": "Prescription Guidance",
+      "introHint": "A simple way to fill this step is: how much each time, how often, and by which route.",
+      "examplesTitle": "Examples",
+      "example1": "Acetaminophen 500 mg by mouth three times daily can be entered as: 500 / mg / TID / Oral.",
+      "example2": "For nasal sprays or topical medicines, choose the correct route instead of leaving it only in free-text notes.",
       "doseValue": { "label": "Dose",      "placeholder": "e.g. 500", "required": "Dose value is required", "positive": "Dose must be greater than 0", "hint": "Enter the single-dose numeric value, for example 500." },
       "doseUnit":  { "label": "Unit",      "placeholder": "e.g. mg",  "required": "Dose unit is required", "hint": "Enter the matching unit, such as mg, mL, or tablet." },
       "frequency": {
@@ -227,12 +287,17 @@
           "46713006": "Nasal"
         }
       },
-      "durationDays": { "label": "Duration (days)", "placeholder": "e.g. 7" },
+      "durationDays": { "label": "Duration (days)", "placeholder": "e.g. 7", "hint": "For short-term medication, common values are 3, 5, or 7 days. Leave it empty when the duration is not fixed." },
       "note":         { "label": "Patient Instructions", "placeholder": "e.g. Take after meals", "hint": "Write instructions in patient-friendly language, such as take after meals or take before bedtime." },
       "success": "MedicationRequest created! ID: {{id}}"
     },
     "extension": {
+      "introTitle": "Supplement Guidance",
       "introHint":   "Supplemental data is useful for information that falls outside the core profile but still needs to be preserved, such as special administration notes or care reminders.",
+      "examplesTitle": "Common extension examples",
+      "example1": "Type Code: special-instruction / Type Name: Special Instruction",
+      "example2": "Extension URL: use a stable definition URL, for example https://example.org/fhir/StructureDefinition/special-instruction",
+      "example3": "Extension Value: Take 30 minutes after meals and avoid antacids together.",
       "codeCode":    { "label": "Type Code",          "placeholder": "e.g. special-instruction", "required": "Type code is required", "hint": "Use a short machine-readable identifier, such as special-instruction." },
       "codeDisplay": { "label": "Type Name",          "placeholder": "e.g. Special Instruction", "required": "Type name is required", "hint": "Use a human-readable title, such as Special administration instruction." },
       "ext1Url":     { "label": "Extension URL (1)",  "placeholder": "https://...",               "required": "Extension URL is required", "hint": "Enter the definition URL for this extension. If the same meaning is reused later, keep the same URL." },

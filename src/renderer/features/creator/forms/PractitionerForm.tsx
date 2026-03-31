@@ -8,6 +8,7 @@ import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
+import FormGuideCard from '../../../components/FormGuideCard'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
 import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
@@ -143,15 +144,31 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
         </Button>
       </div>
+
+      <FormGuideCard title={f('introTitle')} description={f('introHint')} />
+
+      <FormGuideCard title={f('examplesTitle')} variant="examples">
+        <ul className="space-y-1 text-[11px] leading-relaxed text-muted-foreground">
+          {[f('example1'), f('example2')].map((example) => (
+            <li key={example} className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary/60" />
+              <span>{example}</span>
+            </li>
+          ))}
+        </ul>
+      </FormGuideCard>
+
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label htmlFor="prac-family">{f('familyName.label')} *</Label>
           <Input id="prac-family" placeholder={f('familyName.placeholder')} {...register('familyName')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('familyName.hint')}</p>
           {errors.familyName && <p className="text-xs text-destructive">{errors.familyName.message}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="prac-given">{f('givenName.label')} *</Label>
           <Input id="prac-given" placeholder={f('givenName.placeholder')} {...register('givenName')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('givenName.hint')}</p>
           {errors.givenName && <p className="text-xs text-destructive">{errors.givenName.message}</p>}
         </div>
       </div>
@@ -159,12 +176,14 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
       <div className="space-y-2">
         <Label htmlFor="license">{f('licenseNumber.label')} *</Label>
         <Input id="license" placeholder={f('licenseNumber.placeholder')} {...register('licenseNumber')} />
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('licenseNumber.hint')}</p>
         {errors.licenseNumber && <p className="text-xs text-destructive">{errors.licenseNumber.message}</p>}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="qualification">{f('qualification.label')} *</Label>
         <Input id="qualification" placeholder={f('qualification.placeholder')} {...register('qualification')} />
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('qualification.hint')}</p>
         {errors.qualification && <p className="text-xs text-destructive">{errors.qualification.message}</p>}
       </div>
 

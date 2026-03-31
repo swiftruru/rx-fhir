@@ -9,6 +9,7 @@ import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
+import FormGuideCard from '../../../components/FormGuideCard'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
 import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
@@ -150,6 +151,20 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
         </Button>
       </div>
+
+      <FormGuideCard title={f('introTitle')} description={f('introHint')} />
+
+      <FormGuideCard title={f('examplesTitle')} variant="examples">
+        <ul className="space-y-1 text-[11px] leading-relaxed text-muted-foreground">
+          {[f('example1'), f('example2')].map((example) => (
+            <li key={example} className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary/60" />
+              <span>{example}</span>
+            </li>
+          ))}
+        </ul>
+      </FormGuideCard>
+
       <div className="space-y-2">
         <Label>{f('type.label')} *</Label>
         <Select value={selectedType} onValueChange={(v) => setValue('type', v)}>
@@ -162,12 +177,14 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
             ))}
           </SelectContent>
         </Select>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('type.hint')}</p>
         {errors.type && <p className="text-xs text-destructive">{errors.type.message}</p>}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="subscriber-id">{f('insuranceId.label')} *</Label>
         <Input id="subscriber-id" placeholder={f('insuranceId.placeholder')} {...register('subscriberId')} />
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('insuranceId.hint')}</p>
         {errors.subscriberId && <p className="text-xs text-destructive">{errors.subscriberId.message}</p>}
       </div>
 
@@ -175,11 +192,13 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
         <div className="space-y-2">
           <Label htmlFor="cov-start">{f('effectiveDate.label')} *</Label>
           <Input id="cov-start" type="date" {...register('periodStart')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('effectiveDate.hint')}</p>
           {errors.periodStart && <p className="text-xs text-destructive">{errors.periodStart.message}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="cov-end">{f('expiryDate.label')}</Label>
           <Input id="cov-end" type="date" {...register('periodEnd')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('expiryDate.hint')}</p>
         </div>
       </div>
 

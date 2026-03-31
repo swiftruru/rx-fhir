@@ -9,6 +9,7 @@ import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
+import FormGuideCard from '../../../components/FormGuideCard'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
 import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
@@ -131,15 +132,31 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
         </Button>
       </div>
+
+      <FormGuideCard title={f('introTitle')} description={f('introHint')} />
+
+      <FormGuideCard title={f('examplesTitle')} variant="examples">
+        <ul className="space-y-1 text-[11px] leading-relaxed text-muted-foreground">
+          {[f('example1'), f('example2')].map((example) => (
+            <li key={example} className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary/60" />
+              <span>{example}</span>
+            </li>
+          ))}
+        </ul>
+      </FormGuideCard>
+
       <div className="space-y-2">
         <Label htmlFor="org-name">{f('name.label')} *</Label>
         <Input id="org-name" placeholder={f('name.placeholder')} {...register('name')} />
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('name.hint')}</p>
         {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="org-id">{f('identifier.label')} *</Label>
         <Input id="org-id" placeholder={f('identifier.placeholder')} {...register('identifier')} />
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('identifier.hint')}</p>
         {errors.identifier && <p className="text-xs text-destructive">{errors.identifier.message}</p>}
       </div>
 
@@ -155,6 +172,7 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
             ))}
           </SelectContent>
         </Select>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('type.hint')}</p>
         {errors.type && <p className="text-xs text-destructive">{errors.type.message}</p>}
       </div>
 

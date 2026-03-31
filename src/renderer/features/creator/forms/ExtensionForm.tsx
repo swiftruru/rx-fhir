@@ -8,6 +8,7 @@ import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
+import FormGuideCard from '../../../components/FormGuideCard'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
 import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
@@ -157,9 +158,18 @@ export default function ExtensionForm({ onSuccess }: Props): React.JSX.Element {
         </Button>
       </div>
 
-      <div className="rounded-md border border-border/60 bg-muted/30 p-3">
-        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('introHint')}</p>
-      </div>
+      <FormGuideCard title={f('introTitle')} description={f('introHint')} />
+
+      <FormGuideCard title={f('examplesTitle')} variant="examples">
+        <ul className="space-y-1 text-[11px] leading-relaxed text-muted-foreground">
+          {[f('example1'), f('example2'), f('example3')].map((example) => (
+            <li key={example} className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary/60" />
+              <span>{example}</span>
+            </li>
+          ))}
+        </ul>
+      </FormGuideCard>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">

@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Check, ChevronRight, Loader2, Package } from 'lucide-react'
+import { Check, ChevronRight, ChevronsUpDown, Layers3, Loader2, Package, Target, Type } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
 import { ScrollArea } from '../../components/ui/scroll-area'
 import { Badge } from '../../components/ui/badge'
 import JsonViewer from '../../components/JsonViewer'
+import { cn } from '../../lib/utils'
 import { useCreatorStore } from '../../store/creatorStore'
 import { RESOURCE_STEPS } from '../../types/fhir.d'
 import type { CreatedResources, ResourceKey } from '../../types/fhir.d'
@@ -241,20 +242,37 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
     () => Object.entries(resources).filter((entry): entry is [ResourceKey, NonNullable<CreatedResources[ResourceKey]>] => Boolean(entry[1])),
     [resources]
   )
+  const effectiveLatestResourceKey = useMemo(() => {
+    if (lastUpdatedResourceKey && resources[lastUpdatedResourceKey]) return lastUpdatedResourceKey
+    if (resources[currentStepKey]) return currentStepKey
+
+    for (let index = RESOURCE_STEPS.length - 1; index >= 0; index -= 1) {
+      const key = RESOURCE_STEPS[index].key
+      if (resources[key]) return key
+    }
+
+    return undefined
+  }, [currentStepKey, lastUpdatedResourceKey, resources])
   const visibleJsonEntries = useMemo(() => {
-    if (showOnlyLastResource && lastUpdatedResourceKey && resources[lastUpdatedResourceKey]) {
-      return [[lastUpdatedResourceKey, resources[lastUpdatedResourceKey]!]] as Array<[ResourceKey, NonNullable<CreatedResources[ResourceKey]>]>
+    if (showOnlyLastResource && effectiveLatestResourceKey && resources[effectiveLatestResourceKey]) {
+      return [[effectiveLatestResourceKey, resources[effectiveLatestResourceKey]!]] as Array<[ResourceKey, NonNullable<CreatedResources[ResourceKey]>]>
     }
     return jsonEntries
-  }, [jsonEntries, lastUpdatedResourceKey, resources, showOnlyLastResource])
+  }, [effectiveLatestResourceKey, jsonEntries, resources, showOnlyLastResource])
+  const jsonStatusLabel =
+    showOnlyLastResource && effectiveLatestResourceKey
+      ? t('stepper.jsonStatusLatest', { resource: t(`steps.${effectiveLatestResourceKey}.label`) })
+      : t('stepper.jsonStatusAll', { count: visibleJsonEntries.length })
 
   function handleCollapseAll(): void {
     setCollapseAll(true)
     setCollapseSyncToken((token) => token + 1)
   }
 
-  function handleToggleLastResourceView(): void {
-    const next = !showOnlyLastResource
+  function handleSelectJsonMode(mode: 'all' | 'latest'): void {
+    const next = mode === 'latest'
+    if (next === showOnlyLastResource) return
+
     setShowOnlyLastResource(next)
     if (next) {
       setCollapseAll(false)
@@ -389,60 +407,107 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
             {/* JSON Preview panel */}
             {showJsonPreview && (
               <div className="border-l overflow-auto p-4 bg-muted/35 transition-colors">
-                <div className="mb-3 flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground font-mono">{t('stepper.jsonPanelTitle')}</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      {showOnlyLastResource && lastUpdatedResourceKey
-                        ? t('stepper.jsonShowingLast', { resource: t(`steps.${lastUpdatedResourceKey}.label`) })
-                        : t('stepper.jsonShowingAll', { count: visibleJsonEntries.length })}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-end gap-1.5">
-                    <div className="flex items-center rounded-md border border-border bg-background/70 p-0.5">
-                      {(['sm', 'md', 'lg'] as const).map((size) => (
-                        <Button
-                          key={size}
-                          type="button"
-                          variant={jsonFontSize === size ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-6 px-2 text-[10px]"
-                          onClick={() => setJsonFontSize(size)}
-                        >
-                          {t(`stepper.jsonFontSizes.${size}`)}
-                        </Button>
-                      ))}
+                <div className="mb-3 space-y-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground font-mono break-keep">{t('stepper.jsonPanelTitle')}</p>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-[10px]"
-                      onClick={handleCollapseAll}
-                      disabled={visibleJsonEntries.length === 0}
-                    >
-                      {t('stepper.jsonCollapseAll')}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={showOnlyLastResource ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className="h-6 px-2 text-[10px]"
-                      onClick={handleToggleLastResourceView}
-                      disabled={!lastUpdatedResourceKey || !resources[lastUpdatedResourceKey]}
-                    >
-                      {showOnlyLastResource ? t('stepper.jsonShowAllResources') : t('stepper.jsonShowLastOnly')}
-                    </Button>
+                    <div className="flex justify-end">
+                      <div className="w-[18rem] max-w-full rounded-xl border border-border/80 bg-background/90 p-2 shadow-sm backdrop-blur-sm">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="inline-flex h-8 min-w-0 items-center gap-1 rounded-lg border border-border/70 bg-muted/30 px-1">
+                              <span className="px-1 text-[10px] font-medium text-muted-foreground">
+                                <Type className="h-3.5 w-3.5" />
+                              </span>
+                              {(['sm', 'md', 'lg'] as const).map((size) => (
+                                <Button
+                                  key={size}
+                                  type="button"
+                                  variant={jsonFontSize === size ? 'secondary' : 'ghost'}
+                                  size="sm"
+                                  className={cn(
+                                    'h-6 min-w-8 rounded-md px-2 text-[10px]',
+                                    jsonFontSize === size ? 'shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                  )}
+                                  onClick={() => setJsonFontSize(size)}
+                                >
+                                  {t(`stepper.jsonFontSizes.${size}`)}
+                                </Button>
+                              ))}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-[5.5rem] shrink-0 rounded-lg border-border/70 bg-muted/30 px-3 text-[10px] shadow-none hover:bg-accent/60"
+                              onClick={handleCollapseAll}
+                              disabled={visibleJsonEntries.length === 0}
+                            >
+                              <ChevronsUpDown className="h-3.5 w-3.5" />
+                              {t('stepper.jsonCollapseAll')}
+                            </Button>
+                          </div>
+
+                          <div className="grid grid-cols-[minmax(0,1fr)_8.5rem] items-center gap-2">
+                            <div className="min-w-0 rounded-md border border-border/60 bg-muted/35 px-2.5 py-1 text-[11px] text-muted-foreground shadow-sm">
+                              <span className="block truncate" title={jsonStatusLabel}>{jsonStatusLabel}</span>
+                            </div>
+                            <div className="inline-flex h-8 w-[8.5rem] shrink-0 items-center rounded-lg border border-border/70 bg-muted/30 p-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                aria-pressed={!showOnlyLastResource}
+                                className={cn(
+                                  'h-6 w-full rounded-md px-2 text-[10px] font-medium',
+                                  !showOnlyLastResource
+                                    ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                )}
+                                onClick={() => handleSelectJsonMode('all')}
+                                title={t('stepper.jsonShowAllHint')}
+                              >
+                                <Layers3 className="h-3.5 w-3.5" />
+                                {t('stepper.jsonModeAll')}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                aria-pressed={showOnlyLastResource}
+                                className={cn(
+                                  'h-6 w-full rounded-md px-2 text-[10px] font-medium',
+                                  showOnlyLastResource
+                                    ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                )}
+                                onClick={() => handleSelectJsonMode('latest')}
+                                disabled={!effectiveLatestResourceKey || !resources[effectiveLatestResourceKey]}
+                                title={
+                                  effectiveLatestResourceKey
+                                    ? t('stepper.jsonShowLatestHint', { resource: t(`steps.${effectiveLatestResourceKey}.label`) })
+                                    : t('stepper.jsonShowLatestUnavailable')
+                                }
+                              >
+                                <Target className="h-3.5 w-3.5" />
+                                {t('stepper.jsonModeLatest')}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 {visibleJsonEntries.map(([key, resource]) =>
                   resource ? (
                     <div key={key} className="mb-3">
                       <JsonViewer
-                        key={key === lastUpdatedResourceKey ? `${key}-${expandSeq}` : key}
+                        key={key === effectiveLatestResourceKey ? `${key}-${expandSeq}` : key}
                         data={resource}
                         title={key}
-                        defaultCollapsed={collapseAll || key !== lastUpdatedResourceKey}
+                        defaultCollapsed={collapseAll || key !== effectiveLatestResourceKey}
                         collapseSync={{ value: collapseAll, token: collapseSyncToken }}
                         fontSize={jsonFontSize}
                       />

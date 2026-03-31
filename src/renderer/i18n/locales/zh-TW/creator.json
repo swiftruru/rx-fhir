@@ -23,12 +23,19 @@
     "stepBadge": "步驟 {{current}} / {{total}}",
     "showJson": "顯示 JSON 預覽",
     "hideJson": "隱藏 JSON",
-    "jsonPanelTitle": "已建立的 Resources JSON",
+    "jsonPanelTitle": "已建立資源 JSON",
     "jsonShowingAll": "目前顯示全部 {{count}} 筆資源",
-    "jsonShowingLast": "目前只顯示最後建立的資源：{{resource}}",
-    "jsonCollapseAll": "收合全部",
-    "jsonShowLastOnly": "只看最後建立資源",
+    "jsonShowingLast": "目前只顯示最新更新的資源：{{resource}}",
+    "jsonStatusAll": "全部 {{count}} 筆",
+    "jsonStatusLatest": "最新：{{resource}}",
+    "jsonCollapseAll": "收合",
+    "jsonModeAll": "全部",
+    "jsonModeLatest": "最新",
+    "jsonShowLatestOnly": "只顯示最新更新資源",
     "jsonShowAllResources": "顯示全部資源",
+    "jsonShowAllHint": "顯示目前建立的全部資源",
+    "jsonShowLatestHint": "只顯示最新更新的資源：{{resource}}",
+    "jsonShowLatestUnavailable": "目前沒有可切換的最新資源",
     "jsonFontSizes": {
       "sm": "小",
       "md": "中",
@@ -56,12 +63,18 @@
       "optional": "（選填）"
     },
     "organization": {
-      "name":       { "label": "機構名稱", "placeholder": "例：臺大醫院",   "required": "請輸入機構名稱" },
-      "identifier": { "label": "機構代碼", "placeholder": "例：0101020011", "required": "請輸入機構代碼" },
+      "introTitle": "機構資料說明",
+      "introHint": "請填這張處方所屬的醫事機構。機構代碼建議使用院內或系統已採用的固定代碼。",
+      "examplesTitle": "填寫範例",
+      "example1": "臺大醫院 / NTUH001 / 醫院",
+      "example2": "社區藥局 / PHARM001 / 藥局",
+      "name":       { "label": "機構名稱", "placeholder": "例：臺大醫院",   "required": "請輸入機構名稱", "hint": "請填病人與醫師都能辨識的正式機構名稱。" },
+      "identifier": { "label": "機構代碼", "placeholder": "例：0101020011", "required": "請輸入機構代碼", "hint": "請填系統內部或院內慣用的機構代碼，後續查詢也可能會用到。" },
       "type": {
         "label": "機構類型",
         "placeholder": "選擇機構類型",
         "required": "請選擇機構類型",
+        "hint": "請選擇最符合實際情境的機構類型，例如醫院、診所或藥局。",
         "options": {
           "hospital": "醫院",
           "clinic":   "診所",
@@ -71,8 +84,13 @@
       "success": "Organization 已成功建立！ID: {{id}}"
     },
     "patient": {
-      "familyName": { "label": "姓氏",              "placeholder": "例：王",        "required": "請輸入姓氏" },
-      "givenName":  { "label": "名字",              "placeholder": "例：小明",      "required": "請輸入名字" },
+      "introTitle": "病人資料說明",
+      "introHint": "病人資料會作為整張處方的主體。依目前專案規格，Patient.identifier 使用學號。",
+      "examplesTitle": "填寫範例",
+      "example1": "姓氏：王 / 名字：小明 / 學號：S1101001",
+      "example2": "若沒有其他病歷號，本專案預設用學號作為主要識別碼。",
+      "familyName": { "label": "姓氏",              "placeholder": "例：王",        "required": "請輸入姓氏", "hint": "請輸入病人姓氏，會與名字一起組成顯示姓名。" },
+      "givenName":  { "label": "名字",              "placeholder": "例：小明",      "required": "請輸入名字", "hint": "請輸入病人名字，例如小明、雅婷。" },
       "studentId": {
         "label":    "學號 (Identifier)",
         "placeholder": "例：B12345678",
@@ -83,6 +101,7 @@
         "label": "性別",
         "placeholder": "選擇性別",
         "required": "請選擇性別",
+        "hint": "請依病人基本資料選擇對應性別值。",
         "options": {
           "male":    "男 (male)",
           "female":  "女 (female)",
@@ -90,42 +109,64 @@
           "unknown": "未知 (unknown)"
         }
       },
-      "birthDate": { "label": "出生日期", "required": "請輸入出生日期" },
+      "birthDate": { "label": "出生日期", "required": "請輸入出生日期", "hint": "出生日期有助於辨識病人，也會顯示在 Consumer 詳情頁。" },
       "success": "Patient 已成功建立！ID: {{id}}"
     },
     "practitioner": {
-      "familyName":    { "label": "姓氏",     "placeholder": "例：李",       "required": "請輸入姓氏" },
-      "givenName":     { "label": "名字",     "placeholder": "例：大華",     "required": "請輸入名字" },
-      "licenseNumber": { "label": "醫師證號", "placeholder": "例：MD123456", "required": "請輸入醫師證號" },
-      "qualification": { "label": "專科資格", "placeholder": "例：內科專科醫師", "required": "請輸入專科資格" },
+      "introTitle": "醫師資料說明",
+      "introHint": "請填開立處方的醫師資料。醫師證號會作為 Practitioner 的主要識別碼。",
+      "examplesTitle": "填寫範例",
+      "example1": "李 / 大仁 / MED20001 / 一般科",
+      "example2": "專科資格可填內科、家醫科、兒科等人類可讀的名稱。",
+      "familyName":    { "label": "姓氏",     "placeholder": "例：李",       "required": "請輸入姓氏", "hint": "請輸入醫師姓氏。" },
+      "givenName":     { "label": "名字",     "placeholder": "例：大華",     "required": "請輸入名字", "hint": "請輸入醫師名字。" },
+      "licenseNumber": { "label": "醫師證號", "placeholder": "例：MD123456", "required": "請輸入醫師證號", "hint": "請填可識別該醫師的證號或執業號碼。" },
+      "qualification": { "label": "專科資格", "placeholder": "例：內科專科醫師", "required": "請輸入專科資格", "hint": "請填醫師的專科或資格名稱，例如內科、家醫科。" },
       "success": "Practitioner 已成功建立！ID: {{id}}"
     },
     "encounter": {
+      "introTitle": "門診資料說明",
+      "introHint": "此步驟用來記錄本次就醫情境。若是一般看診，通常可選門診並填入實際開始與結束時間。",
+      "examplesTitle": "填寫範例",
+      "example1": "門診 / 2025-01-10 09:00 / 2025-01-10 09:30",
+      "example2": "若只有開始時間，也可先填開始時間，結束時間視情況留白。",
       "type": {
         "label": "就診類型",
         "placeholder": "選擇就診類型",
         "required": "請選擇就診類型",
+        "hint": "請依實際就醫情境選擇門診、急診或住院。",
         "options": {
           "ambulatory": "門診 (Ambulatory)",
           "emergency":  "急診 (Emergency)",
           "inpatient":  "住院 (Inpatient)"
         }
       },
-      "startDate":  { "label": "就診開始日期", "required": "請選擇就診日期" },
-      "endDate":    { "label": "就診結束日期" },
+      "startDate":  { "label": "就診開始日期", "required": "請選擇就診日期", "hint": "請填病人開始就診的日期與時間。" },
+      "endDate":    { "label": "就診結束日期", "hint": "若已知看診結束時間可填入；未知時可留白。" },
       "patientInfo": "關聯病人：{{name}} ({{id}})",
       "success": "Encounter 已成功建立！ID: {{id}}"
     },
     "condition": {
+      "introTitle": "ICD-10 填寫說明",
+      "introHint": "ICD-10 用來標示正式診斷分類。若只知道中文病名，建議先查對應診斷碼，再填入本欄。",
       "presetsTitle": "常用診斷碼（快速選擇）",
       "presetsHint": "上方常用診斷可快速帶入；實際送出前仍建議依病歷內容確認 ICD-10 診斷碼。",
+      "examplesTitle": "填寫範例",
+      "example1": "J06.9 → 急性上呼吸道感染",
+      "example2": "I10 → 原發性高血壓",
       "icdCode":       { "label": "ICD-10 診斷碼", "placeholder": "例：J06.9",      "required": "請輸入 ICD-10 診斷碼", "hint": "請填標準 ICD-10 診斷碼，例如 J06.9、I10、E11.9。" },
       "diagnosisName": { "label": "診斷名稱",       "placeholder": "例：急性上呼吸道感染", "required": "請輸入診斷名稱", "hint": "請輸入與 ICD-10 代碼對應的診斷名稱，例如「急性上呼吸道感染」。" },
       "success": "Condition 已成功建立！ID: {{id}}"
     },
     "observation": {
+      "introTitle": "LOINC 填寫說明",
+      "introHint": "LOINC 代碼代表檢驗或量測項目，數值與單位則代表這次實際量到的結果。",
       "presetsTitle": "常用檢驗項目（快速選擇）",
       "presetsHint": "LOINC 代碼用來標示檢驗或量測項目，建議優先使用標準代碼。",
+      "examplesTitle": "常見單位範例",
+      "example1": "收縮壓 / 舒張壓 → mmHg",
+      "example2": "血糖 / 總膽固醇 → mg/dL",
+      "example3": "體重 → kg",
       "presets": {
         "8867-4":  "心率",
         "8480-6":  "收縮壓",
@@ -136,7 +177,7 @@
       },
       "loincCode":  { "label": "LOINC 代碼", "placeholder": "例：8867-4",    "required": "請輸入 LOINC 代碼", "hint": "請填標準 LOINC 代碼，例如 8867-4（心率）、8480-6（收縮壓）。" },
       "itemName":   { "label": "項目名稱",   "placeholder": "例：心率",       "required": "請輸入檢驗項目名稱", "hint": "項目名稱應與 LOINC 代碼相對應，例如 8867-4 對應「心率」。" },
-      "value":      { "label": "數值",       "placeholder": "例：80",         "required": "請輸入數值" },
+      "value":      { "label": "數值",       "placeholder": "例：80",         "required": "請輸入數值", "hint": "請輸入實際量測結果，例如血壓 120、心率 72、體重 65。" },
       "unit":       { "label": "單位",       "placeholder": "例：beats/min",  "required": "請輸入單位", "hint": "請使用常見醫療單位，例如 mmHg、mg/dL、kg。" },
       "status": {
         "label": "狀態",
@@ -149,23 +190,35 @@
       "success": "Observation 已成功建立！ID: {{id}}"
     },
     "coverage": {
+      "introTitle": "保險資料說明",
+      "introHint": "此步驟用來記錄病人的保險身份。若是全民健保，請填可識別該保險紀錄的健保卡號或保險 ID。",
+      "examplesTitle": "填寫範例",
+      "example1": "全民健保：保險類型選「全民健保（NHI）」、保險 ID 可填健保卡號。",
+      "example2": "若有有效期限，可填到期日；沒有明確期限時可只填生效日。",
       "type": {
         "label": "保險類型",
         "placeholder": "選擇保險類型",
         "required": "請選擇保險類型",
+        "hint": "請選與病人本次就醫最相關的保險別，例如全民健保或自費。",
         "options": {
           "EHCPOL":    "全民健保（NHI）",
           "PAY":       "自費",
           "PUBLICPOL": "公務人員保險"
         }
       },
-      "insuranceId":   { "label": "健保卡號 / 保險 ID", "placeholder": "例：A123456789", "required": "請輸入保險 ID / 健保卡號" },
-      "effectiveDate": { "label": "生效日期", "required": "請輸入保險生效日期" },
-      "expiryDate":    { "label": "到期日期" },
+      "insuranceId":   { "label": "健保卡號 / 保險 ID", "placeholder": "例：A123456789", "required": "請輸入保險 ID / 健保卡號", "hint": "請填病人保險可識別代碼，例如健保卡號、保險會員編號。" },
+      "effectiveDate": { "label": "生效日期", "required": "請輸入保險生效日期", "hint": "通常可填保險開始生效日，若是當次就醫有效，可填就診當天。" },
+      "expiryDate":    { "label": "到期日期", "hint": "若保險沒有明確終止日，可留白。" },
       "success": "Coverage 已成功建立！ID: {{id}}"
     },
     "medication": {
+      "introTitle": "藥品資料說明",
+      "introHint": "此步驟用來建立藥品主檔，建議先決定使用 ATC 或健保藥碼，再填對應代碼與藥名。",
       "presetsTitle": "常用藥品（快速選擇）",
+      "presetsHint": "上方常用藥品可快速帶入代碼與名稱，送出前仍建議確認是否符合這次處方使用的實際藥品。",
+      "examplesTitle": "填寫範例",
+      "example1": "ATC：N02BE01 / 乙醯胺酚 / 錠",
+      "example2": "抗生素 Amoxicillin 可填 J01CA04，並依實際劑型選擇膠囊或懸液。",
       "presets": {
         "N02BE01": "乙醯胺酚",
         "J01CA04": "安莫西林",
@@ -175,17 +228,19 @@
       },
       "codeSystem": {
         "label": "代碼系統",
+        "hint": "ATC 適合通用藥品分類；若你手上是台灣健保藥碼，請改選 NHI Drug Code。",
         "options": {
           "ATC": "ATC Code (WHO)",
           "NHI": "NHI Drug Code（健保藥碼）"
         }
       },
-      "code": { "label": "藥品代碼", "placeholder": "例：N02BE01", "required": "請輸入藥品代碼" },
-      "name": { "label": "藥品名稱", "placeholder": "例：乙醯胺酚", "required": "請輸入藥品名稱" },
+      "code": { "label": "藥品代碼", "placeholder": "例：N02BE01", "required": "請輸入藥品代碼", "hint": "請填對應代碼系統下的藥品代碼，例如 ATC 的 N02BE01。" },
+      "name": { "label": "藥品名稱", "placeholder": "例：乙醯胺酚", "required": "請輸入藥品名稱", "hint": "請填臨床或病人可辨識的藥名，例如乙醯胺酚、安莫西林。" },
       "form": {
         "label": "劑型",
         "placeholder": "選擇劑型",
         "required": "請選擇劑型",
+        "hint": "請選最符合實際給藥形式的劑型，例如錠、膠囊、注射劑。",
         "options": {
           "TAB": "錠 (Tablet)",
           "CAP": "膠囊 (Capsule)",
@@ -199,6 +254,11 @@
     "medicationRequest": {
       "medicationPreview": "藥品：",
       "missingMedication": "請先完成步驟 8「藥品資訊」再建立處方箋。",
+      "introTitle": "處方填寫說明",
+      "introHint": "處方內容建議依「一次吃多少、多久吃一次、怎麼給藥」的順序填寫。",
+      "examplesTitle": "填寫範例",
+      "example1": "口服乙醯胺酚 500 mg，每日三次，可填：500 / mg / TID / 口服",
+      "example2": "鼻噴藥或外用藥也請選對應給藥途徑，避免只寫在備註裡。",
       "doseValue": { "label": "劑量",   "placeholder": "例：500", "required": "請輸入劑量數值", "positive": "劑量必須大於 0", "hint": "請填單次給藥劑量數值，例如 500。" },
       "doseUnit":  { "label": "單位",   "placeholder": "例：mg",  "required": "請輸入劑量單位", "hint": "請填對應單位，例如 mg、mL、tablet。" },
       "frequency": {
@@ -227,12 +287,17 @@
           "46713006": "鼻腔給藥 (Nasal)"
         }
       },
-      "durationDays": { "label": "給藥天數", "placeholder": "例：7" },
+      "durationDays": { "label": "給藥天數", "placeholder": "例：7", "hint": "若是短期用藥，可填 3、5、7 等天數；長期處方可留白或依需求填寫。" },
       "note":         { "label": "用藥說明", "placeholder": "例：飯後服用", "hint": "可填寫病人看得懂的用藥說明，例如飯後服用、睡前服用。" },
       "success": "MedicationRequest 已成功建立！ID: {{id}}"
     },
     "extension": {
+      "introTitle": "補充資料說明",
       "introHint":   "補充資料適合放規格外但仍需保留的附加說明，例如特殊給藥指示或照護備註。",
+      "examplesTitle": "常見補充資料範例",
+      "example1": "類型代碼：special-instruction / 類型名稱：特殊給藥指示",
+      "example2": "Extension URL：可使用院內固定定義網址，例如 https://example.org/fhir/StructureDefinition/special-instruction",
+      "example3": "Extension 值：飯後 30 分鐘服用，避免與制酸劑併服",
       "codeCode":    { "label": "類型代碼",         "placeholder": "例：special-instruction", "required": "請輸入類型代碼", "hint": "類型代碼可用簡短英文識別，例如 special-instruction。" },
       "codeDisplay": { "label": "類型名稱",         "placeholder": "例：特殊給藥指示",         "required": "請輸入類型名稱", "hint": "類型名稱建議使用人類可讀的中文或英文名稱，例如「特殊給藥指示」。" },
       "ext1Url":     { "label": "Extension URL (1)", "placeholder": "https://...",             "required": "請輸入 Extension URL", "hint": "請填這筆 Extension 的定義網址；若同一種附加資料重複使用，應固定使用同一個 URL。" },

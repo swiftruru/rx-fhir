@@ -9,6 +9,7 @@ import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
+import FormGuideCard from '../../../components/FormGuideCard'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
 import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
@@ -144,15 +145,31 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
         </Button>
       </div>
+
+      <FormGuideCard title={f('introTitle')} description={f('introHint')} />
+
+      <FormGuideCard title={f('examplesTitle')} variant="examples">
+        <ul className="space-y-1 text-[11px] leading-relaxed text-muted-foreground">
+          {[f('example1'), f('example2')].map((example) => (
+            <li key={example} className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary/60" />
+              <span>{example}</span>
+            </li>
+          ))}
+        </ul>
+      </FormGuideCard>
+
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label htmlFor="family-name">{f('familyName.label')} *</Label>
           <Input id="family-name" placeholder={f('familyName.placeholder')} {...register('familyName')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('familyName.hint')}</p>
           {errors.familyName && <p className="text-xs text-destructive">{errors.familyName.message}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="given-name">{f('givenName.label')} *</Label>
           <Input id="given-name" placeholder={f('givenName.placeholder')} {...register('givenName')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('givenName.hint')}</p>
           {errors.givenName && <p className="text-xs text-destructive">{errors.givenName.message}</p>}
         </div>
       </div>
@@ -176,12 +193,14 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
             ))}
           </SelectContent>
         </Select>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('gender.hint')}</p>
         {errors.gender && <p className="text-xs text-destructive">{errors.gender.message}</p>}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="birth-date">{f('birthDate.label')} *</Label>
         <Input id="birth-date" type="date" {...register('birthDate')} />
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('birthDate.hint')}</p>
         {errors.birthDate && <p className="text-xs text-destructive">{errors.birthDate.message}</p>}
       </div>
 

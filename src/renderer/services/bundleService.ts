@@ -37,7 +37,8 @@ export function assembleDocumentBundle(
     observation,
     coverage,
     medication,
-    medicationRequest
+    medicationRequest,
+    extension
   } = resources
 
   if (patient) entries.push(toEntry(patient))
@@ -49,11 +50,17 @@ export function assembleDocumentBundle(
   if (coverage) entries.push(toEntry(coverage))
   if (medication) entries.push(toEntry(medication))
   if (medicationRequest) entries.push(toEntry(medicationRequest))
+  if (extension) entries.push(toEntry(extension))
 
   const bundle: fhir4.Bundle = {
     resourceType: 'Bundle',
     type: 'document',
     timestamp: new Date().toISOString(),
+    // Store patient identifier at Bundle level for reliable searching
+    identifier: patient?.identifier?.[0] ? {
+      system: patient.identifier[0].system,
+      value: patient.identifier[0].value
+    } : undefined,
     entry: entries,
     meta: {
       profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Bundle-EP']

@@ -1,0 +1,129 @@
+{
+  "page": {
+    "title": "Consumer — 查詢處方箋",
+    "description": "以多種條件查詢 FHIR Server 上的處方箋",
+    "emptyPrompt": "請輸入查詢條件"
+  },
+  "search": {
+    "tabs": {
+      "basic":   "基本查詢",
+      "date":    "日期查詢",
+      "complex": "複合查詢"
+    },
+    "basic": {
+      "searchByLabel": "查詢方式",
+      "searchByOptions": {
+        "identifier": "病人識別碼 (identifier)",
+        "name":       "病人姓名 (name)"
+      },
+      "identifierLabel": "識別碼（學號）",
+      "nameLabel":       "病人姓名",
+      "identifierPlaceholder": "例：B12345678",
+      "namePlaceholder":       "例：王小明"
+    },
+    "date": {
+      "identifierLabel":       "病人識別碼（學號）",
+      "identifierPlaceholder": "例：B12345678",
+      "dateLabel":             "處方日期",
+      "submitButton":          "日期查詢"
+    },
+    "complex": {
+      "identifierLabel":       "病人識別碼（學號）",
+      "identifierPlaceholder": "例：B12345678",
+      "extraLabel":            "附加條件",
+      "extraOptions": {
+        "organization": "機構代碼 (organization.identifier)",
+        "author":       "醫師姓名 (author.name)"
+      },
+      "orgCodeLabel":       "機構代碼",
+      "orgCodePlaceholder": "例：0101020011",
+      "authorNameLabel":       "醫師姓名",
+      "authorNamePlaceholder": "例：李大華",
+      "submitButtonOrg":    "機構複合查詢",
+      "submitButtonAuthor": "醫師複合查詢"
+    },
+    "queryUrlLabel": "查詢 URL",
+    "queryStepsLabel": "查詢步驟",
+    "error": "查詢失敗"
+  },
+  "recent": {
+    "title":      "近期提交",
+    "empty":      "尚無提交紀錄",
+    "clearAll":   "清除全部",
+    "fillSearch":    "填入搜尋",
+    "queryNow":      "立即查詢",
+    "deleteRecord":  "刪除此筆"
+  },
+  "results": {
+    "empty":        "尚無查詢結果",
+    "emptyHint":    "請使用左側表單進行查詢",
+    "count":        "共找到 {{total}} 筆",
+    "showing":      "顯示 {{count}} 筆",
+    "unknownPatient": "未知病人"
+  },
+  "detail": {
+    "title": "處方箋詳情",
+    "toggleJson":       "JSON",
+    "toggleStructured": "結構化",
+    "sections": {
+      "prescription": {
+        "title":        "處方箋資訊",
+        "docTitle":     "標題",
+        "date":         "日期",
+        "status":       "狀態",
+        "bundleId":     "Bundle ID"
+      },
+      "patient": {
+        "title":       "病人資料",
+        "name":        "姓名",
+        "identifier":  "識別碼",
+        "gender":      "性別",
+        "birthDate":   "出生日期"
+      },
+      "practitioner": {
+        "title":        "醫師資料",
+        "name":         "姓名",
+        "licenseNumber":"證號",
+        "qualification":"專科"
+      },
+      "organization": {
+        "title":      "醫事機構",
+        "name":       "名稱",
+        "identifier": "代碼",
+        "type":       "類型"
+      },
+      "encounter": {
+        "title":     "就診資料",
+        "type":      "類型",
+        "start":     "開始時間",
+        "end":       "結束時間",
+        "status":    "狀態"
+      },
+      "condition": {
+        "title":          "診斷",
+        "code":           "診斷碼",
+        "clinicalStatus": "臨床狀態"
+      },
+      "observation": {
+        "title":  "檢驗檢查",
+        "item":   "項目",
+        "result": "結果",
+        "status": "狀態"
+      },
+      "coverage": {
+        "title":        "保險資訊",
+        "type":         "類型",
+        "insuranceId":  "保險 ID",
+        "effectiveDate":"生效日"
+      },
+      "medicationAndRequest": {
+        "title":          "藥品與處方",
+        "medicationName": "藥品名稱",
+        "medicationCode": "藥品代碼",
+        "form":           "劑型",
+        "dose":           "劑量",
+        "route":          "給藥途徑"
+      }
+    }
+  }
+}

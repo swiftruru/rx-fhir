@@ -1,33 +1,51 @@
-import { useState } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
+import { CheckCircle2, Loader2, AlertCircle, Wand2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { postResource } from '../../../services/fhirClient'
+import { findOrCreate, putResource } from '../../../services/fhirClient'
+import { practitionerMocks } from '../../../mocks/mockPools'
 
-const schema = z.object({
-  familyName: z.string().min(1, '請輸入姓氏'),
-  givenName: z.string().min(1, '請輸入名字'),
-  licenseNumber: z.string().min(1, '請輸入醫師證號'),
-  qualification: z.string().min(1, '請輸入專科資格')
-})
-
-type FormData = z.infer<typeof schema>
+type FormData = {
+  familyName: string
+  givenName: string
+  licenseNumber: string
+  qualification: string
+}
 
 interface Props {
   onSuccess: (resource: fhir4.Practitioner) => void
 }
 
 export default function PractitionerForm({ onSuccess }: Props): React.JSX.Element {
+  const { t } = useTranslation('creator')
+  const { t: tc } = useTranslation('common')
+  const f = (k: string) => t(`forms.practitioner.${k}`)
+
+  const schema = useMemo(() => z.object({
+    familyName:    z.string().min(1, f('familyName.required')),
+    givenName:     z.string().min(1, f('givenName.required')),
+    licenseNumber: z.string().min(1, f('licenseNumber.required')),
+    qualification: z.string().min(1, f('qualification.required'))
+  }), [t])
+
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [resultId, setResultId] = useState<string>()
   const [errorMsg, setErrorMsg] = useState<string>()
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const mockIndexRef = useRef(0)
+  function fillMock(): void {
+    const data = practitionerMocks[mockIndexRef.current % practitionerMocks.length]
+    mockIndexRef.current += 1
+    Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
+  }
+
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { familyName: '', givenName: '', licenseNumber: '', qualification: '' }
   })
@@ -67,40 +85,51 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
           profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Practitioner-EP']
         }
       }
-      const created = await postResource<fhir4.Practitioner>('Practitioner', resource)
+      const created = resultId
+        ? await putResource<fhir4.Practitioner>('Practitioner', resultId, resource)
+        : await findOrCreate<fhir4.Practitioner>(
+            'Practitioner',
+            { identifier: `https://www.mohw.gov.tw/practitioner-license|${data.licenseNumber}` },
+            resource
+          )
       setResultId(created.id)
       setStatus('success')
       onSuccess(created)
     } catch (e) {
       setStatus('error')
-      setErrorMsg(e instanceof Error ? e.message : '發生未知錯誤')
+      setErrorMsg(e instanceof Error ? e.message : tc('errors.unknown'))
     }
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="flex justify-end">
+        <Button type="button" variant="ghost" size="sm" onClick={fillMock} className="h-7 px-2 text-xs text-muted-foreground">
+          <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
+        </Button>
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label htmlFor="prac-family">姓氏 *</Label>
-          <Input id="prac-family" placeholder="例：李" {...register('familyName')} />
+          <Label htmlFor="prac-family">{f('familyName.label')} *</Label>
+          <Input id="prac-family" placeholder={f('familyName.placeholder')} {...register('familyName')} />
           {errors.familyName && <p className="text-xs text-destructive">{errors.familyName.message}</p>}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="prac-given">名字 *</Label>
-          <Input id="prac-given" placeholder="例：大華" {...register('givenName')} />
+          <Label htmlFor="prac-given">{f('givenName.label')} *</Label>
+          <Input id="prac-given" placeholder={f('givenName.placeholder')} {...register('givenName')} />
           {errors.givenName && <p className="text-xs text-destructive">{errors.givenName.message}</p>}
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="license">醫師證號 *</Label>
-        <Input id="license" placeholder="例：MD123456" {...register('licenseNumber')} />
+        <Label htmlFor="license">{f('licenseNumber.label')} *</Label>
+        <Input id="license" placeholder={f('licenseNumber.placeholder')} {...register('licenseNumber')} />
         {errors.licenseNumber && <p className="text-xs text-destructive">{errors.licenseNumber.message}</p>}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="qualification">專科資格 *</Label>
-        <Input id="qualification" placeholder="例：內科專科醫師" {...register('qualification')} />
+        <Label htmlFor="qualification">{f('qualification.label')} *</Label>
+        <Input id="qualification" placeholder={f('qualification.placeholder')} {...register('qualification')} />
         {errors.qualification && <p className="text-xs text-destructive">{errors.qualification.message}</p>}
       </div>
 
@@ -108,7 +137,8 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
         <Alert variant="success">
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
-            Practitioner 已成功建立！ID: <code className="font-mono text-xs">{resultId}</code>
+            {f('success').replace('{{id}}', '')}
+            <code className="font-mono text-xs">{resultId}</code>
           </AlertDescription>
         </Alert>
       )}
@@ -119,9 +149,9 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
         </Alert>
       )}
 
-      <Button type="submit" disabled={status === 'loading'} className="w-full">
+      <Button type="submit" disabled={status === 'loading'} variant={status === 'success' ? 'outline' : 'default'} className="w-full">
         {status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}
-        {status === 'success' ? '重新提交' : 'POST 至 FHIR Server'}
+        {status === 'success' ? tc('buttons.resubmit') : tc('buttons.submit')}
       </Button>
     </form>
   )

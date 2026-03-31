@@ -1,45 +1,92 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
-import { Search, Loader2 } from 'lucide-react'
+import { Search, Loader2, Wand2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
 import { Alert, AlertDescription } from '../../components/ui/alert'
-import { searchBundles, buildSearchUrl } from '../../services/fhirClient'
+import { searchBundles, buildSearchUrl, type QueryStep } from '../../services/fhirClient'
 import { extractSearchResults } from '../../services/searchService'
 import type { BundleSummary, SearchParams } from '../../types/fhir.d'
+import type { SearchPrefill } from './ConsumerPage'
+import { consumerBasicMocks, consumerDateMocks, consumerComplexMocks } from '../../mocks/mockPools'
 
 interface Props {
   onResults: (results: BundleSummary[], total: number) => void
+  prefill?: SearchPrefill | null
+  onPrefillConsumed?: () => void
 }
 
-export default function SearchForm({ onResults }: Props): React.JSX.Element {
+export default function SearchForm({ onResults, prefill, onPrefillConsumed }: Props): React.JSX.Element {
+  const { t } = useTranslation('consumer')
+  const { t: tc } = useTranslation('common')
   const [activeTab, setActiveTab] = useState('basic')
   const [loading, setLoading] = useState(false)
   const [lastUrl, setLastUrl] = useState<string>()
+  const [querySteps, setQuerySteps] = useState<QueryStep[]>([])
   const [error, setError] = useState<string>()
 
-  // Basic search form
   const basicForm = useForm({ defaultValues: { searchBy: 'identifier', value: '' } })
-  // Date search form
   const dateForm = useForm({ defaultValues: { identifier: '', date: '' } })
-  // Complex search form
   const complexForm = useForm({ defaultValues: { identifier: '', complexBy: 'organization', orgId: '', authorName: '' } })
+
+  const basicMockRef   = useRef(0)
+  const dateMockRef    = useRef(0)
+  const complexMockRef = useRef(0)
+
+  function fillMock(): void {
+    if (activeTab === 'basic') {
+      const d = consumerBasicMocks[basicMockRef.current % consumerBasicMocks.length]
+      basicMockRef.current += 1
+      basicForm.setValue('searchBy', d.searchBy)
+      basicForm.setValue('value', d.value)
+    } else if (activeTab === 'date') {
+      const d = consumerDateMocks[dateMockRef.current % consumerDateMocks.length]
+      dateMockRef.current += 1
+      dateForm.setValue('identifier', d.identifier)
+      dateForm.setValue('date', d.date)
+    } else {
+      const d = consumerComplexMocks[complexMockRef.current % consumerComplexMocks.length]
+      complexMockRef.current += 1
+      complexForm.setValue('identifier', d.identifier)
+      complexForm.setValue('complexBy', d.complexBy)
+      complexForm.setValue('orgId', d.orgId)
+      complexForm.setValue('authorName', d.authorName)
+    }
+  }
+
+  useEffect(() => {
+    if (!prefill) return
+    basicForm.setValue('searchBy', prefill.searchBy)
+    basicForm.setValue('value', prefill.value)
+    setActiveTab('basic')
+    onPrefillConsumed?.()
+  }, [prefill])
 
   async function doSearch(params: SearchParams): Promise<void> {
     setLoading(true)
     setError(undefined)
-    const url = buildSearchUrl(params)
-    setLastUrl(url)
+    setQuerySteps([])
+    const isOrgComplex = params.mode === 'complex' && params.complexSearchBy === 'organization'
+    if (!isOrgComplex) {
+      setLastUrl(buildSearchUrl(params))
+    } else {
+      setLastUrl(undefined)
+    }
+    const steps: QueryStep[] = []
     try {
-      const bundle = await searchBundles(params)
+      const bundle = await searchBundles(params, (step) => {
+        steps.push(step)
+        setQuerySteps([...steps])
+      })
       const results = extractSearchResults(bundle)
       const total = bundle.total ?? results.length
       onResults(results, total)
     } catch (e) {
-      setError(e instanceof Error ? e.message : '查詢失敗')
+      setError(e instanceof Error ? e.message : t('search.error'))
       onResults([], 0)
     } finally {
       setLoading(false)
@@ -73,46 +120,54 @@ export default function SearchForm({ onResults }: Props): React.JSX.Element {
     })
   }
 
+  const searchByValue = basicForm.watch('searchBy')
+  const complexBy = complexForm.watch('complexBy')
+
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button type="button" variant="ghost" size="sm" onClick={fillMock} className="h-7 px-2 text-xs text-muted-foreground">
+          <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
+        </Button>
+      </div>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full">
-          <TabsTrigger value="basic" className="flex-1">基本查詢</TabsTrigger>
-          <TabsTrigger value="date" className="flex-1">日期查詢</TabsTrigger>
-          <TabsTrigger value="complex" className="flex-1">複合查詢</TabsTrigger>
+          <TabsTrigger value="basic" className="flex-1">{t('search.tabs.basic')}</TabsTrigger>
+          <TabsTrigger value="date" className="flex-1">{t('search.tabs.date')}</TabsTrigger>
+          <TabsTrigger value="complex" className="flex-1">{t('search.tabs.complex')}</TabsTrigger>
         </TabsList>
 
         {/* Tab 1: Basic search */}
         <TabsContent value="basic">
           <form onSubmit={basicForm.handleSubmit(handleBasicSubmit)} className="space-y-3">
             <div className="space-y-2">
-              <Label>查詢方式</Label>
+              <Label>{t('search.basic.searchByLabel')}</Label>
               <Select
-                value={basicForm.watch('searchBy')}
+                value={searchByValue}
                 onValueChange={(v) => basicForm.setValue('searchBy', v)}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="identifier">病人識別碼 (identifier)</SelectItem>
-                  <SelectItem value="name">病人姓名 (name)</SelectItem>
+                  <SelectItem value="identifier">{t('search.basic.searchByOptions.identifier')}</SelectItem>
+                  <SelectItem value="name">{t('search.basic.searchByOptions.name')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="basic-value">
-                {basicForm.watch('searchBy') === 'identifier' ? '識別碼（學號）' : '病人姓名'}
+                {searchByValue === 'identifier' ? t('search.basic.identifierLabel') : t('search.basic.nameLabel')}
               </Label>
               <Input
                 id="basic-value"
-                placeholder={basicForm.watch('searchBy') === 'identifier' ? '例：B12345678' : '例：王小明'}
+                placeholder={searchByValue === 'identifier' ? t('search.basic.identifierPlaceholder') : t('search.basic.namePlaceholder')}
                 {...basicForm.register('value', { required: true })}
               />
             </div>
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              查詢
+              {tc('buttons.search')}
             </Button>
           </form>
         </TabsContent>
@@ -121,15 +176,15 @@ export default function SearchForm({ onResults }: Props): React.JSX.Element {
         <TabsContent value="date">
           <form onSubmit={dateForm.handleSubmit(handleDateSubmit)} className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="date-id">病人識別碼（學號）</Label>
+              <Label htmlFor="date-id">{t('search.date.identifierLabel')}</Label>
               <Input
                 id="date-id"
-                placeholder="例：B12345678"
+                placeholder={t('search.date.identifierPlaceholder')}
                 {...dateForm.register('identifier', { required: true })}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="search-date">處方日期</Label>
+              <Label htmlFor="search-date">{t('search.date.dateLabel')}</Label>
               <Input
                 id="search-date"
                 type="date"
@@ -138,7 +193,7 @@ export default function SearchForm({ onResults }: Props): React.JSX.Element {
             </div>
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              查詢（identifier AND date）
+              {t('search.date.submitButton')}
             </Button>
           </form>
         </TabsContent>
@@ -147,60 +202,72 @@ export default function SearchForm({ onResults }: Props): React.JSX.Element {
         <TabsContent value="complex">
           <form onSubmit={complexForm.handleSubmit(handleComplexSubmit)} className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="complex-id">病人識別碼（學號）</Label>
+              <Label htmlFor="complex-id">{t('search.complex.identifierLabel')}</Label>
               <Input
                 id="complex-id"
-                placeholder="例：B12345678"
+                placeholder={t('search.complex.identifierPlaceholder')}
                 {...complexForm.register('identifier', { required: true })}
               />
             </div>
             <div className="space-y-2">
-              <Label>附加條件</Label>
+              <Label>{t('search.complex.extraLabel')}</Label>
               <Select
-                value={complexForm.watch('complexBy')}
+                value={complexBy}
                 onValueChange={(v) => complexForm.setValue('complexBy', v)}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="organization">機構代碼 (organization.identifier)</SelectItem>
-                  <SelectItem value="author">醫師姓名 (author.name)</SelectItem>
+                  <SelectItem value="organization">{t('search.complex.extraOptions.organization')}</SelectItem>
+                  <SelectItem value="author">{t('search.complex.extraOptions.author')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            {complexForm.watch('complexBy') === 'organization' ? (
+            {complexBy === 'organization' ? (
               <div className="space-y-2">
-                <Label htmlFor="org-id-search">機構代碼</Label>
+                <Label htmlFor="org-id-search">{t('search.complex.orgCodeLabel')}</Label>
                 <Input
                   id="org-id-search"
-                  placeholder="例：0101020011"
+                  placeholder={t('search.complex.orgCodePlaceholder')}
                   {...complexForm.register('orgId')}
                 />
               </div>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="author-name">醫師姓名</Label>
+                <Label htmlFor="author-name">{t('search.complex.authorNameLabel')}</Label>
                 <Input
                   id="author-name"
-                  placeholder="例：李大華"
+                  placeholder={t('search.complex.authorNamePlaceholder')}
                   {...complexForm.register('authorName')}
                 />
               </div>
             )}
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              查詢（identifier AND {complexForm.watch('complexBy')}）
+              {complexBy === 'organization' ? t('search.complex.submitButtonOrg') : t('search.complex.submitButtonAuthor')}
             </Button>
           </form>
         </TabsContent>
       </Tabs>
 
-      {/* Query URL display */}
       {lastUrl && (
         <div className="p-2 rounded bg-muted">
-          <p className="text-[10px] text-muted-foreground mb-1">查詢 URL</p>
+          <p className="text-[10px] text-muted-foreground mb-1">{t('search.queryUrlLabel')}</p>
           <code className="text-xs break-all">{lastUrl}</code>
+        </div>
+      )}
+
+      {querySteps.length > 0 && (
+        <div className="p-2 rounded bg-muted space-y-2">
+          <p className="text-[10px] text-muted-foreground">{t('search.queryStepsLabel')}</p>
+          {querySteps.map((s) => (
+            <div key={s.step} className="space-y-0.5">
+              <p className="text-[10px] font-medium text-foreground">{s.label}</p>
+              <code className="text-[10px] break-all text-muted-foreground">{s.url}</code>
+              {s.note && <p className="text-[10px] text-muted-foreground/70 italic">{s.note}</p>}
+            </div>
+          ))}
         </div>
       )}
 

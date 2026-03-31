@@ -1,0 +1,232 @@
+{
+  "page": {
+    "title": "Creator — 建立處方箋",
+    "description": "依序建立各 FHIR Resource，最後組裝為 Document Bundle",
+    "successMessage": "Document Bundle 已成功提交！Bundle ID:",
+    "successHint": "可至 Consumer 模組查詢此處方箋",
+    "resetConfirmTitle": "確定要重新開始？",
+    "resetConfirmDesc": "所有已建立的 Resource 將被清除，此操作無法復原。",
+    "resetConfirmOk": "確定清除",
+    "resetConfirmCancel": "取消"
+  },
+  "stepper": {
+    "progress": "進度",
+    "progressCount": "{{completed}} / {{total}} 完成",
+    "stepBadge": "步驟 {{current}} / {{total}}",
+    "showJson": "顯示 JSON 預覽",
+    "hideJson": "隱藏 JSON",
+    "jsonPanelTitle": "已建立的 Resources JSON",
+    "jsonEmpty": "尚未建立任何 Resource",
+    "unknownStep": "未知步驟"
+  },
+  "steps": {
+    "organization":      { "label": "醫事機構",  "labelEn": "Organization" },
+    "patient":           { "label": "病人資料",  "labelEn": "Patient" },
+    "practitioner":      { "label": "醫師資料",  "labelEn": "Practitioner" },
+    "encounter":         { "label": "門診資料",  "labelEn": "Encounter" },
+    "condition":         { "label": "診斷",       "labelEn": "Condition" },
+    "observation":       { "label": "檢驗檢查",  "labelEn": "Observation" },
+    "coverage":          { "label": "保險資訊",  "labelEn": "Coverage" },
+    "medication":        { "label": "藥品資訊",  "labelEn": "Medication" },
+    "medicationRequest": { "label": "處方箋",    "labelEn": "MedicationRequest" },
+    "extension":         { "label": "補充資料",  "labelEn": "Extension" },
+    "composition":       { "label": "文件組裝",  "labelEn": "Composition & Bundle" }
+  },
+  "forms": {
+    "shared": {
+      "requiredMark": "*",
+      "optional": "（選填）"
+    },
+    "organization": {
+      "name":       { "label": "機構名稱", "placeholder": "例：臺大醫院",   "required": "請輸入機構名稱" },
+      "identifier": { "label": "機構代碼", "placeholder": "例：0101020011", "required": "請輸入機構代碼" },
+      "type": {
+        "label": "機構類型",
+        "placeholder": "選擇機構類型",
+        "required": "請選擇機構類型",
+        "options": {
+          "hospital": "醫院",
+          "clinic":   "診所",
+          "pharmacy": "藥局"
+        }
+      },
+      "success": "Organization 已成功建立！ID: {{id}}"
+    },
+    "patient": {
+      "familyName": { "label": "姓氏",              "placeholder": "例：王",        "required": "請輸入姓氏" },
+      "givenName":  { "label": "名字",              "placeholder": "例：小明",      "required": "請輸入名字" },
+      "studentId": {
+        "label":    "學號 (Identifier)",
+        "placeholder": "例：B12345678",
+        "hint":     "★ 依規格要求，Patient.identifier 使用學號",
+        "required": "請輸入學號（作為 identifier）"
+      },
+      "gender": {
+        "label": "性別",
+        "placeholder": "選擇性別",
+        "required": "請選擇性別",
+        "options": {
+          "male":    "男 (male)",
+          "female":  "女 (female)",
+          "other":   "其他 (other)",
+          "unknown": "未知 (unknown)"
+        }
+      },
+      "birthDate": { "label": "出生日期", "required": "請輸入出生日期" },
+      "success": "Patient 已成功建立！ID: {{id}}"
+    },
+    "practitioner": {
+      "familyName":    { "label": "姓氏",     "placeholder": "例：李",       "required": "請輸入姓氏" },
+      "givenName":     { "label": "名字",     "placeholder": "例：大華",     "required": "請輸入名字" },
+      "licenseNumber": { "label": "醫師證號", "placeholder": "例：MD123456", "required": "請輸入醫師證號" },
+      "qualification": { "label": "專科資格", "placeholder": "例：內科專科醫師", "required": "請輸入專科資格" },
+      "success": "Practitioner 已成功建立！ID: {{id}}"
+    },
+    "encounter": {
+      "type": {
+        "label": "就診類型",
+        "placeholder": "選擇就診類型",
+        "required": "請選擇就診類型",
+        "options": {
+          "ambulatory": "門診 (Ambulatory)",
+          "emergency":  "急診 (Emergency)",
+          "inpatient":  "住院 (Inpatient)"
+        }
+      },
+      "startDate":  { "label": "就診開始日期", "required": "請選擇就診日期" },
+      "endDate":    { "label": "就診結束日期" },
+      "patientInfo": "關聯病人：{{name}} ({{id}})",
+      "success": "Encounter 已成功建立！ID: {{id}}"
+    },
+    "condition": {
+      "presetsTitle": "常用診斷碼（快速選擇）",
+      "icdCode":       { "label": "ICD-10 診斷碼", "placeholder": "例：J06.9",      "required": "請輸入 ICD-10 診斷碼" },
+      "diagnosisName": { "label": "診斷名稱",       "placeholder": "例：急性上呼吸道感染", "required": "請輸入診斷名稱" },
+      "success": "Condition 已成功建立！ID: {{id}}"
+    },
+    "observation": {
+      "presetsTitle": "常用檢驗項目（快速選擇）",
+      "presets": {
+        "8867-4":  "心率",
+        "8480-6":  "收縮壓",
+        "8462-4":  "舒張壓",
+        "2345-7":  "血糖",
+        "2093-3":  "總膽固醇",
+        "29463-7": "體重"
+      },
+      "loincCode":  { "label": "LOINC 代碼", "placeholder": "例：8867-4",    "required": "請輸入 LOINC 代碼" },
+      "itemName":   { "label": "項目名稱",   "placeholder": "例：心率",       "required": "請輸入檢驗項目名稱" },
+      "value":      { "label": "數值",       "placeholder": "例：80",         "required": "請輸入數值" },
+      "unit":       { "label": "單位",       "placeholder": "例：beats/min",  "required": "請輸入單位" },
+      "status": {
+        "label": "狀態",
+        "options": {
+          "final":       "final（最終結果）",
+          "preliminary": "preliminary（初步結果）",
+          "amended":     "amended（已修訂）"
+        }
+      },
+      "success": "Observation 已成功建立！ID: {{id}}"
+    },
+    "coverage": {
+      "type": {
+        "label": "保險類型",
+        "placeholder": "選擇保險類型",
+        "required": "請選擇保險類型",
+        "options": {
+          "EHCPOL":    "全民健保（NHI）",
+          "PAY":       "自費",
+          "PUBLICPOL": "公務人員保險"
+        }
+      },
+      "insuranceId":   { "label": "健保卡號 / 保險 ID", "placeholder": "例：A123456789", "required": "請輸入保險 ID / 健保卡號" },
+      "effectiveDate": { "label": "生效日期", "required": "請輸入保險生效日期" },
+      "expiryDate":    { "label": "到期日期" },
+      "success": "Coverage 已成功建立！ID: {{id}}"
+    },
+    "medication": {
+      "presetsTitle": "常用藥品（快速選擇）",
+      "presets": {
+        "N02BE01": "乙醯胺酚",
+        "J01CA04": "安莫西林",
+        "C09AA05": "雷米普利",
+        "A02BC01": "奥美拉唑",
+        "N02AA01": "嗎啡"
+      },
+      "codeSystem": {
+        "label": "代碼系統",
+        "options": {
+          "ATC": "ATC Code (WHO)",
+          "NHI": "NHI Drug Code（健保藥碼）"
+        }
+      },
+      "code": { "label": "藥品代碼", "placeholder": "例：N02BE01", "required": "請輸入藥品代碼" },
+      "name": { "label": "藥品名稱", "placeholder": "例：乙醯胺酚", "required": "請輸入藥品名稱" },
+      "form": {
+        "label": "劑型",
+        "placeholder": "選擇劑型",
+        "required": "請選擇劑型",
+        "options": {
+          "TAB": "錠 (Tablet)",
+          "CAP": "膠囊 (Capsule)",
+          "SOL": "溶液 (Solution)",
+          "INJ": "注射劑 (Injection)",
+          "CRM": "乳膏 (Cream)"
+        }
+      },
+      "success": "Medication 已成功建立！ID: {{id}}"
+    },
+    "medicationRequest": {
+      "medicationPreview": "藥品：",
+      "missingMedication": "請先完成步驟 8「藥品資訊」再建立處方箋。",
+      "doseValue": { "label": "劑量",   "placeholder": "例：500", "required": "請輸入劑量數值", "positive": "劑量必須大於 0" },
+      "doseUnit":  { "label": "單位",   "placeholder": "例：mg",  "required": "請輸入劑量單位" },
+      "frequency": {
+        "label": "給藥頻率",
+        "placeholder": "選擇頻率",
+        "required": "請選擇給藥頻率",
+        "options": {
+          "QD":  "每日一次 (QD)",
+          "BID": "每日兩次 (BID)",
+          "TID": "每日三次 (TID)",
+          "QID": "每日四次 (QID)",
+          "PRN": "需要時給藥 (PRN)"
+        }
+      },
+      "route": {
+        "label": "給藥途徑",
+        "placeholder": "選擇給藥途徑",
+        "required": "請選擇給藥途徑",
+        "options": {
+          "26643006": "口服 (Oral)",
+          "47625008": "靜脈注射 (IV)",
+          "78421000": "肌肉注射 (IM)",
+          "6064005":  "局部外用 (Topical)",
+          "46713006": "鼻腔給藥 (Nasal)"
+        }
+      },
+      "durationDays": { "label": "給藥天數", "placeholder": "例：7" },
+      "note":         { "label": "用藥說明", "placeholder": "例：飯後服用" },
+      "success": "MedicationRequest 已成功建立！ID: {{id}}"
+    },
+    "extension": {
+      "codeCode":    { "label": "類型代碼",         "placeholder": "例：special-instruction", "required": "請輸入類型代碼" },
+      "codeDisplay": { "label": "類型名稱",         "placeholder": "例：特殊給藥指示",         "required": "請輸入類型名稱" },
+      "ext1Url":     { "label": "Extension URL (1)", "placeholder": "https://...",             "required": "請輸入 Extension URL" },
+      "ext1Value":   { "label": "Extension 值 (1)", "placeholder": "例：飯後服用",             "required": "請輸入 Extension 值" },
+      "ext2Url":     { "label": "Extension URL (2)", "placeholder": "https://...（選填）" },
+      "ext2Value":   { "label": "Extension 值 (2)", "placeholder": "（選填）" },
+      "success":     "Basic (Extension) 已成功建立！ID: {{id}}"
+    },
+    "composition": {
+      "docTitle":     { "label": "文件標題",  "placeholder": "電子處方箋", "required": "請輸入文件標題" },
+      "date":         { "label": "處方日期",  "required": "請輸入處方日期" },
+      "resourcesTitle": "已建立的 Resources",
+      "notCreated":   "未建立",
+      "submitButton":   "組裝並提交 Document Bundle",
+      "resubmitButton": "重新提交 Bundle",
+      "previewTitle":   "Document Bundle 預覽（即時）",
+      "success": "Composition ID: {{compositionId}}\nBundle ID: {{bundleId}}"
+    }
+  }
+}

@@ -24,22 +24,24 @@ export interface CreatedResources {
   coverage?: fhir4.Coverage
   medication?: fhir4.Medication
   medicationRequest?: fhir4.MedicationRequest
+  extension?: fhir4.Basic
   composition?: fhir4.Composition
 }
 
 export type ResourceKey = keyof CreatedResources
 
-export const RESOURCE_STEPS: { key: ResourceKey; label: string; labelEn: string }[] = [
-  { key: 'organization', label: '醫事機構', labelEn: 'Organization' },
-  { key: 'patient', label: '病人資料', labelEn: 'Patient' },
-  { key: 'practitioner', label: '醫師資料', labelEn: 'Practitioner' },
-  { key: 'encounter', label: '門診資料', labelEn: 'Encounter' },
-  { key: 'condition', label: '診斷', labelEn: 'Condition' },
-  { key: 'observation', label: '檢驗檢查', labelEn: 'Observation' },
-  { key: 'coverage', label: '保險資訊', labelEn: 'Coverage' },
-  { key: 'medication', label: '藥品資訊', labelEn: 'Medication' },
-  { key: 'medicationRequest', label: '處方箋', labelEn: 'MedicationRequest' },
-  { key: 'composition', label: '文件組裝', labelEn: 'Composition & Bundle' }
+export const RESOURCE_STEPS: { key: ResourceKey }[] = [
+  { key: 'organization' },
+  { key: 'patient' },
+  { key: 'practitioner' },
+  { key: 'encounter' },
+  { key: 'condition' },
+  { key: 'observation' },
+  { key: 'coverage' },
+  { key: 'medication' },
+  { key: 'medicationRequest' },
+  { key: 'extension' },
+  { key: 'composition' }
 ]
 
 export interface SearchParams {

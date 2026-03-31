@@ -1,32 +1,31 @@
-import { useState } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
+import { CheckCircle2, Loader2, AlertCircle, Wand2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { postResource } from '../../../services/fhirClient'
+import { postResource, putResource } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
+import { conditionMocks } from '../../../mocks/mockPools'
 
-// Common ICD-10 codes for quick selection
 const COMMON_ICD10 = [
   { code: 'J06.9', display: '急性上呼吸道感染' },
-  { code: 'I10', display: '原發性高血壓' },
+  { code: 'I10',   display: '原發性高血壓' },
   { code: 'E11.9', display: '第2型糖尿病，無併發症' },
   { code: 'J18.9', display: '肺炎，未明示' },
   { code: 'K29.7', display: '胃炎，未明示' },
   { code: 'M54.5', display: '下背痛' }
 ]
 
-const schema = z.object({
-  icdCode: z.string().min(1, '請輸入 ICD-10 診斷碼'),
-  icdDisplay: z.string().min(1, '請輸入診斷名稱'),
-  clinicalStatus: z.enum(['active', 'resolved', 'inactive']).default('active')
-})
-
-type FormData = z.infer<typeof schema>
+type FormData = {
+  icdCode: string
+  icdDisplay: string
+  clinicalStatus: 'active' | 'resolved' | 'inactive'
+}
 
 interface Props {
   onSuccess: (resource: fhir4.Condition) => void
@@ -34,9 +33,26 @@ interface Props {
 
 export default function ConditionForm({ onSuccess }: Props): React.JSX.Element {
   const { resources } = useCreatorStore()
+  const { t } = useTranslation('creator')
+  const { t: tc } = useTranslation('common')
+  const f = (k: string) => t(`forms.condition.${k}`)
+
+  const schema = useMemo(() => z.object({
+    icdCode:        z.string().min(1, f('icdCode.required')),
+    icdDisplay:     z.string().min(1, f('diagnosisName.required')),
+    clinicalStatus: z.enum(['active', 'resolved', 'inactive']).default('active')
+  }), [t])
+
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [resultId, setResultId] = useState<string>()
   const [errorMsg, setErrorMsg] = useState<string>()
+
+  const mockIndexRef = useRef(0)
+  function fillMock(): void {
+    const data = conditionMocks[mockIndexRef.current % conditionMocks.length]
+    mockIndexRef.current += 1
+    Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
+  }
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -78,21 +94,27 @@ export default function ConditionForm({ onSuccess }: Props): React.JSX.Element {
           profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Condition-EP']
         }
       }
-      const created = await postResource<fhir4.Condition>('Condition', resource)
+      const created = resultId
+        ? await putResource<fhir4.Condition>('Condition', resultId, resource)
+        : await postResource<fhir4.Condition>('Condition', resource)
       setResultId(created.id)
       setStatus('success')
       onSuccess(created)
     } catch (e) {
       setStatus('error')
-      setErrorMsg(e instanceof Error ? e.message : '發生未知錯誤')
+      setErrorMsg(e instanceof Error ? e.message : tc('errors.unknown'))
     }
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      {/* Quick presets */}
+      <div className="flex justify-end">
+        <Button type="button" variant="ghost" size="sm" onClick={fillMock} className="h-7 px-2 text-xs text-muted-foreground">
+          <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
+        </Button>
+      </div>
       <div className="space-y-2">
-        <Label>常用診斷碼（快速選擇）</Label>
+        <Label>{f('presetsTitle')}</Label>
         <div className="flex flex-wrap gap-1.5">
           {COMMON_ICD10.map(({ code, display }) => (
             <button
@@ -108,14 +130,14 @@ export default function ConditionForm({ onSuccess }: Props): React.JSX.Element {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="icd-code">ICD-10 診斷碼 *</Label>
-        <Input id="icd-code" placeholder="例：J06.9" {...register('icdCode')} className="font-mono" />
+        <Label htmlFor="icd-code">{f('icdCode.label')} *</Label>
+        <Input id="icd-code" placeholder={f('icdCode.placeholder')} {...register('icdCode')} className="font-mono" />
         {errors.icdCode && <p className="text-xs text-destructive">{errors.icdCode.message}</p>}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="icd-display">診斷名稱 *</Label>
-        <Input id="icd-display" placeholder="例：急性上呼吸道感染" {...register('icdDisplay')} />
+        <Label htmlFor="icd-display">{f('diagnosisName.label')} *</Label>
+        <Input id="icd-display" placeholder={f('diagnosisName.placeholder')} {...register('icdDisplay')} />
         {errors.icdDisplay && <p className="text-xs text-destructive">{errors.icdDisplay.message}</p>}
       </div>
 
@@ -123,7 +145,8 @@ export default function ConditionForm({ onSuccess }: Props): React.JSX.Element {
         <Alert variant="success">
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
-            Condition 已成功建立！ID: <code className="font-mono text-xs">{resultId}</code>
+            {f('success').replace('{{id}}', '')}
+            <code className="font-mono text-xs">{resultId}</code>
           </AlertDescription>
         </Alert>
       )}
@@ -134,9 +157,9 @@ export default function ConditionForm({ onSuccess }: Props): React.JSX.Element {
         </Alert>
       )}
 
-      <Button type="submit" disabled={status === 'loading'} className="w-full">
+      <Button type="submit" disabled={status === 'loading'} variant={status === 'success' ? 'outline' : 'default'} className="w-full">
         {status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}
-        {status === 'success' ? '重新提交' : 'POST 至 FHIR Server'}
+        {status === 'success' ? tc('buttons.resubmit') : tc('buttons.submit')}
       </Button>
     </form>
   )

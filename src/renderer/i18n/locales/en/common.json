@@ -1,0 +1,35 @@
+{
+  "buttons": {
+    "submit": "POST to FHIR Server",
+    "resubmit": "Resubmit",
+    "save": "Save Settings",
+    "test": "Test Connection",
+    "reset": "Start Over",
+    "prev": "Previous",
+    "next": "Skip / Next",
+    "search": "Search",
+    "close": "Close",
+    "fillMock": "Fill Mock"
+  },
+  "server": {
+    "checking": "Connecting…",
+    "online": "Connected",
+    "offline": "Connection Failed",
+    "unknown": "Not Tested"
+  },
+  "errors": {
+    "unknown": "An unknown error occurred"
+  },
+  "fhir": {
+    "resourceCreated": "{{resourceType}} created successfully! ID: {{id}}"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "lang": {
+    "toggle": "繁中",
+    "current": "EN"
+  }
+}

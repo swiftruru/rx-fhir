@@ -1,16 +1,21 @@
 import { NavLink } from 'react-router-dom'
-import { FilePlus2, Search, Settings, Activity } from 'lucide-react'
+import { FilePlus2, Search, Settings, Activity, Info } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '../lib/utils'
 import { useAppStore } from '../store/appStore'
 
-const navItems = [
-  { to: '/creator', label: 'Creator', sublabel: '建立處方箋', icon: FilePlus2 },
-  { to: '/consumer', label: 'Consumer', sublabel: '查詢處方箋', icon: Search },
-  { to: '/settings', label: 'Settings', sublabel: '系統設定', icon: Settings }
+type NavKey = 'creator' | 'consumer' | 'settings' | 'about'
+
+const navItems: { to: string; key: NavKey; icon: React.ElementType }[] = [
+  { to: '/creator',  key: 'creator',  icon: FilePlus2 },
+  { to: '/consumer', key: 'consumer', icon: Search },
+  { to: '/settings', key: 'settings', icon: Settings },
+  { to: '/about',    key: 'about',    icon: Info }
 ]
 
 export default function Sidebar(): React.JSX.Element {
   const { serverUrl } = useAppStore()
+  const { t } = useTranslation('nav')
 
   const shortUrl = serverUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
 
@@ -26,7 +31,7 @@ export default function Sidebar(): React.JSX.Element {
           <div>
             <h1 className="text-lg font-bold leading-none text-sidebar-foreground">RxFHIR</h1>
             <p className="text-[10px] text-sidebar-foreground/50 leading-tight mt-0.5">
-              電子處方箋管理系統
+              {t('appDescription')}
             </p>
           </div>
         </div>
@@ -34,7 +39,7 @@ export default function Sidebar(): React.JSX.Element {
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-3 space-y-1">
-        {navItems.map(({ to, label, sublabel, icon: Icon }) => (
+        {navItems.map(({ to, key, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -49,8 +54,8 @@ export default function Sidebar(): React.JSX.Element {
           >
             <Icon className="h-4 w-4 shrink-0" />
             <div className="min-w-0">
-              <div className="text-sm font-medium leading-none">{label}</div>
-              <div className="text-[11px] opacity-60 mt-0.5">{sublabel}</div>
+              <div className="text-sm font-medium leading-none">{t(`items.${key}.label`)}</div>
+              <div className="text-[11px] opacity-60 mt-0.5">{t(`items.${key}.sublabel`)}</div>
             </div>
           </NavLink>
         ))}

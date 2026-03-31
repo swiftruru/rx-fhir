@@ -1,30 +1,29 @@
-import { useState } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
+import { CheckCircle2, Loader2, AlertCircle, Wand2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { postResource } from '../../../services/fhirClient'
+import { postResource, putResource } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
+import { coverageMocks } from '../../../mocks/mockPools'
 
-const COVERAGE_TYPES = [
-  { code: 'EHCPOL', display: '全民健保（NHI）', system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode' },
-  { code: 'PAY', display: '自費', system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode' },
-  { code: 'PUBLICPOL', display: '公務人員保險', system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode' }
-]
+const COVERAGE_TYPE_CODES = ['EHCPOL', 'PAY', 'PUBLICPOL'] as const
+type CoverageTypeCode = (typeof COVERAGE_TYPE_CODES)[number]
 
-const schema = z.object({
-  type: z.string().min(1, '請選擇保險類型'),
-  subscriberId: z.string().min(1, '請輸入保險 ID / 健保卡號'),
-  periodStart: z.string().min(1, '請輸入保險生效日期'),
-  periodEnd: z.string().optional()
-})
+const COVERAGE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v3-ActCode'
 
-type FormData = z.infer<typeof schema>
+type FormData = {
+  type: string
+  subscriberId: string
+  periodStart: string
+  periodEnd?: string
+}
 
 interface Props {
   onSuccess: (resource: fhir4.Coverage) => void
@@ -32,9 +31,27 @@ interface Props {
 
 export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
   const { resources } = useCreatorStore()
+  const { t } = useTranslation('creator')
+  const { t: tc } = useTranslation('common')
+  const f = (k: string) => t(`forms.coverage.${k}`)
+
+  const schema = useMemo(() => z.object({
+    type:         z.string().min(1, f('type.required')),
+    subscriberId: z.string().min(1, f('insuranceId.required')),
+    periodStart:  z.string().min(1, f('effectiveDate.required')),
+    periodEnd:    z.string().optional()
+  }), [t])
+
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [resultId, setResultId] = useState<string>()
   const [errorMsg, setErrorMsg] = useState<string>()
+
+  const mockIndexRef = useRef(0)
+  function fillMock(): void {
+    const data = coverageMocks[mockIndexRef.current % coverageMocks.length]
+    mockIndexRef.current += 1
+    Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
+  }
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -47,17 +64,18 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
     setStatus('loading')
     setErrorMsg(undefined)
     try {
-      const typeInfo = COVERAGE_TYPES.find(t => t.code === data.type) || COVERAGE_TYPES[0]
+      const typeCode = data.type as CoverageTypeCode
+      const typeDisplay = t(`forms.coverage.type.options.${typeCode}`)
       const resource: Omit<fhir4.Coverage, 'id'> = {
         resourceType: 'Coverage',
         status: 'active',
         type: {
           coding: [{
-            system: typeInfo.system,
-            code: typeInfo.code,
-            display: typeInfo.display
+            system: COVERAGE_SYSTEM,
+            code: typeCode,
+            display: typeDisplay
           }],
-          text: typeInfo.display
+          text: typeDisplay
         },
         subscriber: resources.patient
           ? { reference: `Patient/${resources.patient.id}` }
@@ -70,34 +88,39 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
           start: data.periodStart,
           ...(data.periodEnd ? { end: data.periodEnd } : {})
         },
-        payor: [{
-          display: '全民健康保險'
-        }],
+        payor: [{ display: '全民健康保險' }],
         meta: {
           profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Coverage-EP']
         }
       }
-      const created = await postResource<fhir4.Coverage>('Coverage', resource)
+      const created = resultId
+        ? await putResource<fhir4.Coverage>('Coverage', resultId, resource)
+        : await postResource<fhir4.Coverage>('Coverage', resource)
       setResultId(created.id)
       setStatus('success')
       onSuccess(created)
     } catch (e) {
       setStatus('error')
-      setErrorMsg(e instanceof Error ? e.message : '發生未知錯誤')
+      setErrorMsg(e instanceof Error ? e.message : tc('errors.unknown'))
     }
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="flex justify-end">
+        <Button type="button" variant="ghost" size="sm" onClick={fillMock} className="h-7 px-2 text-xs text-muted-foreground">
+          <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
+        </Button>
+      </div>
       <div className="space-y-2">
-        <Label>保險類型 *</Label>
+        <Label>{f('type.label')} *</Label>
         <Select value={selectedType} onValueChange={(v) => setValue('type', v)}>
           <SelectTrigger>
-            <SelectValue placeholder="選擇保險類型" />
+            <SelectValue placeholder={f('type.placeholder')} />
           </SelectTrigger>
           <SelectContent>
-            {COVERAGE_TYPES.map(t => (
-              <SelectItem key={t.code} value={t.code}>{t.display}</SelectItem>
+            {COVERAGE_TYPE_CODES.map(code => (
+              <SelectItem key={code} value={code}>{f(`type.options.${code}`)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -105,19 +128,19 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="subscriber-id">健保卡號 / 保險 ID *</Label>
-        <Input id="subscriber-id" placeholder="例：A123456789" {...register('subscriberId')} />
+        <Label htmlFor="subscriber-id">{f('insuranceId.label')} *</Label>
+        <Input id="subscriber-id" placeholder={f('insuranceId.placeholder')} {...register('subscriberId')} />
         {errors.subscriberId && <p className="text-xs text-destructive">{errors.subscriberId.message}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label htmlFor="cov-start">生效日期 *</Label>
+          <Label htmlFor="cov-start">{f('effectiveDate.label')} *</Label>
           <Input id="cov-start" type="date" {...register('periodStart')} />
           {errors.periodStart && <p className="text-xs text-destructive">{errors.periodStart.message}</p>}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="cov-end">到期日期（選填）</Label>
+          <Label htmlFor="cov-end">{f('expiryDate.label')}</Label>
           <Input id="cov-end" type="date" {...register('periodEnd')} />
         </div>
       </div>
@@ -126,7 +149,8 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
         <Alert variant="success">
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
-            Coverage 已成功建立！ID: <code className="font-mono text-xs">{resultId}</code>
+            {f('success').replace('{{id}}', '')}
+            <code className="font-mono text-xs">{resultId}</code>
           </AlertDescription>
         </Alert>
       )}
@@ -137,9 +161,9 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
         </Alert>
       )}
 
-      <Button type="submit" disabled={status === 'loading'} className="w-full">
+      <Button type="submit" disabled={status === 'loading'} variant={status === 'success' ? 'outline' : 'default'} className="w-full">
         {status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}
-        {status === 'success' ? '重新提交' : 'POST 至 FHIR Server'}
+        {status === 'success' ? tc('buttons.resubmit') : tc('buttons.submit')}
       </Button>
     </form>
   )

@@ -1,0 +1,45 @@
+{
+  "page": {
+    "title": "Settings",
+    "description": "Configure FHIR Server connection"
+  },
+  "server": {
+    "title":       "FHIR Server URL",
+    "description": "Set the base URL of the target HAPI FHIR Server (baseR4)",
+    "urlLabel":    "Server URL",
+    "presetsLabel": "Quick Select Preset Servers",
+    "testSuccess":  "Connection successful!",
+    "testFail":     "Connection failed. Please verify the URL or check your network.",
+    "saved":        "Settings saved."
+  },
+  "status": {
+    "title":       "Current Connection Status",
+    "serverInfo":  "Server",
+    "fhirVersion": "FHIR"
+  },
+  "about": {
+    "title":       "About RxFHIR",
+    "tagline":     "℞ + FHIR = RxFHIR",
+    "description": "Desktop application for Taiwan Core electronic prescription profiles",
+    "spec":        "Based on MOHW EMR-IG Electronic Prescription 2.5 specification",
+    "version":     "Version 1.0.0 · Electron + React + FHIR R4",
+    "fields": {
+      "author":      "Author",
+      "affiliation": "Affiliation",
+      "department":  "Department",
+      "course":      "Course",
+      "advisors":    "Advisors"
+    },
+    "values": {
+      "author":      "Yu-Ru Pan",
+      "affiliation": "National Taipei University of Nursing and Health Sciences",
+      "department":  "Department of Information Management",
+      "course":      "Introduction to Healthcare Information Systems"
+    },
+    "advisors": {
+      "lien": "Prof. Chen-Yueh Lien",
+      "kuo":  "Prof. Chen-Tsung Kuo",
+      "lee":  "Prof. Siang-Hao Lee"
+    }
+  }
+}

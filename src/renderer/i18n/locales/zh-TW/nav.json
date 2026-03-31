@@ -1,0 +1,15 @@
+{
+  "appDescription": "電子處方箋管理系統",
+  "items": {
+    "creator": { "label": "Creator", "sublabel": "建立處方箋" },
+    "consumer": { "label": "Consumer", "sublabel": "查詢處方箋" },
+    "settings": { "label": "Settings", "sublabel": "系統設定" },
+    "about":    { "label": "About",    "sublabel": "關於" }
+  },
+  "modeLabels": {
+    "creator": "Creator 模式",
+    "consumer": "Consumer 模式",
+    "settings": "Settings",
+    "about":    "關於"
+  }
+}

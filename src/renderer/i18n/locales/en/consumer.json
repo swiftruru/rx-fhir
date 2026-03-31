@@ -1,0 +1,129 @@
+{
+  "page": {
+    "title": "Consumer — Query Prescriptions",
+    "description": "Search prescriptions on the FHIR Server using various criteria",
+    "emptyPrompt": "Enter search criteria to get started"
+  },
+  "search": {
+    "tabs": {
+      "basic":   "Basic",
+      "date":    "Date",
+      "complex": "Complex"
+    },
+    "basic": {
+      "searchByLabel": "Search By",
+      "searchByOptions": {
+        "identifier": "Patient Identifier",
+        "name":       "Patient Name"
+      },
+      "identifierLabel": "Identifier (Student ID)",
+      "nameLabel":       "Patient Name",
+      "identifierPlaceholder": "e.g. B12345678",
+      "namePlaceholder":       "e.g. Wang Xiao Ming"
+    },
+    "date": {
+      "identifierLabel":       "Patient Identifier (Student ID)",
+      "identifierPlaceholder": "e.g. B12345678",
+      "dateLabel":             "Prescription Date",
+      "submitButton":          "Search by Date"
+    },
+    "complex": {
+      "identifierLabel":       "Patient Identifier (Student ID)",
+      "identifierPlaceholder": "e.g. B12345678",
+      "extraLabel":            "Additional Criteria",
+      "extraOptions": {
+        "organization": "Organization Code (organization.identifier)",
+        "author":       "Physician Name (author.name)"
+      },
+      "orgCodeLabel":          "Organization Code",
+      "orgCodePlaceholder":    "e.g. 0101020011",
+      "authorNameLabel":       "Physician Name",
+      "authorNamePlaceholder": "e.g. Li Da Hua",
+      "submitButtonOrg":       "Search by Organization",
+      "submitButtonAuthor":    "Search by Author"
+    },
+    "queryUrlLabel": "Query URL",
+    "queryStepsLabel": "Query Steps",
+    "error": "Search failed"
+  },
+  "recent": {
+    "title":      "Recent Submissions",
+    "empty":      "No submissions yet",
+    "clearAll":   "Clear All",
+    "fillSearch":   "Fill Search",
+    "queryNow":     "Query Now",
+    "deleteRecord": "Delete"
+  },
+  "results": {
+    "empty":          "No results found",
+    "emptyHint":      "Use the form on the left to search",
+    "count":          "Found {{total}} result(s)",
+    "showing":        "Showing {{count}}",
+    "unknownPatient": "Unknown Patient"
+  },
+  "detail": {
+    "title": "Prescription Details",
+    "toggleJson":       "JSON",
+    "toggleStructured": "Structured",
+    "sections": {
+      "prescription": {
+        "title":    "Prescription Info",
+        "docTitle": "Title",
+        "date":     "Date",
+        "status":   "Status",
+        "bundleId": "Bundle ID"
+      },
+      "patient": {
+        "title":      "Patient Info",
+        "name":       "Name",
+        "identifier": "Identifier",
+        "gender":     "Gender",
+        "birthDate":  "Birth Date"
+      },
+      "practitioner": {
+        "title":         "Practitioner",
+        "name":          "Name",
+        "licenseNumber": "License No.",
+        "qualification": "Specialty"
+      },
+      "organization": {
+        "title":      "Organization",
+        "name":       "Name",
+        "identifier": "Code",
+        "type":       "Type"
+      },
+      "encounter": {
+        "title":  "Encounter",
+        "type":   "Type",
+        "start":  "Start",
+        "end":    "End",
+        "status": "Status"
+      },
+      "condition": {
+        "title":          "Condition",
+        "code":           "Diagnosis Code",
+        "clinicalStatus": "Clinical Status"
+      },
+      "observation": {
+        "title":  "Observation",
+        "item":   "Item",
+        "result": "Result",
+        "status": "Status"
+      },
+      "coverage": {
+        "title":         "Coverage",
+        "type":          "Type",
+        "insuranceId":   "Insurance ID",
+        "effectiveDate": "Effective Date"
+      },
+      "medicationAndRequest": {
+        "title":          "Medication & Prescription",
+        "medicationName": "Medication Name",
+        "medicationCode": "Code",
+        "form":           "Form",
+        "dose":           "Dose",
+        "route":          "Route"
+      }
+    }
+  }
+}

@@ -18,7 +18,7 @@ interface CreatorState {
   reset: () => void
 }
 
-const TOTAL_STEPS = 10
+const TOTAL_STEPS = 11
 
 export const useCreatorStore = create<CreatorState>()((set, get) => ({
   currentStep: 0,

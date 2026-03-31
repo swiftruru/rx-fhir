@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { X, Code2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
 import { Separator } from '../../components/ui/separator'
@@ -32,10 +33,10 @@ function Field({ label, value }: { label: string; value?: string }): React.JSX.E
 }
 
 export default function PrescriptionDetail({ summary, onClose }: Props): React.JSX.Element {
+  const { t } = useTranslation('consumer')
   const [showJson, setShowJson] = useState(false)
   const bundle = summary.raw
 
-  // Extract resources from bundle entries
   const entries = bundle.entry || []
   const getResource = <T extends fhir4.Resource>(type: string): T | undefined =>
     entries.find(e => e.resource?.resourceType === type)?.resource as T | undefined
@@ -51,12 +52,13 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
   const medicationRequest = getResource<fhir4.MedicationRequest>('MedicationRequest')
   const composition = getResource<fhir4.Composition>('Composition')
 
+  const s = (section: string, key: string) => t(`detail.sections.${section}.${key}`)
+
   return (
     <div className="flex flex-col h-full border-l">
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b bg-background shrink-0">
         <div>
-          <h2 className="text-sm font-semibold">處方箋詳情</h2>
+          <h2 className="text-sm font-semibold">{t('detail.title')}</h2>
           <code className="text-[11px] text-muted-foreground font-mono">{summary.id}</code>
         </div>
         <div className="flex items-center gap-2">
@@ -66,7 +68,7 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
             onClick={() => setShowJson(!showJson)}
           >
             <Code2 className="h-3.5 w-3.5" />
-            {showJson ? '結構化' : 'JSON'}
+            {showJson ? t('detail.toggleStructured') : t('detail.toggleJson')}
           </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
             <X className="h-4 w-4" />
@@ -80,69 +82,63 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
             <JsonViewer data={bundle} title="Raw FHIR JSON" defaultCollapsed={false} />
           ) : (
             <div className="space-y-5">
-              {/* Composition info */}
               {composition && (
-                <Section title="處方箋資訊">
-                  <Field label="標題" value={composition.title} />
-                  <Field label="日期" value={composition.date} />
-                  <Field label="狀態" value={composition.status} />
-                  <Field label="Bundle ID" value={summary.id} />
+                <Section title={s('prescription', 'title')}>
+                  <Field label={s('prescription', 'docTitle')} value={composition.title} />
+                  <Field label={s('prescription', 'date')} value={composition.date} />
+                  <Field label={s('prescription', 'status')} value={composition.status} />
+                  <Field label={s('prescription', 'bundleId')} value={summary.id} />
                 </Section>
               )}
 
               <Separator />
 
-              {/* Patient */}
               {patient && (
-                <Section title="病人資料">
-                  <Field label="姓名" value={patient.name?.[0]?.text} />
-                  <Field label="識別碼" value={patient.identifier?.[0]?.value} />
-                  <Field label="性別" value={patient.gender} />
-                  <Field label="出生日期" value={patient.birthDate} />
+                <Section title={s('patient', 'title')}>
+                  <Field label={s('patient', 'name')} value={patient.name?.[0]?.text} />
+                  <Field label={s('patient', 'identifier')} value={patient.identifier?.[0]?.value} />
+                  <Field label={s('patient', 'gender')} value={patient.gender} />
+                  <Field label={s('patient', 'birthDate')} value={patient.birthDate} />
                 </Section>
               )}
 
               <Separator />
 
-              {/* Practitioner */}
               {practitioner && (
-                <Section title="醫師資料">
-                  <Field label="姓名" value={practitioner.name?.[0]?.text} />
-                  <Field label="證號" value={practitioner.identifier?.[0]?.value} />
-                  <Field label="專科" value={practitioner.qualification?.[0]?.code?.text} />
+                <Section title={s('practitioner', 'title')}>
+                  <Field label={s('practitioner', 'name')} value={practitioner.name?.[0]?.text} />
+                  <Field label={s('practitioner', 'licenseNumber')} value={practitioner.identifier?.[0]?.value} />
+                  <Field label={s('practitioner', 'qualification')} value={practitioner.qualification?.[0]?.code?.text} />
                 </Section>
               )}
 
-              {/* Organization */}
               {organization && (
                 <>
                   <Separator />
-                  <Section title="醫事機構">
-                    <Field label="名稱" value={organization.name} />
-                    <Field label="代碼" value={organization.identifier?.[0]?.value} />
-                    <Field label="類型" value={organization.type?.[0]?.coding?.[0]?.display} />
+                  <Section title={s('organization', 'title')}>
+                    <Field label={s('organization', 'name')} value={organization.name} />
+                    <Field label={s('organization', 'identifier')} value={organization.identifier?.[0]?.value} />
+                    <Field label={s('organization', 'type')} value={organization.type?.[0]?.coding?.[0]?.display} />
                   </Section>
                 </>
               )}
 
-              {/* Encounter */}
               {encounter && (
                 <>
                   <Separator />
-                  <Section title="就診資料">
-                    <Field label="類型" value={encounter.class?.display} />
-                    <Field label="開始時間" value={encounter.period?.start} />
-                    <Field label="結束時間" value={encounter.period?.end} />
-                    <Field label="狀態" value={encounter.status} />
+                  <Section title={s('encounter', 'title')}>
+                    <Field label={s('encounter', 'type')} value={encounter.class?.display} />
+                    <Field label={s('encounter', 'start')} value={encounter.period?.start} />
+                    <Field label={s('encounter', 'end')} value={encounter.period?.end} />
+                    <Field label={s('encounter', 'status')} value={encounter.status} />
                   </Section>
                 </>
               )}
 
-              {/* Condition */}
               {condition && (
                 <>
                   <Separator />
-                  <Section title="診斷">
+                  <Section title={s('condition', 'title')}>
                     <div className="flex gap-2 flex-wrap">
                       {condition.code?.coding?.map((c, i) => (
                         <Badge key={i} variant="outline">
@@ -150,56 +146,53 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
                         </Badge>
                       ))}
                     </div>
-                    <Field label="狀態" value={condition.clinicalStatus?.coding?.[0]?.code} />
+                    <Field label={s('condition', 'clinicalStatus')} value={condition.clinicalStatus?.coding?.[0]?.code} />
                   </Section>
                 </>
               )}
 
-              {/* Observation */}
               {observation && (
                 <>
                   <Separator />
-                  <Section title="檢驗檢查">
-                    <Field label="項目" value={observation.code?.text} />
+                  <Section title={s('observation', 'title')}>
+                    <Field label={s('observation', 'item')} value={observation.code?.text} />
                     <Field
-                      label="結果"
+                      label={s('observation', 'result')}
                       value={observation.valueQuantity
                         ? `${observation.valueQuantity.value} ${observation.valueQuantity.unit}`
                         : undefined}
                     />
-                    <Field label="狀態" value={observation.status} />
+                    <Field label={s('observation', 'status')} value={observation.status} />
                   </Section>
                 </>
               )}
 
-              {/* Coverage */}
               {coverage && (
                 <>
                   <Separator />
-                  <Section title="保險資訊">
-                    <Field label="類型" value={coverage.type?.text} />
-                    <Field label="保險 ID" value={coverage.subscriberId} />
-                    <Field label="生效日" value={coverage.period?.start} />
+                  <Section title={s('coverage', 'title')}>
+                    <Field label={s('coverage', 'type')} value={coverage.type?.text} />
+                    <Field label={s('coverage', 'insuranceId')} value={coverage.subscriberId} />
+                    <Field label={s('coverage', 'effectiveDate')} value={coverage.period?.start} />
                   </Section>
                 </>
               )}
 
-              {/* Medication & MedicationRequest */}
               {medication && (
                 <>
                   <Separator />
-                  <Section title="藥品與處方">
-                    <Field label="藥品名稱" value={medication.code?.text} />
-                    <Field label="藥品代碼" value={medication.code?.coding?.[0]?.code} />
-                    <Field label="劑型" value={medication.form?.text} />
+                  <Section title={s('medicationAndRequest', 'title')}>
+                    <Field label={s('medicationAndRequest', 'medicationName')} value={medication.code?.text} />
+                    <Field label={s('medicationAndRequest', 'medicationCode')} value={medication.code?.coding?.[0]?.code} />
+                    <Field label={s('medicationAndRequest', 'form')} value={medication.form?.text} />
                     {medicationRequest && (
                       <>
                         <Field
-                          label="劑量"
+                          label={s('medicationAndRequest', 'dose')}
                           value={medicationRequest.dosageInstruction?.[0]?.text}
                         />
                         <Field
-                          label="給藥途徑"
+                          label={s('medicationAndRequest', 'route')}
                           value={medicationRequest.dosageInstruction?.[0]?.route?.coding?.[0]?.display}
                         />
                       </>

@@ -1,0 +1,232 @@
+{
+  "page": {
+    "title": "Creator — Build Prescription",
+    "description": "Build each FHIR Resource step by step, then assemble into a Document Bundle",
+    "successMessage": "Document Bundle submitted successfully! Bundle ID:",
+    "successHint": "Go to the Consumer module to query this prescription",
+    "resetConfirmTitle": "Start over?",
+    "resetConfirmDesc": "All created Resources will be cleared. This cannot be undone.",
+    "resetConfirmOk": "Clear All",
+    "resetConfirmCancel": "Cancel"
+  },
+  "stepper": {
+    "progress": "Progress",
+    "progressCount": "{{completed}} / {{total}} completed",
+    "stepBadge": "Step {{current}} / {{total}}",
+    "showJson": "Show JSON Preview",
+    "hideJson": "Hide JSON",
+    "jsonPanelTitle": "Created Resources JSON",
+    "jsonEmpty": "No resources created yet",
+    "unknownStep": "Unknown step"
+  },
+  "steps": {
+    "organization":      { "label": "Organization",   "labelEn": "Organization" },
+    "patient":           { "label": "Patient",         "labelEn": "Patient" },
+    "practitioner":      { "label": "Practitioner",    "labelEn": "Practitioner" },
+    "encounter":         { "label": "Encounter",       "labelEn": "Encounter" },
+    "condition":         { "label": "Condition",       "labelEn": "Condition" },
+    "observation":       { "label": "Observation",     "labelEn": "Observation" },
+    "coverage":          { "label": "Coverage",        "labelEn": "Coverage" },
+    "medication":        { "label": "Medication",      "labelEn": "Medication" },
+    "medicationRequest": { "label": "MedicationRequest", "labelEn": "MedicationRequest" },
+    "extension":         { "label": "Extension",        "labelEn": "Extension" },
+    "composition":       { "label": "Document Bundle",  "labelEn": "Composition & Bundle" }
+  },
+  "forms": {
+    "shared": {
+      "requiredMark": "*",
+      "optional": " (optional)"
+    },
+    "organization": {
+      "name":       { "label": "Institution Name", "placeholder": "e.g. National Taiwan University Hospital", "required": "Institution name is required" },
+      "identifier": { "label": "Institution Code", "placeholder": "e.g. 0101020011",                          "required": "Institution code is required" },
+      "type": {
+        "label": "Institution Type",
+        "placeholder": "Select type",
+        "required": "Institution type is required",
+        "options": {
+          "hospital": "Hospital",
+          "clinic":   "Clinic",
+          "pharmacy": "Pharmacy"
+        }
+      },
+      "success": "Organization created! ID: {{id}}"
+    },
+    "patient": {
+      "familyName": { "label": "Family Name", "placeholder": "e.g. Wang",   "required": "Family name is required" },
+      "givenName":  { "label": "Given Name",  "placeholder": "e.g. Xiao Ming", "required": "Given name is required" },
+      "studentId": {
+        "label":       "Student ID (Identifier)",
+        "placeholder": "e.g. B12345678",
+        "hint":        "★ Per spec, Patient.identifier uses student ID",
+        "required":    "Student ID is required"
+      },
+      "gender": {
+        "label": "Gender",
+        "placeholder": "Select gender",
+        "required": "Gender is required",
+        "options": {
+          "male":    "Male",
+          "female":  "Female",
+          "other":   "Other",
+          "unknown": "Unknown"
+        }
+      },
+      "birthDate": { "label": "Birth Date", "required": "Birth date is required" },
+      "success": "Patient created! ID: {{id}}"
+    },
+    "practitioner": {
+      "familyName":    { "label": "Family Name",    "placeholder": "e.g. Lee",          "required": "Family name is required" },
+      "givenName":     { "label": "Given Name",     "placeholder": "e.g. Da Hua",       "required": "Given name is required" },
+      "licenseNumber": { "label": "License Number", "placeholder": "e.g. MD123456",     "required": "License number is required" },
+      "qualification": { "label": "Qualification",  "placeholder": "e.g. Internal Medicine Specialist", "required": "Qualification is required" },
+      "success": "Practitioner created! ID: {{id}}"
+    },
+    "encounter": {
+      "type": {
+        "label": "Visit Type",
+        "placeholder": "Select visit type",
+        "required": "Visit type is required",
+        "options": {
+          "ambulatory": "Ambulatory (Outpatient)",
+          "emergency":  "Emergency",
+          "inpatient":  "Inpatient"
+        }
+      },
+      "startDate":  { "label": "Visit Start Date", "required": "Visit date is required" },
+      "endDate":    { "label": "Visit End Date" },
+      "patientInfo": "Associated Patient: {{name}} ({{id}})",
+      "success": "Encounter created! ID: {{id}}"
+    },
+    "condition": {
+      "presetsTitle": "Common Diagnoses (Quick Select)",
+      "icdCode":       { "label": "ICD-10 Code",       "placeholder": "e.g. J06.9",                     "required": "ICD-10 code is required" },
+      "diagnosisName": { "label": "Diagnosis Name",    "placeholder": "e.g. Acute upper respiratory infection", "required": "Diagnosis name is required" },
+      "success": "Condition created! ID: {{id}}"
+    },
+    "observation": {
+      "presetsTitle": "Common Lab Tests (Quick Select)",
+      "presets": {
+        "8867-4":  "Heart Rate",
+        "8480-6":  "Systolic BP",
+        "8462-4":  "Diastolic BP",
+        "2345-7":  "Blood Glucose",
+        "2093-3":  "Total Cholesterol",
+        "29463-7": "Body Weight"
+      },
+      "loincCode": { "label": "LOINC Code",  "placeholder": "e.g. 8867-4",   "required": "LOINC code is required" },
+      "itemName":  { "label": "Item Name",   "placeholder": "e.g. Heart Rate","required": "Item name is required" },
+      "value":     { "label": "Value",       "placeholder": "e.g. 80",        "required": "Value is required" },
+      "unit":      { "label": "Unit",        "placeholder": "e.g. beats/min", "required": "Unit is required" },
+      "status": {
+        "label": "Status",
+        "options": {
+          "final":       "final",
+          "preliminary": "preliminary",
+          "amended":     "amended"
+        }
+      },
+      "success": "Observation created! ID: {{id}}"
+    },
+    "coverage": {
+      "type": {
+        "label": "Insurance Type",
+        "placeholder": "Select insurance type",
+        "required": "Insurance type is required",
+        "options": {
+          "EHCPOL":    "National Health Insurance (NHI)",
+          "PAY":       "Self-pay",
+          "PUBLICPOL": "Government Employee Insurance"
+        }
+      },
+      "insuranceId":   { "label": "NHI Card / Insurance ID", "placeholder": "e.g. A123456789", "required": "Insurance ID is required" },
+      "effectiveDate": { "label": "Effective Date", "required": "Effective date is required" },
+      "expiryDate":    { "label": "Expiry Date" },
+      "success": "Coverage created! ID: {{id}}"
+    },
+    "medication": {
+      "presetsTitle": "Common Medications (Quick Select)",
+      "presets": {
+        "N02BE01": "Acetaminophen",
+        "J01CA04": "Amoxicillin",
+        "C09AA05": "Ramipril",
+        "A02BC01": "Omeprazole",
+        "N02AA01": "Morphine"
+      },
+      "codeSystem": {
+        "label": "Code System",
+        "options": {
+          "ATC": "ATC Code (WHO)",
+          "NHI": "NHI Drug Code"
+        }
+      },
+      "code": { "label": "Medication Code", "placeholder": "e.g. N02BE01",     "required": "Medication code is required" },
+      "name": { "label": "Medication Name", "placeholder": "e.g. Acetaminophen","required": "Medication name is required" },
+      "form": {
+        "label": "Dose Form",
+        "placeholder": "Select dose form",
+        "required": "Dose form is required",
+        "options": {
+          "TAB": "Tablet",
+          "CAP": "Capsule",
+          "SOL": "Solution",
+          "INJ": "Injection",
+          "CRM": "Cream"
+        }
+      },
+      "success": "Medication created! ID: {{id}}"
+    },
+    "medicationRequest": {
+      "medicationPreview": "Medication: ",
+      "missingMedication": "Please complete Step 8 (Medication) before creating a prescription.",
+      "doseValue": { "label": "Dose",      "placeholder": "e.g. 500", "required": "Dose value is required", "positive": "Dose must be greater than 0" },
+      "doseUnit":  { "label": "Unit",      "placeholder": "e.g. mg",  "required": "Dose unit is required" },
+      "frequency": {
+        "label": "Frequency",
+        "placeholder": "Select frequency",
+        "required": "Frequency is required",
+        "options": {
+          "QD":  "Once daily (QD)",
+          "BID": "Twice daily (BID)",
+          "TID": "Three times daily (TID)",
+          "QID": "Four times daily (QID)",
+          "PRN": "As needed (PRN)"
+        }
+      },
+      "route": {
+        "label": "Route",
+        "placeholder": "Select route",
+        "required": "Route is required",
+        "options": {
+          "26643006": "Oral",
+          "47625008": "Intravenous (IV)",
+          "78421000": "Intramuscular (IM)",
+          "6064005":  "Topical",
+          "46713006": "Nasal"
+        }
+      },
+      "durationDays": { "label": "Duration (days)", "placeholder": "e.g. 7" },
+      "note":         { "label": "Patient Instructions", "placeholder": "e.g. Take after meals" },
+      "success": "MedicationRequest created! ID: {{id}}"
+    },
+    "extension": {
+      "codeCode":    { "label": "Type Code",          "placeholder": "e.g. special-instruction", "required": "Type code is required" },
+      "codeDisplay": { "label": "Type Name",          "placeholder": "e.g. Special Instruction", "required": "Type name is required" },
+      "ext1Url":     { "label": "Extension URL (1)",  "placeholder": "https://...",               "required": "Extension URL is required" },
+      "ext1Value":   { "label": "Extension Value (1)","placeholder": "e.g. Take after meals",     "required": "Extension value is required" },
+      "ext2Url":     { "label": "Extension URL (2)",  "placeholder": "https://... (optional)" },
+      "ext2Value":   { "label": "Extension Value (2)","placeholder": "(optional)" },
+      "success":     "Basic (Extension) created! ID: {{id}}"
+    },
+    "composition": {
+      "docTitle":     { "label": "Document Title", "placeholder": "Electronic Prescription", "required": "Document title is required" },
+      "date":         { "label": "Prescription Date", "required": "Prescription date is required" },
+      "resourcesTitle": "Created Resources",
+      "notCreated":   "Not created",
+      "submitButton":   "Assemble & Submit Document Bundle",
+      "resubmitButton": "Resubmit Bundle",
+      "previewTitle":   "Document Bundle Preview (Live)",
+      "success": "Composition ID: {{compositionId}}\nBundle ID: {{bundleId}}"
+    }
+  }
+}

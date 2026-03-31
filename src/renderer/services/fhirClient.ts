@@ -32,7 +32,96 @@ export async function postResource<T extends fhir4.Resource>(
   return response.json() as Promise<T>
 }
 
-export async function searchBundles(params: SearchParams): Promise<fhir4.Bundle> {
+/**
+ * Search for an existing resource; if found return it, otherwise POST a new one.
+ * Avoids custom headers (If-None-Exist) that trigger CORS preflight failures.
+ */
+export async function findOrCreate<T extends fhir4.Resource>(
+  resourceType: string,
+  searchParams: Record<string, string>,
+  body: Omit<T, 'id'>
+): Promise<T> {
+  const qs = new URLSearchParams(searchParams)
+  const searchUrl = `${getFhirBaseUrl()}/${resourceType}?${qs}`
+  const searchRes = await fetch(searchUrl, { method: 'GET', headers: FHIR_HEADERS })
+  if (searchRes.ok) {
+    const bundle = await searchRes.json() as fhir4.Bundle
+    if (bundle.entry && bundle.entry.length > 0) {
+      return bundle.entry[0].resource as T
+    }
+  }
+  return postResource<T>(resourceType, body)
+}
+
+export async function putResource<T extends fhir4.Resource>(
+  resourceType: string,
+  id: string,
+  body: Omit<T, 'id'>
+): Promise<T> {
+  const url = `${getFhirBaseUrl()}/${resourceType}/${id}`
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: FHIR_HEADERS,
+    body: JSON.stringify({ ...body, id })
+  })
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`PUT ${resourceType}/${id} failed (${response.status}): ${errorText}`)
+  }
+  return response.json() as Promise<T>
+}
+
+export interface QueryStep {
+  step: number
+  label: string
+  url: string
+  note?: string
+}
+
+export async function searchBundles(
+  params: SearchParams,
+  onStep?: (step: QueryStep) => void
+): Promise<fhir4.Bundle> {
+  // Complex org search: resolve Organization ID first, then query Bundle
+  if (params.mode === 'complex' && params.complexSearchBy === 'organization' && params.organizationId) {
+    const orgUrl = `${getFhirBaseUrl()}/Organization?identifier=${encodeURIComponent(params.organizationId)}`
+    onStep?.({ step: 1, label: '① 解析機構 ID', url: orgUrl })
+    const orgRes = await fetch(orgUrl, { method: 'GET', headers: FHIR_HEADERS })
+    if (!orgRes.ok) {
+      const errorText = await orgRes.text()
+      throw new Error(`Search failed (${orgRes.status}): ${errorText}`)
+    }
+    const orgBundle = await orgRes.json() as fhir4.Bundle
+    const orgId = orgBundle.entry?.[0]?.resource?.id
+    if (!orgId) throw new Error('找不到符合機構代碼的機構')
+
+    // HAPI public server does not support composition.custodian chain;
+    // fetch by identifier only, then filter client-side by custodian reference
+    const qs = new URLSearchParams()
+    if (params.identifier) qs.set('identifier', params.identifier)
+    const searchUrl = `${getFhirBaseUrl()}/Bundle?${qs.toString()}`
+    onStep?.({ step: 2, label: '② 查詢 Bundle', url: searchUrl, note: `(custodian chain 不支援，改用 identifier 撈回後過濾)` })
+    const response = await fetch(searchUrl, { method: 'GET', headers: FHIR_HEADERS })
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Search failed (${response.status}): ${errorText}`)
+    }
+    const allBundles = await response.json() as fhir4.Bundle
+    const orgRef = `Organization/${orgId}`
+    const filtered = (allBundles.entry ?? []).filter(entry => {
+      const inner = entry.resource as fhir4.Bundle | undefined
+      const composition = inner?.entry?.[0]?.resource as fhir4.Composition | undefined
+      return composition?.custodian?.reference === orgRef
+    })
+    onStep?.({
+      step: 3,
+      label: '③ Client 端過濾',
+      url: `Composition.custodian.reference = "${orgRef}"`,
+      note: `取得 ${allBundles.entry?.length ?? 0} 筆 → 符合 ${filtered.length} 筆`
+    })
+    return { ...allBundles, entry: filtered, total: filtered.length }
+  }
+
   const searchUrl = buildSearchUrl(params)
   const response = await fetch(searchUrl, {
     method: 'GET',
@@ -52,23 +141,21 @@ export function buildSearchUrl(params: SearchParams): string {
   switch (params.mode) {
     case 'basic':
       if (params.identifier) {
-        qs.set('composition.patient.identifier', params.identifier)
+        qs.set('identifier', params.identifier)
       } else if (params.name) {
-        qs.set('composition.patient.name', params.name)
+        qs.set('composition.subject.name', params.name)
       }
       break
 
     case 'date':
-      if (params.identifier) qs.set('composition.patient.identifier', params.identifier)
-      if (params.date) qs.set('composition.date', params.date)
+      if (params.identifier) qs.set('identifier', params.identifier)
+      if (params.date) qs.set('timestamp', params.date)
       break
 
     case 'complex':
-      if (params.identifier) qs.set('composition.patient.identifier', params.identifier)
-      if (params.complexSearchBy === 'organization' && params.organizationId) {
-        qs.set('composition.patient.organization.identifier', params.organizationId)
-      } else if (params.complexSearchBy === 'author' && params.authorName) {
-        qs.set('composition.author.name', params.authorName)
+      if (params.identifier) qs.set('identifier', params.identifier)
+      if (params.complexSearchBy === 'author' && params.authorName) {
+        qs.set('composition.author:Practitioner.name', params.authorName)
       }
       break
   }

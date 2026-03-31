@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, nativeImage, Menu } from 'electron'
+import { app, shell, BrowserWindow, nativeImage, Menu, nativeTheme } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
@@ -13,13 +13,31 @@ function getIconPath(): string {
 }
 
 // Custom About window — replaces the system About panel so we can show our icon
-function createAboutWindow(): void {
+async function createAboutWindow(): Promise<void> {
   const iconPath = getIconPath()
   let iconDataUrl = ''
   try {
     const img = nativeImage.createFromPath(iconPath)
     iconDataUrl = img.resize({ width: 128, height: 128 }).toDataURL()
   } catch { /* fall back to no icon */ }
+
+  // Read the actual rendered theme by checking if .dark class is on <html>
+  let isDark = nativeTheme.shouldUseDarkColors
+  const mainWindow = BrowserWindow.getAllWindows().find(w => !w.isDestroyed())
+  if (mainWindow) {
+    try {
+      isDark = await mainWindow.webContents.executeJavaScript(
+        `document.documentElement.classList.contains('dark')`
+      ) as boolean
+    } catch { /* fall back to nativeTheme */ }
+  }
+
+  // Match globals.css: light = Sakura Mist, dark = Twilight Mauve
+  const bg      = isDark ? 'hsl(330,12%,10%)'  : 'hsl(340,35%,98.5%)'
+  const fg      = isDark ? 'hsl(30,12%,87%)'   : 'hsl(330,20%,17%)'
+  const subFg   = isDark ? 'hsl(330,6%,56%)'   : 'hsl(330,8%,50%)'
+  const descFg  = isDark ? 'hsl(330,8%,40%)'   : 'hsl(330,8%,65%)'
+  const bgHex   = isDark ? '#1c1518'            : '#faf3f5'
 
   const win = new BrowserWindow({
     width: 380,
@@ -29,6 +47,7 @@ function createAboutWindow(): void {
     maximizable: false,
     alwaysOnTop: true,
     titleBarStyle: 'hiddenInset',
+    backgroundColor: bgHex,
     webPreferences: { contextIsolation: true, nodeIntegration: false }
   })
 
@@ -42,14 +61,14 @@ function createAboutWindow(): void {
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     display: flex; flex-direction: column; align-items: center;
     justify-content: center; height: 100vh;
-    background: #f2f2f7; color: #1d1d1f;
+    background: ${bg}; color: ${fg};
     gap: 6px; padding: 20px; text-align: center;
     -webkit-user-select: none;
   }
   img { width: 100px; height: 100px; border-radius: 22px; margin-bottom: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.15); }
   h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
-  .version { font-size: 13px; color: #888; }
-  .desc { font-size: 12px; color: #aaa; line-height: 1.6; margin-top: 6px; }
+  .version { font-size: 13px; color: ${subFg}; }
+  .desc { font-size: 12px; color: ${descFg}; line-height: 1.6; margin-top: 6px; }
 </style>
 </head>
 <body>

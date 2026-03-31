@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Check, ChevronRight } from 'lucide-react'
+import { Check, ChevronRight, Loader2, Package } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
 import { ScrollArea } from '../../components/ui/scroll-area'
 import { Badge } from '../../components/ui/badge'
@@ -16,6 +17,7 @@ import ObservationForm from './forms/ObservationForm'
 import CoverageForm from './forms/CoverageForm'
 import MedicationForm from './forms/MedicationForm'
 import MedicationRequestForm from './forms/MedicationRequestForm'
+import ExtensionForm from './forms/ExtensionForm'
 import CompositionForm from './forms/CompositionForm'
 
 interface ResourceStepperProps {
@@ -23,8 +25,19 @@ interface ResourceStepperProps {
 }
 
 export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProps): React.JSX.Element {
-  const { currentStep, setStep, resources, nextStep, prevStep, bundleId } = useCreatorStore()
+  const { currentStep, setStep, resources, nextStep, prevStep, bundleId, submittingBundle } = useCreatorStore()
   const [showJsonPreview, setShowJsonPreview] = useState(false)
+  const [lastCreatedKey, setLastCreatedKey] = useState<string | null>(null)
+  const [expandSeq, setExpandSeq] = useState(0)
+
+  function onResourceSuccess(key: string, resource: fhir4.Resource): void {
+    useCreatorStore.getState().setResource(key as never, resource as never)
+    setLastCreatedKey(key)
+    setExpandSeq(s => s + 1)
+    setShowJsonPreview(true)
+  }
+  const { t } = useTranslation('creator')
+  const { t: tc } = useTranslation('common')
 
   function isStepComplete(index: number): boolean {
     const step = RESOURCE_STEPS[index]
@@ -37,31 +50,33 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
 
     switch (step.key) {
       case 'organization':
-        return <OrganizationForm onSuccess={(r) => { useCreatorStore.getState().setResource('organization', r); nextStep() }} />
+        return <OrganizationForm onSuccess={(r) => onResourceSuccess('organization', r)} />
       case 'patient':
-        return <PatientForm onSuccess={(r) => { useCreatorStore.getState().setResource('patient', r); nextStep() }} />
+        return <PatientForm onSuccess={(r) => onResourceSuccess('patient', r)} />
       case 'practitioner':
-        return <PractitionerForm onSuccess={(r) => { useCreatorStore.getState().setResource('practitioner', r); nextStep() }} />
+        return <PractitionerForm onSuccess={(r) => onResourceSuccess('practitioner', r)} />
       case 'encounter':
-        return <EncounterForm onSuccess={(r) => { useCreatorStore.getState().setResource('encounter', r); nextStep() }} />
+        return <EncounterForm onSuccess={(r) => onResourceSuccess('encounter', r)} />
       case 'condition':
-        return <ConditionForm onSuccess={(r) => { useCreatorStore.getState().setResource('condition', r); nextStep() }} />
+        return <ConditionForm onSuccess={(r) => onResourceSuccess('condition', r)} />
       case 'observation':
-        return <ObservationForm onSuccess={(r) => { useCreatorStore.getState().setResource('observation', r); nextStep() }} />
+        return <ObservationForm onSuccess={(r) => onResourceSuccess('observation', r)} />
       case 'coverage':
-        return <CoverageForm onSuccess={(r) => { useCreatorStore.getState().setResource('coverage', r); nextStep() }} />
+        return <CoverageForm onSuccess={(r) => onResourceSuccess('coverage', r)} />
       case 'medication':
-        return <MedicationForm onSuccess={(r) => { useCreatorStore.getState().setResource('medication', r); nextStep() }} />
+        return <MedicationForm onSuccess={(r) => onResourceSuccess('medication', r)} />
       case 'medicationRequest':
-        return <MedicationRequestForm onSuccess={(r) => { useCreatorStore.getState().setResource('medicationRequest', r); nextStep() }} />
+        return <MedicationRequestForm onSuccess={(r) => onResourceSuccess('medicationRequest', r)} />
+      case 'extension':
+        return <ExtensionForm onSuccess={(r) => onResourceSuccess('extension', r)} />
       case 'composition':
         return <CompositionForm onBundleSuccess={onBundleSuccess} />
       default:
-        return <div>未知步驟</div>
+        return <div>{t('stepper.unknownStep')}</div>
     }
   }
 
-  const currentStepInfo = RESOURCE_STEPS[currentStep]
+  const currentStepKey = RESOURCE_STEPS[currentStep].key
   const completedCount = RESOURCE_STEPS.filter((_, i) => isStepComplete(i)).length
 
   return (
@@ -69,8 +84,8 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
       {/* Left: Step indicator */}
       <div className="w-48 border-r bg-muted/30 flex flex-col">
         <div className="px-3 py-3 border-b">
-          <div className="text-xs text-muted-foreground">進度</div>
-          <div className="text-sm font-semibold">{completedCount} / {RESOURCE_STEPS.length} 完成</div>
+          <div className="text-xs text-muted-foreground">{t('stepper.progress')}</div>
+          <div className="text-sm font-semibold">{t('stepper.progressCount', { completed: completedCount, total: RESOURCE_STEPS.length })}</div>
         </div>
         <ScrollArea className="flex-1">
           <nav className="p-2 space-y-1">
@@ -95,8 +110,16 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
                     {complete ? <Check className="h-3 w-3" /> : index + 1}
                   </span>
                   <div className="min-w-0">
-                    <div className="font-medium truncate">{step.label}</div>
-                    <div className="text-[10px] opacity-60 truncate">{step.labelEn}</div>
+                    {(() => {
+                      const label = t(`steps.${step.key}.label`)
+                      const labelEn = t(`steps.${step.key}.labelEn`)
+                      return (
+                        <>
+                          <div className="font-medium truncate">{label}</div>
+                          {label !== labelEn && <div className="text-[10px] opacity-60 truncate">{labelEn}</div>}
+                        </>
+                      )
+                    })()}
                   </div>
                 </button>
               )
@@ -112,10 +135,12 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
           <div>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-[10px]">
-                步驟 {currentStep + 1} / {RESOURCE_STEPS.length}
+                {t('stepper.stepBadge', { current: currentStep + 1, total: RESOURCE_STEPS.length })}
               </Badge>
-              <h2 className="text-base font-semibold">{currentStepInfo.label}</h2>
-              <span className="text-sm text-muted-foreground">{currentStepInfo.labelEn}</span>
+              <h2 className="text-base font-semibold">{t(`steps.${currentStepKey}.label`)}</h2>
+              {t(`steps.${currentStepKey}.label`) !== t(`steps.${currentStepKey}.labelEn`) && (
+                <span className="text-sm text-muted-foreground">{t(`steps.${currentStepKey}.labelEn`)}</span>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -124,7 +149,7 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
               onClick={() => setShowJsonPreview(!showJsonPreview)}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              {showJsonPreview ? '隱藏 JSON' : '顯示 JSON 預覽'}
+              {showJsonPreview ? t('stepper.hideJson') : t('stepper.showJson')}
             </button>
           </div>
         </div>
@@ -133,29 +158,49 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
         <div className="flex-1 overflow-auto">
           <div className={showJsonPreview ? 'grid grid-cols-2 gap-0 h-full' : 'h-full'}>
             {/* Form */}
-            <ScrollArea className="h-full">
-              <div className="p-5">
-                {renderForm()}
-              </div>
-            </ScrollArea>
+            <div className="flex flex-col h-full min-h-0">
+              <ScrollArea className="flex-1 min-h-0">
+                <div className="p-5">
+                  {renderForm()}
+                </div>
+              </ScrollArea>
+              {currentStepKey === 'composition' && (
+                <div className="p-4 pt-2 border-t bg-background shrink-0">
+                  <Button
+                    type="submit"
+                    form="composition-form"
+                    disabled={submittingBundle || !resources.patient}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {submittingBundle && <Loader2 className="h-4 w-4 animate-spin" />}
+                    <Package className="h-4 w-4" />
+                    {bundleId
+                      ? t('forms.composition.resubmitButton')
+                      : t('forms.composition.submitButton')}
+                  </Button>
+                </div>
+              )}
+            </div>
 
             {/* JSON Preview panel */}
             {showJsonPreview && (
               <div className="border-l overflow-auto p-4 bg-slate-950">
-                <p className="text-xs text-slate-400 mb-3 font-mono">已建立的 Resources JSON</p>
+                <p className="text-xs text-slate-400 mb-3 font-mono">{t('stepper.jsonPanelTitle')}</p>
                 {Object.entries(resources).map(([key, resource]) =>
                   resource ? (
                     <div key={key} className="mb-3">
                       <JsonViewer
+                        key={key === lastCreatedKey ? `${key}-${expandSeq}` : key}
                         data={resource}
                         title={key}
-                        defaultCollapsed={true}
+                        defaultCollapsed={key !== lastCreatedKey}
                       />
                     </div>
                   ) : null
                 )}
                 {Object.values(resources).every(v => !v) && (
-                  <p className="text-slate-500 text-xs">尚未建立任何 Resource</p>
+                  <p className="text-slate-500 text-xs">{t('stepper.jsonEmpty')}</p>
                 )}
               </div>
             )}
@@ -170,7 +215,7 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
             onClick={prevStep}
             disabled={currentStep === 0}
           >
-            上一步
+            {tc('buttons.prev')}
           </Button>
           <Button
             variant="outline"
@@ -178,7 +223,7 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
             onClick={nextStep}
             disabled={currentStep === RESOURCE_STEPS.length - 1}
           >
-            跳過 / 下一步
+            {tc('buttons.next')}
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>

@@ -1,0 +1,35 @@
+{
+  "buttons": {
+    "submit": "POST 至 FHIR Server",
+    "resubmit": "重新提交",
+    "save": "儲存設定",
+    "test": "測試連線",
+    "reset": "重新開始",
+    "prev": "上一步",
+    "next": "跳過 / 下一步",
+    "search": "查詢",
+    "close": "關閉",
+    "fillMock": "填入範例"
+  },
+  "server": {
+    "checking": "連線中…",
+    "online": "已連線",
+    "offline": "連線失敗",
+    "unknown": "未測試"
+  },
+  "errors": {
+    "unknown": "發生未知錯誤"
+  },
+  "fhir": {
+    "resourceCreated": "{{resourceType}} 已成功建立！ID: {{id}}"
+  },
+  "theme": {
+    "light": "亮色",
+    "dark": "暗色",
+    "system": "系統"
+  },
+  "lang": {
+    "toggle": "EN",
+    "current": "繁中"
+  }
+}

@@ -33,6 +33,7 @@ export default function JsonViewer({
       <div className="flex items-center justify-between px-3 py-2 bg-slate-800 border-b border-slate-700">
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => setCollapsed(!collapsed)}
             className="text-slate-300 hover:text-white transition-colors flex items-center gap-1 text-xs"
           >
@@ -45,6 +46,7 @@ export default function JsonViewer({
           </button>
         </div>
         <Button
+          type="button"
           variant="ghost"
           size="icon"
           className="h-6 w-6 text-slate-400 hover:text-white hover:bg-slate-700"

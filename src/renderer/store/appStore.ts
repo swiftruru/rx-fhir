@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { getFhirBaseUrl, setFhirBaseUrl } from '../services/fhirClient'
+import type { SupportedLocale } from '../i18n'
 
 type ServerStatus = 'unknown' | 'online' | 'offline' | 'checking'
 type AppMode = 'creator' | 'consumer' | 'settings'
@@ -13,10 +14,12 @@ interface AppState {
   serverVersion?: string
   currentMode: AppMode
   theme: ThemeMode
+  locale: SupportedLocale
   setServerUrl: (url: string) => void
   setServerStatus: (status: ServerStatus, name?: string, version?: string) => void
   setCurrentMode: (mode: AppMode) => void
   setTheme: (theme: ThemeMode) => void
+  setLocale: (locale: SupportedLocale) => void
 }
 
 export const useAppStore = create<AppState>()(
@@ -28,6 +31,7 @@ export const useAppStore = create<AppState>()(
       serverVersion: undefined,
       currentMode: 'creator',
       theme: 'system',
+      locale: 'zh-TW',
 
       setServerUrl: (url: string) => {
         setFhirBaseUrl(url)
@@ -40,11 +44,16 @@ export const useAppStore = create<AppState>()(
 
       setCurrentMode: (mode) => set({ currentMode: mode }),
 
-      setTheme: (theme) => set({ theme })
+      setTheme: (theme) => set({ theme }),
+
+      setLocale: (locale) => {
+        localStorage.setItem('rxfhir-locale', locale)
+        set({ locale })
+      }
     }),
     {
       name: 'rxfhir-app-store',
-      partialize: (state) => ({ serverUrl: state.serverUrl, theme: state.theme })
+      partialize: (state) => ({ serverUrl: state.serverUrl, theme: state.theme, locale: state.locale })
     }
   )
 )

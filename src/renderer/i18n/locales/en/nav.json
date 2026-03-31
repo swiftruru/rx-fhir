@@ -1,0 +1,15 @@
+{
+  "appDescription": "Electronic Prescription System",
+  "items": {
+    "creator": { "label": "Creator", "sublabel": "Create Prescription" },
+    "consumer": { "label": "Consumer", "sublabel": "Query Prescription" },
+    "settings": { "label": "Settings", "sublabel": "System Settings" },
+    "about":    { "label": "About",    "sublabel": "About RxFHIR" }
+  },
+  "modeLabels": {
+    "creator": "Creator Mode",
+    "consumer": "Consumer Mode",
+    "settings": "Settings",
+    "about":    "About"
+  }
+}

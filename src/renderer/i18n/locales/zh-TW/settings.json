@@ -1,0 +1,45 @@
+{
+  "page": {
+    "title": "Settings — 系統設定",
+    "description": "設定 FHIR Server 連線位址"
+  },
+  "server": {
+    "title":       "FHIR Server URL",
+    "description": "設定目標 HAPI FHIR Server 的基礎 URL（baseR4）",
+    "urlLabel":    "Server URL",
+    "presetsLabel": "快速選擇預設伺服器",
+    "testSuccess":  "連線成功！",
+    "testFail":     "連線失敗，請確認 URL 是否正確，或網路是否暢通。",
+    "saved":        "設定已儲存。"
+  },
+  "status": {
+    "title":      "目前連線狀態",
+    "serverInfo": "Server",
+    "fhirVersion": "FHIR"
+  },
+  "about": {
+    "title":       "關於 RxFHIR",
+    "tagline":     "℞ + FHIR = RxFHIR",
+    "description": "基於 TW Core 電子處方箋 Profile 的桌面應用程式",
+    "spec":        "依據衛福部 EMR-IG 電子處方箋 2.5 規範實作",
+    "version":     "Version 1.0.0 · Electron + React + FHIR R4",
+    "fields": {
+      "author":      "作者",
+      "affiliation": "學校",
+      "department":  "系所",
+      "course":      "課程",
+      "advisors":    "指導老師"
+    },
+    "values": {
+      "author":      "潘昱如",
+      "affiliation": "國立臺北護理健康大學",
+      "department":  "資訊管理系所",
+      "course":      "醫療資訊系統基礎"
+    },
+    "advisors": {
+      "lien": "連中岳老師（Chen-Yueh Lien）",
+      "kuo":  "郭振宗老師（Chen-Tsung Kuo）",
+      "lee":  "李祥豪老師（Siang-Hao Lee）"
+    }
+  }
+}

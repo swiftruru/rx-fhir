@@ -229,11 +229,13 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
         <div className="space-y-2">
           <Label htmlFor="dose-val">{f('doseValue.label')} *</Label>
           <Input id="dose-val" type="number" step="any" placeholder={f('doseValue.placeholder')} {...register('doseValue')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('doseValue.hint')}</p>
           {errors.doseValue && <p className="text-xs text-destructive">{errors.doseValue.message}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="dose-unit">{f('doseUnit.label')} *</Label>
           <Input id="dose-unit" placeholder={f('doseUnit.placeholder')} {...register('doseUnit')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('doseUnit.hint')}</p>
           {errors.doseUnit && <p className="text-xs text-destructive">{errors.doseUnit.message}</p>}
         </div>
       </div>
@@ -250,6 +252,7 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
             ))}
           </SelectContent>
         </Select>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('frequency.hint')}</p>
         {errors.frequency && <p className="text-xs text-destructive">{errors.frequency.message}</p>}
       </div>
 
@@ -265,6 +268,7 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
             ))}
           </SelectContent>
         </Select>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('route.hint')}</p>
         {errors.route && <p className="text-xs text-destructive">{errors.route.message}</p>}
       </div>
 
@@ -276,6 +280,7 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
         <div className="space-y-2">
           <Label htmlFor="note">{f('note.label')}</Label>
           <Input id="note" placeholder={f('note.placeholder')} {...register('note')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('note.hint')}</p>
         </div>
       </div>
 

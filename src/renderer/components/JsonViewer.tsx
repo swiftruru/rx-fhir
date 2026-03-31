@@ -10,13 +10,20 @@ interface JsonViewerProps {
   title?: string
   defaultCollapsed?: boolean
   className?: string
+  fontSize?: 'sm' | 'md' | 'lg'
+  collapseSync?: {
+    value: boolean
+    token: number
+  }
 }
 
 export default function JsonViewer({
   data,
   title,
   defaultCollapsed = false,
-  className
+  className,
+  fontSize = 'sm',
+  collapseSync
 }: JsonViewerProps): React.JSX.Element {
   const [copied, setCopied] = useState(false)
   const [collapsed, setCollapsed] = useState(defaultCollapsed)
@@ -35,10 +42,18 @@ export default function JsonViewer({
     return () => observer.disconnect()
   }, [])
 
+  useEffect(() => {
+    if (!collapseSync) return
+    setCollapsed(collapseSync.value)
+  }, [collapseSync?.token, collapseSync?.value])
+
   const jsonTheme = useMemo(() => ({
     ...defaultStyles,
     container: cn(
-      'font-mono text-[11px] leading-6',
+      'font-mono leading-6',
+      fontSize === 'sm' && 'text-[11px]',
+      fontSize === 'md' && 'text-xs',
+      fontSize === 'lg' && 'text-[13px]',
       isDark ? 'text-slate-100' : 'text-slate-700'
     ),
     basicChildStyle: 'ml-4',
@@ -53,7 +68,7 @@ export default function JsonViewer({
     expandIcon: 'text-muted-foreground cursor-pointer',
     collapseIcon: 'text-muted-foreground cursor-pointer',
     noQuotesForStringValues: false
-  }), [isDark])
+  }), [fontSize, isDark])
 
   const headerClasses = isDark
     ? 'bg-card border-border'

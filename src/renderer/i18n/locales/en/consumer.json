@@ -54,9 +54,65 @@
     "queryNow":     "Query Now",
     "deleteRecord": "Delete"
   },
+  "saved": {
+    "title": "Search History",
+    "favorites": "Favorites",
+    "recent": "Recent Searches",
+    "runSearch": "Run Search",
+    "pin": "Add to Favorites",
+    "unpin": "Remove from Favorites",
+    "deleteSearch": "Delete Search",
+    "clearRecent": "Clear Recent Searches",
+    "emptyTitle": "Untitled Search",
+    "modes": {
+      "basic": "Basic",
+      "date": "Date",
+      "complex": "Complex"
+    },
+    "criteria": {
+      "identifier": "Identifier: {{value}}",
+      "name": "Name: {{value}}"
+    },
+    "patterns": {
+      "date": "Identifier {{identifier}} / Date {{date}}",
+      "organization": "Identifier {{identifier}} / Organization {{organizationId}}",
+      "author": "Identifier {{identifier}} / Author {{authorName}}"
+    }
+  },
   "results": {
     "empty":          "No results found",
     "emptyHint":      "Use the form on the left to search",
+    "errorTitle":     "This search did not complete",
+    "errorHint":      "Check the error message on the left, then verify the FHIR Server setting and connection before retrying.",
+    "criteriaTitle":  "Search Criteria",
+    "reasonTitle":    "Possible Reasons",
+    "suggestionsTitle": "Suggested Next Steps",
+    "filterInsight":  "The app first found {{fetched}} candidate bundle(s), then the additional filter reduced the result to {{matched}}.",
+    "criteria": {
+      "identifier": "Identifier: {{value}}",
+      "name": "Name: {{value}}",
+      "date": "Date: {{value}}",
+      "organization": "Organization: {{value}}",
+      "author": "Author: {{value}}"
+    },
+    "reasons": {
+      "generic": "No prescriptions matched the current search criteria.",
+      "basicIdentifier": "No prescriptions were found for identifier {{identifier}}.",
+      "basicName": "No prescriptions were found for patient names matching \"{{name}}\".",
+      "date": "No prescriptions were found for identifier {{identifier}} on {{date}}.",
+      "complexOrganization": "No prescriptions were found for identifier {{identifier}} with organization code {{organizationId}}.",
+      "complexAuthor": "No prescriptions were found for identifier {{identifier}} with physician name {{authorName}}."
+    },
+    "suggestions": {
+      "retry": "Resolve the error shown on the left, then run the search again.",
+      "checkServer": "Confirm that you are connected to the same FHIR Server that was used when the prescription was created.",
+      "checkIdentifier": "Verify the patient identifier carefully to avoid missing or extra characters.",
+      "preferIdentifier": "If name search returns nothing, try searching by patient identifier for a more reliable match.",
+      "checkDate": "Run a basic search first, then compare the date against the prescription's recorded submission time.",
+      "checkOrganization": "Confirm that the organization code exactly matches the one used when the prescription was created.",
+      "checkAuthor": "Confirm that the physician name exactly matches the value stored in the prescription details.",
+      "broadenSearch": "Try removing the additional filter first, then narrow the results step by step."
+    },
     "count":          "Found {{total}} result(s)",
     "showing":        "Showing {{count}}",
     "unknownPatient": "Unknown Patient"

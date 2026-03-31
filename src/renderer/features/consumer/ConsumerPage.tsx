@@ -5,14 +5,24 @@ import SearchForm from './SearchForm'
 import ResultList from './ResultList'
 import PrescriptionDetail from './PrescriptionDetail'
 import RecentRecords from './RecentRecords'
+import SavedSearches from './SavedSearches'
 import type { BundleSummary, SearchParams } from '../../types/fhir.d'
 import type { SubmissionRecord } from '../../store/historyStore'
-import type { ConsumerLaunchState, SearchPrefill, SearchTab } from './searchState'
+import { useSearchHistoryStore } from '../../store/searchHistoryStore'
+import {
+  buildSearchPrefillFromParams,
+  getSearchTabFromParams,
+  type ConsumerLaunchState,
+  type ConsumerSearchExecution,
+  type SearchPrefill,
+  type SearchTab
+} from './searchState'
 
 export default function ConsumerPage(): React.JSX.Element {
   const { t } = useTranslation('consumer')
   const location = useLocation()
   const navigate = useNavigate()
+  const recordSearch = useSearchHistoryStore((state) => state.recordSearch)
   const [results, setResults] = useState<BundleSummary[]>([])
   const [total, setTotal] = useState(0)
   const [selected, setSelected] = useState<BundleSummary | null>(null)
@@ -21,6 +31,7 @@ export default function ConsumerPage(): React.JSX.Element {
   const [prefill, setPrefill] = useState<SearchPrefill | null>(null)
   const [autoSearch, setAutoSearch] = useState<SearchParams | null>(null)
   const [targetBundleId, setTargetBundleId] = useState<string | null>(null)
+  const [searchExecution, setSearchExecution] = useState<ConsumerSearchExecution | null>(null)
 
   useEffect(() => {
     const launchState = location.state as ConsumerLaunchState | null
@@ -36,9 +47,11 @@ export default function ConsumerPage(): React.JSX.Element {
     navigate('/consumer', { replace: true, state: null })
   }, [location.state, navigate])
 
-  function handleResults(r: BundleSummary[], t: number): void {
+  function handleResults(r: BundleSummary[], t: number, execution: ConsumerSearchExecution): void {
     setResults(r)
     setTotal(t)
+    setSearchExecution(execution)
+    recordSearch(execution.params)
     if (targetBundleId) {
       setSelected(r.find((summary) => summary.id === targetBundleId) ?? (r.length === 1 ? r[0] : null))
       setTargetBundleId(null)
@@ -92,6 +105,12 @@ export default function ConsumerPage(): React.JSX.Element {
     setPrefill({ tab: 'basic', searchBy: 'identifier', value: identifier })
   }
 
+  function handleRunSavedSearch(params: SearchParams): void {
+    setActiveTab(getSearchTabFromParams(params))
+    setPrefill(buildSearchPrefillFromParams(params))
+    setAutoSearch(params)
+  }
+
   return (
     <div className="flex h-full">
       {/* Left panel: Search form */}
@@ -101,6 +120,7 @@ export default function ConsumerPage(): React.JSX.Element {
           <p className="text-xs text-muted-foreground mt-0.5">{t('page.description')}</p>
         </div>
         <RecentRecords onFill={handleFill} />
+        <SavedSearches onRun={handleRunSavedSearch} />
         <div className="flex-1 overflow-auto p-4">
           <SearchForm
             activeTab={activeTab}
@@ -120,6 +140,7 @@ export default function ConsumerPage(): React.JSX.Element {
           <ResultList
             results={results}
             total={total}
+            searchExecution={searchExecution}
             selected={selected}
             onSelect={setSelected}
           />

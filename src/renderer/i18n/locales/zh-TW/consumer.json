@@ -54,9 +54,65 @@
     "queryNow":      "立即查詢",
     "deleteRecord":  "刪除此筆"
   },
+  "saved": {
+    "title": "查詢記錄",
+    "favorites": "常用查詢",
+    "recent": "最近查詢",
+    "runSearch": "重新查詢",
+    "pin": "加入常用查詢",
+    "unpin": "移出常用查詢",
+    "deleteSearch": "刪除此查詢",
+    "clearRecent": "清除最近查詢",
+    "emptyTitle": "未命名查詢",
+    "modes": {
+      "basic": "基本查詢",
+      "date": "日期查詢",
+      "complex": "複合查詢"
+    },
+    "criteria": {
+      "identifier": "識別碼：{{value}}",
+      "name": "姓名：{{value}}"
+    },
+    "patterns": {
+      "date": "識別碼 {{identifier}} / 日期 {{date}}",
+      "organization": "識別碼 {{identifier}} / 機構 {{organizationId}}",
+      "author": "識別碼 {{identifier}} / 醫師 {{authorName}}"
+    }
+  },
   "results": {
     "empty":        "尚無查詢結果",
     "emptyHint":    "請使用左側表單進行查詢",
+    "errorTitle":   "本次查詢未完成",
+    "errorHint":    "請先查看左側錯誤訊息，確認 FHIR Server 設定與連線狀態後再重試。",
+    "criteriaTitle": "本次查詢條件",
+    "reasonTitle": "可能原因",
+    "suggestionsTitle": "建議操作",
+    "filterInsight": "系統先取得 {{fetched}} 筆候選處方，套用附加條件後剩下 {{matched}} 筆。",
+    "criteria": {
+      "identifier": "識別碼：{{value}}",
+      "name": "姓名：{{value}}",
+      "date": "日期：{{value}}",
+      "organization": "機構代碼：{{value}}",
+      "author": "醫師姓名：{{value}}"
+    },
+    "reasons": {
+      "generic": "目前條件沒有查到符合的處方資料。",
+      "basicIdentifier": "找不到識別碼 {{identifier}} 的處方資料。",
+      "basicName": "找不到姓名包含「{{name}}」的處方資料。",
+      "date": "找不到識別碼 {{identifier}} 在 {{date}} 的處方資料。",
+      "complexOrganization": "找不到識別碼 {{identifier}} 且機構代碼為 {{organizationId}} 的處方資料。",
+      "complexAuthor": "找不到識別碼 {{identifier}} 且醫師姓名為 {{authorName}} 的處方資料。"
+    },
+    "suggestions": {
+      "retry": "請先排除左側顯示的錯誤後再重新查詢。",
+      "checkServer": "確認目前連線的 FHIR Server 是否與建立資料時使用的是同一台。",
+      "checkIdentifier": "確認病人識別碼是否正確，避免多一碼、少一碼或輸入了別的識別欄位。",
+      "preferIdentifier": "若用姓名查不到，建議改用病人識別碼查詢，通常會更穩定。",
+      "checkDate": "先用基本查詢確認有無資料，再比對日期是否與處方建立時間一致。",
+      "checkOrganization": "確認機構代碼是否與建立處方時使用的代碼完全一致。",
+      "checkAuthor": "確認醫師姓名是否與處方中的姓名一致，必要時先用基本查詢打開詳情核對。",
+      "broadenSearch": "可先移除附加條件做基本查詢，再逐步縮小查詢範圍。"
+    },
     "count":        "共找到 {{total}} 筆",
     "showing":      "顯示 {{count}} 筆",
     "unknownPatient": "未知病人"

@@ -177,17 +177,20 @@ export default function ConditionForm({ onSuccess }: Props): React.JSX.Element {
             </button>
           ))}
         </div>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('presetsHint')}</p>
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="icd-code">{f('icdCode.label')} *</Label>
         <Input id="icd-code" placeholder={f('icdCode.placeholder')} {...register('icdCode')} className="font-mono" />
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('icdCode.hint')}</p>
         {errors.icdCode && <p className="text-xs text-destructive">{errors.icdCode.message}</p>}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="icd-display">{f('diagnosisName.label')} *</Label>
         <Input id="icd-display" placeholder={f('diagnosisName.placeholder')} {...register('icdDisplay')} />
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('diagnosisName.hint')}</p>
         {errors.icdDisplay && <p className="text-xs text-destructive">{errors.icdDisplay.message}</p>}
       </div>
 

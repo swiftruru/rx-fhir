@@ -157,15 +157,21 @@ export default function ExtensionForm({ onSuccess }: Props): React.JSX.Element {
         </Button>
       </div>
 
+      <div className="rounded-md border border-border/60 bg-muted/30 p-3">
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('introHint')}</p>
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label htmlFor="ext-code-code">{f('codeCode.label')} *</Label>
           <Input id="ext-code-code" placeholder={f('codeCode.placeholder')} {...register('codeCode')} className="font-mono" />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('codeCode.hint')}</p>
           {errors.codeCode && <p className="text-xs text-destructive">{errors.codeCode.message}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="ext-code-display">{f('codeDisplay.label')} *</Label>
           <Input id="ext-code-display" placeholder={f('codeDisplay.placeholder')} {...register('codeDisplay')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('codeDisplay.hint')}</p>
           {errors.codeDisplay && <p className="text-xs text-destructive">{errors.codeDisplay.message}</p>}
         </div>
       </div>
@@ -175,11 +181,13 @@ export default function ExtensionForm({ onSuccess }: Props): React.JSX.Element {
         <div className="space-y-2">
           <Label htmlFor="ext1-url">{f('ext1Url.label')}</Label>
           <Input id="ext1-url" placeholder={f('ext1Url.placeholder')} {...register('ext1Url')} className="font-mono text-xs" />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('ext1Url.hint')}</p>
           {errors.ext1Url && <p className="text-xs text-destructive">{errors.ext1Url.message}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="ext1-value">{f('ext1Value.label')}</Label>
           <Input id="ext1-value" placeholder={f('ext1Value.placeholder')} {...register('ext1Value')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('ext1Value.hint')}</p>
           {errors.ext1Value && <p className="text-xs text-destructive">{errors.ext1Value.message}</p>}
         </div>
       </div>
@@ -189,10 +197,12 @@ export default function ExtensionForm({ onSuccess }: Props): React.JSX.Element {
         <div className="space-y-2">
           <Label htmlFor="ext2-url">{f('ext2Url.label')}</Label>
           <Input id="ext2-url" placeholder={f('ext2Url.placeholder')} {...register('ext2Url')} className="font-mono text-xs" />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('ext2Url.hint')}</p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="ext2-value">{f('ext2Value.label')}</Label>
           <Input id="ext2-value" placeholder={f('ext2Value.placeholder')} {...register('ext2Value')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('ext2Value.hint')}</p>
         </div>
       </div>
 

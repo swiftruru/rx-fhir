@@ -30,6 +30,7 @@ interface CreatorState {
   resources: CreatedResources
   drafts: CreatorDraftValues
   feedbacks: CreatorResourceFeedbacks
+  lastUpdatedResourceKey?: ResourceKey
   draftSavedAt?: string
   draftHydrated: boolean
   draftRestored: boolean
@@ -62,6 +63,7 @@ export const useCreatorStore = create<CreatorState>()(
       resources: {},
       drafts: {},
       feedbacks: {},
+      lastUpdatedResourceKey: undefined,
       draftSavedAt: undefined,
       draftHydrated: false,
       draftRestored: false,
@@ -89,6 +91,7 @@ export const useCreatorStore = create<CreatorState>()(
       setResource: (key, resource) =>
         set((state) => ({
           resources: { ...state.resources, [key]: resource },
+          lastUpdatedResourceKey: key,
           draftSavedAt: new Date().toISOString()
         })),
 
@@ -138,6 +141,7 @@ export const useCreatorStore = create<CreatorState>()(
           resources: {},
           drafts: {},
           feedbacks: {},
+          lastUpdatedResourceKey: undefined,
           draftSavedAt: undefined,
           draftRestored: false,
           draftRevision: state.draftRevision + 1,

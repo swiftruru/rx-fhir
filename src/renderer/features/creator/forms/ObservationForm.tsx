@@ -189,17 +189,20 @@ export default function ObservationForm({ onSuccess }: Props): React.JSX.Element
             </button>
           ))}
         </div>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{f('presetsHint')}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label htmlFor="loinc">{f('loincCode.label')} *</Label>
           <Input id="loinc" placeholder={f('loincCode.placeholder')} {...register('loincCode')} className="font-mono" />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('loincCode.hint')}</p>
           {errors.loincCode && <p className="text-xs text-destructive">{errors.loincCode.message}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="obs-display">{f('itemName.label')} *</Label>
           <Input id="obs-display" placeholder={f('itemName.placeholder')} {...register('display')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('itemName.hint')}</p>
           {errors.display && <p className="text-xs text-destructive">{errors.display.message}</p>}
         </div>
       </div>
@@ -213,6 +216,7 @@ export default function ObservationForm({ onSuccess }: Props): React.JSX.Element
         <div className="space-y-2">
           <Label htmlFor="obs-unit">{f('unit.label')} *</Label>
           <Input id="obs-unit" placeholder={f('unit.placeholder')} {...register('unit')} />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{f('unit.hint')}</p>
           {errors.unit && <p className="text-xs text-destructive">{errors.unit.message}</p>}
         </div>
       </div>

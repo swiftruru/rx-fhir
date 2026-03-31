@@ -24,6 +24,16 @@
     "showJson": "Show JSON Preview",
     "hideJson": "Hide JSON",
     "jsonPanelTitle": "Created Resources JSON",
+    "jsonShowingAll": "Showing all {{count}} resource(s)",
+    "jsonShowingLast": "Showing only the latest created resource: {{resource}}",
+    "jsonCollapseAll": "Collapse All",
+    "jsonShowLastOnly": "Latest Resource Only",
+    "jsonShowAllResources": "Show All Resources",
+    "jsonFontSizes": {
+      "sm": "S",
+      "md": "M",
+      "lg": "L"
+    },
     "jsonEmpty": "No resources created yet",
     "unknownStep": "Unknown step"
   },
@@ -108,12 +118,14 @@
     },
     "condition": {
       "presetsTitle": "Common Diagnoses (Quick Select)",
-      "icdCode":       { "label": "ICD-10 Code",       "placeholder": "e.g. J06.9",                     "required": "ICD-10 code is required" },
-      "diagnosisName": { "label": "Diagnosis Name",    "placeholder": "e.g. Acute upper respiratory infection", "required": "Diagnosis name is required" },
+      "presetsHint": "The presets above are only quick examples. Before submitting, confirm the ICD-10 diagnosis code against the actual chart.",
+      "icdCode":       { "label": "ICD-10 Code",       "placeholder": "e.g. J06.9",                     "required": "ICD-10 code is required", "hint": "Enter a standard ICD-10 diagnosis code, such as J06.9, I10, or E11.9." },
+      "diagnosisName": { "label": "Diagnosis Name",    "placeholder": "e.g. Acute upper respiratory infection", "required": "Diagnosis name is required", "hint": "Enter the diagnosis name that matches the ICD-10 code." },
       "success": "Condition created! ID: {{id}}"
     },
     "observation": {
       "presetsTitle": "Common Lab Tests (Quick Select)",
+      "presetsHint": "LOINC codes identify the lab or measurement item. Use standard codes whenever possible.",
       "presets": {
         "8867-4":  "Heart Rate",
         "8480-6":  "Systolic BP",
@@ -122,10 +134,10 @@
         "2093-3":  "Total Cholesterol",
         "29463-7": "Body Weight"
       },
-      "loincCode": { "label": "LOINC Code",  "placeholder": "e.g. 8867-4",   "required": "LOINC code is required" },
-      "itemName":  { "label": "Item Name",   "placeholder": "e.g. Heart Rate","required": "Item name is required" },
+      "loincCode": { "label": "LOINC Code",  "placeholder": "e.g. 8867-4",   "required": "LOINC code is required", "hint": "Enter a standard LOINC code, such as 8867-4 for heart rate or 8480-6 for systolic blood pressure." },
+      "itemName":  { "label": "Item Name",   "placeholder": "e.g. Heart Rate","required": "Item name is required", "hint": "The item name should match the selected LOINC code." },
       "value":     { "label": "Value",       "placeholder": "e.g. 80",        "required": "Value is required" },
-      "unit":      { "label": "Unit",        "placeholder": "e.g. beats/min", "required": "Unit is required" },
+      "unit":      { "label": "Unit",        "placeholder": "e.g. beats/min", "required": "Unit is required", "hint": "Use common clinical units such as mmHg, mg/dL, or kg." },
       "status": {
         "label": "Status",
         "options": {
@@ -187,12 +199,13 @@
     "medicationRequest": {
       "medicationPreview": "Medication: ",
       "missingMedication": "Please complete Step 8 (Medication) before creating a prescription.",
-      "doseValue": { "label": "Dose",      "placeholder": "e.g. 500", "required": "Dose value is required", "positive": "Dose must be greater than 0" },
-      "doseUnit":  { "label": "Unit",      "placeholder": "e.g. mg",  "required": "Dose unit is required" },
+      "doseValue": { "label": "Dose",      "placeholder": "e.g. 500", "required": "Dose value is required", "positive": "Dose must be greater than 0", "hint": "Enter the single-dose numeric value, for example 500." },
+      "doseUnit":  { "label": "Unit",      "placeholder": "e.g. mg",  "required": "Dose unit is required", "hint": "Enter the matching unit, such as mg, mL, or tablet." },
       "frequency": {
         "label": "Frequency",
         "placeholder": "Select frequency",
         "required": "Frequency is required",
+        "hint": "If the abbreviations are unfamiliar, use the dropdown as a reference for QD, BID, TID, QID, and PRN.",
         "options": {
           "QD":  "Once daily (QD)",
           "BID": "Twice daily (BID)",
@@ -205,6 +218,7 @@
         "label": "Route",
         "placeholder": "Select route",
         "required": "Route is required",
+        "hint": "The selected route is stored as a standard route code. Common examples are Oral and Intravenous (IV).",
         "options": {
           "26643006": "Oral",
           "47625008": "Intravenous (IV)",
@@ -214,16 +228,17 @@
         }
       },
       "durationDays": { "label": "Duration (days)", "placeholder": "e.g. 7" },
-      "note":         { "label": "Patient Instructions", "placeholder": "e.g. Take after meals" },
+      "note":         { "label": "Patient Instructions", "placeholder": "e.g. Take after meals", "hint": "Write instructions in patient-friendly language, such as take after meals or take before bedtime." },
       "success": "MedicationRequest created! ID: {{id}}"
     },
     "extension": {
-      "codeCode":    { "label": "Type Code",          "placeholder": "e.g. special-instruction", "required": "Type code is required" },
-      "codeDisplay": { "label": "Type Name",          "placeholder": "e.g. Special Instruction", "required": "Type name is required" },
-      "ext1Url":     { "label": "Extension URL (1)",  "placeholder": "https://...",               "required": "Extension URL is required" },
-      "ext1Value":   { "label": "Extension Value (1)","placeholder": "e.g. Take after meals",     "required": "Extension value is required" },
-      "ext2Url":     { "label": "Extension URL (2)",  "placeholder": "https://... (optional)" },
-      "ext2Value":   { "label": "Extension Value (2)","placeholder": "(optional)" },
+      "introHint":   "Supplemental data is useful for information that falls outside the core profile but still needs to be preserved, such as special administration notes or care reminders.",
+      "codeCode":    { "label": "Type Code",          "placeholder": "e.g. special-instruction", "required": "Type code is required", "hint": "Use a short machine-readable identifier, such as special-instruction." },
+      "codeDisplay": { "label": "Type Name",          "placeholder": "e.g. Special Instruction", "required": "Type name is required", "hint": "Use a human-readable title, such as Special administration instruction." },
+      "ext1Url":     { "label": "Extension URL (1)",  "placeholder": "https://...",               "required": "Extension URL is required", "hint": "Enter the definition URL for this extension. If the same meaning is reused later, keep the same URL." },
+      "ext1Value":   { "label": "Extension Value (1)","placeholder": "e.g. Take after meals",     "required": "Extension value is required", "hint": "Enter the actual supplemental content, for example Take 30 minutes after meals and avoid antacids together." },
+      "ext2Url":     { "label": "Extension URL (2)",  "placeholder": "https://... (optional)", "hint": "If you need a second supplemental entry, provide another extension URL here. Leave it blank if not needed." },
+      "ext2Value":   { "label": "Extension Value (2)","placeholder": "(optional)", "hint": "A second supplemental note, reminder, or other free-text extension value." },
       "success":     "Basic (Extension) created! ID: {{id}}"
     },
     "composition": {

@@ -11,13 +11,13 @@ import FhirErrorAlert from '../../components/FhirErrorAlert'
 import { searchBundles, buildSearchUrl, type QueryStep } from '../../services/fhirClient'
 import { extractSearchResults } from '../../services/searchService'
 import type { BundleSummary, SearchParams } from '../../types/fhir.d'
-import type { SearchPrefill, SearchTab } from './searchState'
+import type { ConsumerSearchExecution, SearchPrefill, SearchTab } from './searchState'
 import { consumerBasicMocks, consumerDateMocks, consumerComplexMocks } from '../../mocks/mockPools'
 
 interface Props {
   activeTab: SearchTab
   onTabChange: (tab: SearchTab) => void
-  onResults: (results: BundleSummary[], total: number) => void
+  onResults: (results: BundleSummary[], total: number, execution: ConsumerSearchExecution) => void
   prefill?: SearchPrefill | null
   onPrefillConsumed?: () => void
   autoSearch?: SearchParams | null
@@ -126,6 +126,14 @@ export default function SearchForm({
       setLastUrl(undefined)
     }
     const steps: QueryStep[] = []
+    const buildExecution = (overrides?: Partial<ConsumerSearchExecution>): ConsumerSearchExecution => ({
+      params,
+      lastUrl: isClientFilteredComplex ? undefined : buildSearchUrl(params),
+      querySteps: [...steps],
+      error: undefined,
+      ...overrides
+    })
+
     try {
       const bundle = await searchBundles(params, (step) => {
         steps.push(step)
@@ -133,10 +141,11 @@ export default function SearchForm({
       })
       const results = extractSearchResults(bundle)
       const total = bundle.total ?? results.length
-      onResults(results, total)
+      onResults(results, total, buildExecution())
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('search.error'))
-      onResults([], 0)
+      const message = e instanceof Error ? e.message : t('search.error')
+      setError(message)
+      onResults([], 0, buildExecution({ error: message }))
     } finally {
       setLoading(false)
     }

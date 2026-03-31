@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Check, ChevronRight, Loader2, Package } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
@@ -7,6 +7,7 @@ import { Badge } from '../../components/ui/badge'
 import JsonViewer from '../../components/JsonViewer'
 import { useCreatorStore } from '../../store/creatorStore'
 import { RESOURCE_STEPS } from '../../types/fhir.d'
+import type { CreatedResources, ResourceKey } from '../../types/fhir.d'
 
 import OrganizationForm from './forms/OrganizationForm'
 import PatientForm from './forms/PatientForm'
@@ -24,21 +25,176 @@ interface ResourceStepperProps {
   onBundleSuccess: (bundleId: string) => void
 }
 
+function compactText(value?: string): string | undefined {
+  const normalized = value?.replace(/\s+/g, ' ').trim()
+  return normalized || undefined
+}
+
+function joinSummary(...parts: Array<string | undefined>): string | undefined {
+  const values = parts.filter((part): part is string => !!compactText(part))
+  return values.length ? values.join(' / ') : undefined
+}
+
+function formatHumanName(names?: fhir4.HumanName[]): string | undefined {
+  const primary = names?.[0]
+  if (!primary) return undefined
+  return compactText(primary.text) || compactText(`${primary.family ?? ''}${primary.given?.join('') ?? ''}`)
+}
+
+function getIdentifierValue(resource?: { identifier?: fhir4.Identifier[] }): string | undefined {
+  return resource?.identifier?.find((identifier) => compactText(identifier.value))?.value
+}
+
+function getCodeableText(concept?: fhir4.CodeableConcept): string | undefined {
+  return compactText(concept?.text) || compactText(concept?.coding?.[0]?.display) || compactText(concept?.coding?.[0]?.code)
+}
+
+function formatQuantity(quantity?: fhir4.Quantity): string | undefined {
+  if (quantity?.value === undefined || quantity?.value === null) return undefined
+  return compactText(`${quantity.value}${quantity.unit ? ` ${quantity.unit}` : ''}`)
+}
+
+function formatShortDateTime(value?: string): string | undefined {
+  const normalized = compactText(value)
+  if (!normalized) return undefined
+
+  const matched = normalized.match(/^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2}))?/)
+  if (matched) {
+    const [, date, time] = matched
+    return `${date.replace(/-/g, '/')}${time ? ` ${time}` : ''}`
+  }
+
+  const parsed = new Date(normalized)
+  if (Number.isNaN(parsed.getTime())) return normalized
+
+  const pad = (part: number) => String(part).padStart(2, '0')
+  return `${parsed.getFullYear()}/${pad(parsed.getMonth() + 1)}/${pad(parsed.getDate())} ${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`
+}
+
+function getEncounterTypeLabel(code: string | undefined, t: (key: string) => string): string | undefined {
+  switch (code) {
+    case 'AMB':
+      return t('forms.encounter.type.options.ambulatory')
+    case 'EMER':
+      return t('forms.encounter.type.options.emergency')
+    case 'IMP':
+      return t('forms.encounter.type.options.inpatient')
+    default:
+      return undefined
+  }
+}
+
+function getCoverageTypeLabel(code: string | undefined, t: (key: string) => string): string | undefined {
+  switch (code) {
+    case 'EHCPOL':
+      return t('forms.coverage.type.options.EHCPOL')
+    case 'PAY':
+      return t('forms.coverage.type.options.PAY')
+    case 'PUBLICPOL':
+      return t('forms.coverage.type.options.PUBLICPOL')
+    default:
+      return undefined
+  }
+}
+
+function getMedicationRequestFrequency(resource?: fhir4.MedicationRequest): string | undefined {
+  return compactText(resource?.dosageInstruction?.[0]?.timing?.code?.text)
+    || compactText(resource?.dosageInstruction?.[0]?.timing?.code?.coding?.[0]?.display)
+    || compactText(resource?.dosageInstruction?.[0]?.timing?.code?.coding?.[0]?.code)
+}
+
+function getStepSummary(
+  key: ResourceKey,
+  resources: CreatedResources,
+  bundleId: string | undefined,
+  t: (key: string) => string
+): string | undefined {
+  switch (key) {
+    case 'organization':
+      return joinSummary(resources.organization?.name, getIdentifierValue(resources.organization))
+    case 'patient':
+      return joinSummary(formatHumanName(resources.patient?.name), getIdentifierValue(resources.patient))
+    case 'practitioner':
+      return joinSummary(formatHumanName(resources.practitioner?.name), getIdentifierValue(resources.practitioner))
+    case 'encounter':
+      return joinSummary(
+        getEncounterTypeLabel(resources.encounter?.class?.code, t) || compactText(resources.encounter?.class?.display),
+        formatShortDateTime(resources.encounter?.period?.start)
+      )
+    case 'condition':
+      return joinSummary(getCodeableText(resources.condition?.code), compactText(resources.condition?.code?.coding?.[0]?.code))
+    case 'observation':
+      return joinSummary(getCodeableText(resources.observation?.code), formatQuantity(resources.observation?.valueQuantity))
+    case 'coverage':
+      return joinSummary(
+        getCoverageTypeLabel(resources.coverage?.type?.coding?.[0]?.code, t) || getCodeableText(resources.coverage?.type),
+        getIdentifierValue(resources.coverage)
+      )
+    case 'medication':
+      return joinSummary(
+        compactText(resources.medication?.code?.text) || compactText(resources.medication?.code?.coding?.[0]?.display),
+        compactText(resources.medication?.code?.coding?.[0]?.code)
+      )
+    case 'medicationRequest': {
+      const medicationName =
+        compactText(resources.medicationRequest?.medicationReference?.display)
+        || compactText(resources.medication?.code?.text)
+        || compactText(resources.medication?.code?.coding?.[0]?.display)
+      const dose = formatQuantity(resources.medicationRequest?.dosageInstruction?.[0]?.doseAndRate?.[0]?.doseQuantity)
+      const frequency = getMedicationRequestFrequency(resources.medicationRequest)
+      const dosageSummary = [dose, frequency].filter((part): part is string => !!part).join(' · ')
+      return joinSummary(medicationName, dosageSummary || undefined)
+    }
+    case 'extension':
+      return joinSummary(
+        getCodeableText(resources.extension?.code),
+        compactText(resources.extension?.extension?.[0]?.valueString)
+      )
+    case 'composition':
+      return joinSummary(resources.composition?.title, bundleId)
+    default:
+      return undefined
+  }
+}
+
 export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProps): React.JSX.Element {
-  const { currentStep, setStep, resources, nextStep, prevStep, bundleId, submittingBundle, draftRevision, clearDraft } = useCreatorStore()
+  const {
+    currentStep,
+    setStep,
+    resources,
+    nextStep,
+    prevStep,
+    bundleId,
+    submittingBundle,
+    draftRevision,
+    clearDraft,
+    lastUpdatedResourceKey
+  } = useCreatorStore()
   const [showJsonPreview, setShowJsonPreview] = useState(false)
-  const [lastCreatedKey, setLastCreatedKey] = useState<string | null>(null)
   const [expandSeq, setExpandSeq] = useState(0)
+  const [jsonFontSize, setJsonFontSize] = useState<'sm' | 'md' | 'lg'>('sm')
+  const [showOnlyLastResource, setShowOnlyLastResource] = useState(false)
+  const [collapseSyncToken, setCollapseSyncToken] = useState(0)
+  const [collapseAll, setCollapseAll] = useState(false)
 
   function onResourceSuccess(key: string, resource: fhir4.Resource): void {
     useCreatorStore.getState().setResource(key as never, resource as never)
     clearDraft(key as keyof typeof resources)
-    setLastCreatedKey(key)
     setExpandSeq(s => s + 1)
+    setCollapseAll(false)
     setShowJsonPreview(true)
   }
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
+  const stepSummaries = useMemo(
+    () =>
+      RESOURCE_STEPS.reduce<Partial<Record<ResourceKey, string>>>((acc, step) => {
+        const summary = getStepSummary(step.key, resources, bundleId, t)
+        if (summary) acc[step.key] = summary
+        return acc
+      }, {}),
+    [bundleId, resources, t]
+  )
 
   function isStepComplete(index: number): boolean {
     const step = RESOURCE_STEPS[index]
@@ -80,6 +236,31 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
 
   const currentStepKey = RESOURCE_STEPS[currentStep].key
   const completedCount = RESOURCE_STEPS.filter((_, i) => isStepComplete(i)).length
+  const currentStepSummary = stepSummaries[currentStepKey]
+  const jsonEntries = useMemo(
+    () => Object.entries(resources).filter((entry): entry is [ResourceKey, NonNullable<CreatedResources[ResourceKey]>] => Boolean(entry[1])),
+    [resources]
+  )
+  const visibleJsonEntries = useMemo(() => {
+    if (showOnlyLastResource && lastUpdatedResourceKey && resources[lastUpdatedResourceKey]) {
+      return [[lastUpdatedResourceKey, resources[lastUpdatedResourceKey]!]] as Array<[ResourceKey, NonNullable<CreatedResources[ResourceKey]>]>
+    }
+    return jsonEntries
+  }, [jsonEntries, lastUpdatedResourceKey, resources, showOnlyLastResource])
+
+  function handleCollapseAll(): void {
+    setCollapseAll(true)
+    setCollapseSyncToken((token) => token + 1)
+  }
+
+  function handleToggleLastResourceView(): void {
+    const next = !showOnlyLastResource
+    setShowOnlyLastResource(next)
+    if (next) {
+      setCollapseAll(false)
+      setCollapseSyncToken((token) => token + 1)
+    }
+  }
 
   return (
     <div className="flex h-full gap-0">
@@ -98,7 +279,7 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
                 <button
                   key={step.key}
                   onClick={() => setStep(index)}
-                  className={`w-full text-left flex items-center gap-2 px-2 py-2 rounded-md text-xs transition-colors ${
+                  className={`w-full text-left flex items-start gap-2 px-2 py-2 rounded-md text-xs transition-colors ${
                     active
                       ? 'bg-primary text-primary-foreground'
                       : complete
@@ -115,10 +296,25 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
                     {(() => {
                       const label = t(`steps.${step.key}.label`)
                       const labelEn = t(`steps.${step.key}.labelEn`)
+                      const summary = complete ? stepSummaries[step.key] : undefined
                       return (
                         <>
                           <div className="font-medium truncate">{label}</div>
                           {label !== labelEn && <div className="text-[10px] opacity-60 truncate">{labelEn}</div>}
+                          {summary && (
+                            <div
+                              className={`mt-0.5 text-[10px] truncate ${
+                                active
+                                  ? 'text-primary-foreground/80'
+                                  : complete
+                                  ? 'opacity-70'
+                                  : 'text-muted-foreground'
+                              }`}
+                              title={summary}
+                            >
+                              {summary}
+                            </div>
+                          )}
                         </>
                       )
                     })()}
@@ -144,6 +340,11 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
                 <span className="text-sm text-muted-foreground">{t(`steps.${currentStepKey}.labelEn`)}</span>
               )}
             </div>
+            {currentStepSummary && (
+              <p className="mt-1 text-xs text-muted-foreground truncate" title={currentStepSummary}>
+                {currentStepSummary}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -188,20 +389,67 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
             {/* JSON Preview panel */}
             {showJsonPreview && (
               <div className="border-l overflow-auto p-4 bg-muted/35 transition-colors">
-                <p className="text-xs text-muted-foreground mb-3 font-mono">{t('stepper.jsonPanelTitle')}</p>
-                {Object.entries(resources).map(([key, resource]) =>
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground font-mono">{t('stepper.jsonPanelTitle')}</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {showOnlyLastResource && lastUpdatedResourceKey
+                        ? t('stepper.jsonShowingLast', { resource: t(`steps.${lastUpdatedResourceKey}.label`) })
+                        : t('stepper.jsonShowingAll', { count: visibleJsonEntries.length })}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-end gap-1.5">
+                    <div className="flex items-center rounded-md border border-border bg-background/70 p-0.5">
+                      {(['sm', 'md', 'lg'] as const).map((size) => (
+                        <Button
+                          key={size}
+                          type="button"
+                          variant={jsonFontSize === size ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-6 px-2 text-[10px]"
+                          onClick={() => setJsonFontSize(size)}
+                        >
+                          {t(`stepper.jsonFontSizes.${size}`)}
+                        </Button>
+                      ))}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-[10px]"
+                      onClick={handleCollapseAll}
+                      disabled={visibleJsonEntries.length === 0}
+                    >
+                      {t('stepper.jsonCollapseAll')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={showOnlyLastResource ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-6 px-2 text-[10px]"
+                      onClick={handleToggleLastResourceView}
+                      disabled={!lastUpdatedResourceKey || !resources[lastUpdatedResourceKey]}
+                    >
+                      {showOnlyLastResource ? t('stepper.jsonShowAllResources') : t('stepper.jsonShowLastOnly')}
+                    </Button>
+                  </div>
+                </div>
+                {visibleJsonEntries.map(([key, resource]) =>
                   resource ? (
                     <div key={key} className="mb-3">
                       <JsonViewer
-                        key={key === lastCreatedKey ? `${key}-${expandSeq}` : key}
+                        key={key === lastUpdatedResourceKey ? `${key}-${expandSeq}` : key}
                         data={resource}
                         title={key}
-                        defaultCollapsed={key !== lastCreatedKey}
+                        defaultCollapsed={collapseAll || key !== lastUpdatedResourceKey}
+                        collapseSync={{ value: collapseAll, token: collapseSyncToken }}
+                        fontSize={jsonFontSize}
                       />
                     </div>
                   ) : null
                 )}
-                {Object.values(resources).every(v => !v) && (
+                {visibleJsonEntries.length === 0 && (
                   <p className="text-muted-foreground text-xs">{t('stepper.jsonEmpty')}</p>
                 )}
               </div>

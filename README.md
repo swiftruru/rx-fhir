@@ -3,7 +3,7 @@
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.6-d4779a?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.7-d4779a?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/github/license/swiftruru/rx-fhir?style=flat-square&color=d4779a" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-8e8e93?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
@@ -78,6 +78,7 @@ Step-by-step wizard to build and submit a FHIR Document Bundle:
 Current Creator capabilities:
 
 - Stepper-based workflow with per-step progress
+- Stepper-based workflow with per-step progress and completion summaries
 - Form validation via `react-hook-form` + `zod`
 - Mock data fill for quick demos
 - Revisiting completed steps restores current resource values back into the form
@@ -88,8 +89,10 @@ Current Creator capabilities:
 - When an existing server-side resource is reused, the UI now shows an explicit reuse message instead of only a generic success state
 - Step success / reuse alerts now remain visible when you leave a completed step and come back later
 - Human-friendly FHIR `OperationOutcome` messages are shown first, with expandable raw error details for troubleshooting
+- Rich inline guidance is now included for higher-friction fields such as ICD-10, LOINC, medication route, and supplemental extensions
 - Live JSON preview of created resources
 - JSON preview now follows the active light / dark theme instead of staying fixed in a dark-only style
+- JSON preview now supports font-size switching, collapse-all, and filtering down to the latest created resource for demos
 - Final submission now includes a structured prescription summary review card before bundle assembly
 - Composition-first, then document bundle submission
 - After a successful bundle submission, Creator can jump directly into Consumer, auto-run the query, and focus the newly created bundle
@@ -104,8 +107,10 @@ Search and inspect FHIR Bundles on the configured server:
 - **Complex search**: patient identifier + author or organization
 - Recent-record magnifier prefills the active search tab instead of forcing a return to basic search
 - Complex search prefills patient identifier and available author / organization context from local submission history
+- Search conditions are now stored locally as recent searches, and any search can be pinned into favorites for quick reruns
 - Query URL display and multi-step trace for compatibility workarounds
 - Result list with patient, organization, diagnosis, and medication summary
+- Empty-result states now explain likely causes and suggest next actions based on the actual search mode
 - Structured detail view and raw JSON viewer
 - Supports Creator-to-Consumer handoff with automatic query prefill, auto-search, and newly created bundle focus
 

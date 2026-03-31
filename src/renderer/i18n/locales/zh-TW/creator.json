@@ -24,6 +24,16 @@
     "showJson": "顯示 JSON 預覽",
     "hideJson": "隱藏 JSON",
     "jsonPanelTitle": "已建立的 Resources JSON",
+    "jsonShowingAll": "目前顯示全部 {{count}} 筆資源",
+    "jsonShowingLast": "目前只顯示最後建立的資源：{{resource}}",
+    "jsonCollapseAll": "收合全部",
+    "jsonShowLastOnly": "只看最後建立資源",
+    "jsonShowAllResources": "顯示全部資源",
+    "jsonFontSizes": {
+      "sm": "小",
+      "md": "中",
+      "lg": "大"
+    },
     "jsonEmpty": "尚未建立任何 Resource",
     "unknownStep": "未知步驟"
   },
@@ -108,12 +118,14 @@
     },
     "condition": {
       "presetsTitle": "常用診斷碼（快速選擇）",
-      "icdCode":       { "label": "ICD-10 診斷碼", "placeholder": "例：J06.9",      "required": "請輸入 ICD-10 診斷碼" },
-      "diagnosisName": { "label": "診斷名稱",       "placeholder": "例：急性上呼吸道感染", "required": "請輸入診斷名稱" },
+      "presetsHint": "上方常用診斷可快速帶入；實際送出前仍建議依病歷內容確認 ICD-10 診斷碼。",
+      "icdCode":       { "label": "ICD-10 診斷碼", "placeholder": "例：J06.9",      "required": "請輸入 ICD-10 診斷碼", "hint": "請填標準 ICD-10 診斷碼，例如 J06.9、I10、E11.9。" },
+      "diagnosisName": { "label": "診斷名稱",       "placeholder": "例：急性上呼吸道感染", "required": "請輸入診斷名稱", "hint": "請輸入與 ICD-10 代碼對應的診斷名稱，例如「急性上呼吸道感染」。" },
       "success": "Condition 已成功建立！ID: {{id}}"
     },
     "observation": {
       "presetsTitle": "常用檢驗項目（快速選擇）",
+      "presetsHint": "LOINC 代碼用來標示檢驗或量測項目，建議優先使用標準代碼。",
       "presets": {
         "8867-4":  "心率",
         "8480-6":  "收縮壓",
@@ -122,10 +134,10 @@
         "2093-3":  "總膽固醇",
         "29463-7": "體重"
       },
-      "loincCode":  { "label": "LOINC 代碼", "placeholder": "例：8867-4",    "required": "請輸入 LOINC 代碼" },
-      "itemName":   { "label": "項目名稱",   "placeholder": "例：心率",       "required": "請輸入檢驗項目名稱" },
+      "loincCode":  { "label": "LOINC 代碼", "placeholder": "例：8867-4",    "required": "請輸入 LOINC 代碼", "hint": "請填標準 LOINC 代碼，例如 8867-4（心率）、8480-6（收縮壓）。" },
+      "itemName":   { "label": "項目名稱",   "placeholder": "例：心率",       "required": "請輸入檢驗項目名稱", "hint": "項目名稱應與 LOINC 代碼相對應，例如 8867-4 對應「心率」。" },
       "value":      { "label": "數值",       "placeholder": "例：80",         "required": "請輸入數值" },
-      "unit":       { "label": "單位",       "placeholder": "例：beats/min",  "required": "請輸入單位" },
+      "unit":       { "label": "單位",       "placeholder": "例：beats/min",  "required": "請輸入單位", "hint": "請使用常見醫療單位，例如 mmHg、mg/dL、kg。" },
       "status": {
         "label": "狀態",
         "options": {
@@ -187,12 +199,13 @@
     "medicationRequest": {
       "medicationPreview": "藥品：",
       "missingMedication": "請先完成步驟 8「藥品資訊」再建立處方箋。",
-      "doseValue": { "label": "劑量",   "placeholder": "例：500", "required": "請輸入劑量數值", "positive": "劑量必須大於 0" },
-      "doseUnit":  { "label": "單位",   "placeholder": "例：mg",  "required": "請輸入劑量單位" },
+      "doseValue": { "label": "劑量",   "placeholder": "例：500", "required": "請輸入劑量數值", "positive": "劑量必須大於 0", "hint": "請填單次給藥劑量數值，例如 500。" },
+      "doseUnit":  { "label": "單位",   "placeholder": "例：mg",  "required": "請輸入劑量單位", "hint": "請填對應單位，例如 mg、mL、tablet。" },
       "frequency": {
         "label": "給藥頻率",
         "placeholder": "選擇頻率",
         "required": "請選擇給藥頻率",
+        "hint": "若不確定縮寫，可直接參考下拉選單中的 QD、BID、TID、QID、PRN。",
         "options": {
           "QD":  "每日一次 (QD)",
           "BID": "每日兩次 (BID)",
@@ -205,6 +218,7 @@
         "label": "給藥途徑",
         "placeholder": "選擇給藥途徑",
         "required": "請選擇給藥途徑",
+        "hint": "給藥途徑會寫入標準路徑代碼，常見如口服（Oral）、靜脈注射（IV）。",
         "options": {
           "26643006": "口服 (Oral)",
           "47625008": "靜脈注射 (IV)",
@@ -214,16 +228,17 @@
         }
       },
       "durationDays": { "label": "給藥天數", "placeholder": "例：7" },
-      "note":         { "label": "用藥說明", "placeholder": "例：飯後服用" },
+      "note":         { "label": "用藥說明", "placeholder": "例：飯後服用", "hint": "可填寫病人看得懂的用藥說明，例如飯後服用、睡前服用。" },
       "success": "MedicationRequest 已成功建立！ID: {{id}}"
     },
     "extension": {
-      "codeCode":    { "label": "類型代碼",         "placeholder": "例：special-instruction", "required": "請輸入類型代碼" },
-      "codeDisplay": { "label": "類型名稱",         "placeholder": "例：特殊給藥指示",         "required": "請輸入類型名稱" },
-      "ext1Url":     { "label": "Extension URL (1)", "placeholder": "https://...",             "required": "請輸入 Extension URL" },
-      "ext1Value":   { "label": "Extension 值 (1)", "placeholder": "例：飯後服用",             "required": "請輸入 Extension 值" },
-      "ext2Url":     { "label": "Extension URL (2)", "placeholder": "https://...（選填）" },
-      "ext2Value":   { "label": "Extension 值 (2)", "placeholder": "（選填）" },
+      "introHint":   "補充資料適合放規格外但仍需保留的附加說明，例如特殊給藥指示或照護備註。",
+      "codeCode":    { "label": "類型代碼",         "placeholder": "例：special-instruction", "required": "請輸入類型代碼", "hint": "類型代碼可用簡短英文識別，例如 special-instruction。" },
+      "codeDisplay": { "label": "類型名稱",         "placeholder": "例：特殊給藥指示",         "required": "請輸入類型名稱", "hint": "類型名稱建議使用人類可讀的中文或英文名稱，例如「特殊給藥指示」。" },
+      "ext1Url":     { "label": "Extension URL (1)", "placeholder": "https://...",             "required": "請輸入 Extension URL", "hint": "請填這筆 Extension 的定義網址；若同一種附加資料重複使用，應固定使用同一個 URL。" },
+      "ext1Value":   { "label": "Extension 值 (1)", "placeholder": "例：飯後服用",             "required": "請輸入 Extension 值", "hint": "請填實際補充內容，例如「飯後30分鐘服用，避免與制酸劑併服」。" },
+      "ext2Url":     { "label": "Extension URL (2)", "placeholder": "https://...（選填）", "hint": "若還有第二組補充資料，可填另一個 Extension URL；沒有就留白。" },
+      "ext2Value":   { "label": "Extension 值 (2)", "placeholder": "（選填）", "hint": "第二組補充內容，可填備註、提醒或其他補充說明。" },
       "success":     "Basic (Extension) 已成功建立！ID: {{id}}"
     },
     "composition": {

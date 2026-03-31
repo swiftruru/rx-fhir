@@ -3,7 +3,7 @@
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.5-d4779a?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.6-d4779a?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/github/license/swiftruru/rx-fhir?style=flat-square&color=d4779a" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-8e8e93?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
@@ -250,12 +250,12 @@ This repository now follows a version-scoped release process:
 
 1. Create a changelog file in [`changelog/`](./changelog) named after the release tag, for example `v1.2.0.md`.
 2. Write only the changes introduced in that version.
-3. Push the matching Git tag, for example `v1.2.0`.
+3. Commit the changelog file before pushing the matching Git tag, for example `v1.2.0`.
 4. GitHub Actions will automatically build:
    - macOS app artifacts
    - Windows installer
    - Windows portable executable
-5. GitHub Release notes will use only that version's changelog file, so release descriptions stay focused and do not accumulate old history.
+5. GitHub Release notes will use only that version's changelog file from the tagged commit, so release descriptions stay focused and do not accumulate old history.
 
 ---
 

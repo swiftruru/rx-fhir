@@ -1,6 +1,6 @@
 {
   "name": "rx-fhir",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "℞ + FHIR = RxFHIR — 基於 TW Core 電子處方箋 Profile 的桌面應用程式",
   "author": "Yu-Ru Pan",
   "type": "module",

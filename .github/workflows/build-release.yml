@@ -44,7 +44,7 @@ jobs:
           npx electron-builder --mac dmg zip --x64 --publish never
 
       - name: Upload macOS artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: rxfhir-macos
           path: |
@@ -79,7 +79,7 @@ jobs:
           npx electron-builder --win nsis portable --x64 --publish never
 
       - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: rxfhir-windows
           path: |
@@ -100,6 +100,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
+          ref: ${{ github.ref }}
           fetch-depth: 0
 
       - name: Resolve release metadata
@@ -107,25 +108,29 @@ jobs:
           TAG_NAME: ${{ github.ref_name }}
         run: |
           CHANGELOG_FILE="changelog/${TAG_NAME}.md"
+          RELEASE_NOTES_FILE="${RUNNER_TEMP}/${TAG_NAME}-release-notes.md"
 
-          if [ ! -f "$CHANGELOG_FILE" ]; then
-            echo "::error file=${CHANGELOG_FILE}::Missing per-version changelog file."
+          if ! git cat-file -e "${GITHUB_SHA}:${CHANGELOG_FILE}" 2>/dev/null; then
+            echo "::error file=${CHANGELOG_FILE}::Missing per-version changelog file in tagged commit ${GITHUB_SHA}."
             echo "Create ${CHANGELOG_FILE} before pushing the release tag."
             exit 1
           fi
 
+          git show "${GITHUB_SHA}:${CHANGELOG_FILE}" > "$RELEASE_NOTES_FILE"
+
           echo "TAG_NAME=${TAG_NAME}" >> "$GITHUB_ENV"
           echo "CHANGELOG_FILE=${CHANGELOG_FILE}" >> "$GITHUB_ENV"
+          echo "RELEASE_NOTES_FILE=${RELEASE_NOTES_FILE}" >> "$GITHUB_ENV"
           echo "RELEASE_TITLE=RxFHIR ${TAG_NAME#v}" >> "$GITHUB_ENV"
 
       - name: Download macOS artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: rxfhir-macos
           path: release-assets/macos
 
       - name: Download Windows artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: rxfhir-windows
           path: release-assets/windows
@@ -136,12 +141,12 @@ jobs:
         run: |
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
             gh release upload "$TAG_NAME" release-assets/macos/* release-assets/windows/* --clobber
-            gh release edit "$TAG_NAME" --title "$RELEASE_TITLE" --notes-file "$CHANGELOG_FILE"
+            gh release edit "$TAG_NAME" --title "$RELEASE_TITLE" --notes-file "$RELEASE_NOTES_FILE"
           else
             gh release create "$TAG_NAME" \
               release-assets/macos/* \
               release-assets/windows/* \
               --title "$RELEASE_TITLE" \
-              --notes-file "$CHANGELOG_FILE" \
+              --notes-file "$RELEASE_NOTES_FILE" \
               --verify-tag
           fi

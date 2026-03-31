@@ -8,9 +8,11 @@ import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { postResource, putResource } from '../../../services/fhirClient'
+import { findOrCreate, putResource } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
 import { extensionMocks } from '../../../mocks/mockPools'
+
+const BASIC_EXTENSION_IDENTIFIER_SYSTEM = 'https://rxfhir.app/fhir/basic-extension-key'
 
 type FormData = {
   codeCode: string
@@ -65,6 +67,17 @@ export default function ExtensionForm({ onSuccess }: Props): React.JSX.Element {
     defaultValues: initialValues
   })
 
+  function buildExtensionIdentifierValue(data: FormData): string {
+    return JSON.stringify({
+      patient: resources.patient?.identifier?.[0]?.value ?? resources.patient?.id ?? '',
+      code: data.codeCode,
+      ext1Url: data.ext1Url,
+      ext1Value: data.ext1Value,
+      ext2Url: data.ext2Url ?? '',
+      ext2Value: data.ext2Value ?? ''
+    })
+  }
+
   async function onSubmit(data: FormData): Promise<void> {
     setStatus('loading')
     setErrorMsg(undefined)
@@ -78,6 +91,10 @@ export default function ExtensionForm({ onSuccess }: Props): React.JSX.Element {
 
       const resource: Omit<fhir4.Basic, 'id'> = {
         resourceType: 'Basic',
+        identifier: [{
+          system: BASIC_EXTENSION_IDENTIFIER_SYSTEM,
+          value: buildExtensionIdentifierValue(data)
+        }],
         code: {
           coding: [{
             system: 'https://twcore.mohw.gov.tw/ig/emr/CodeSystem/extension-type',
@@ -94,7 +111,13 @@ export default function ExtensionForm({ onSuccess }: Props): React.JSX.Element {
       const existingExtensionId = resultId ?? resources.extension?.id
       const created = existingExtensionId
         ? await putResource<fhir4.Basic>('Basic', existingExtensionId, resource)
-        : await postResource<fhir4.Basic>('Basic', resource)
+        : await findOrCreate<fhir4.Basic>(
+            'Basic',
+            {
+              identifier: `${BASIC_EXTENSION_IDENTIFIER_SYSTEM}|${buildExtensionIdentifierValue(data)}`
+            },
+            resource
+          )
       setResultId(created.id)
       setStatus('success')
       onSuccess(created)

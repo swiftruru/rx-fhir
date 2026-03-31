@@ -185,8 +185,8 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
 
             {/* JSON Preview panel */}
             {showJsonPreview && (
-              <div className="border-l overflow-auto p-4 bg-slate-950">
-                <p className="text-xs text-slate-400 mb-3 font-mono">{t('stepper.jsonPanelTitle')}</p>
+              <div className="border-l overflow-auto p-4 bg-muted/35 transition-colors">
+                <p className="text-xs text-muted-foreground mb-3 font-mono">{t('stepper.jsonPanelTitle')}</p>
                 {Object.entries(resources).map(([key, resource]) =>
                   resource ? (
                     <div key={key} className="mb-3">
@@ -200,7 +200,7 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
                   ) : null
                 )}
                 {Object.values(resources).every(v => !v) && (
-                  <p className="text-slate-500 text-xs">{t('stepper.jsonEmpty')}</p>
+                  <p className="text-muted-foreground text-xs">{t('stepper.jsonEmpty')}</p>
                 )}
               </div>
             )}

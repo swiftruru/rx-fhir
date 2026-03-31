@@ -9,9 +9,11 @@ import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { postResource, putResource } from '../../../services/fhirClient'
+import { findOrCreate, putResource } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
 import { observationMocks } from '../../../mocks/mockPools'
+
+const OBSERVATION_IDENTIFIER_SYSTEM = 'https://rxfhir.app/fhir/observation-key'
 
 const COMMON_OBS = [
   { loincCode: '8867-4',  unit: 'beats/min' },
@@ -80,12 +82,27 @@ export default function ObservationForm({ onSuccess }: Props): React.JSX.Element
     setValue('unit', obs.unit)
   }
 
+  function buildObservationIdentifierValue(data: FormData): string {
+    return JSON.stringify({
+      patient: resources.patient?.identifier?.[0]?.value ?? resources.patient?.id ?? '',
+      encounter: resources.encounter?.id ?? '',
+      loincCode: data.loincCode,
+      value: data.value,
+      unit: data.unit,
+      status: data.status
+    })
+  }
+
   async function onSubmit(data: FormData): Promise<void> {
     setStatus('loading')
     setErrorMsg(undefined)
     try {
       const resource: Omit<fhir4.Observation, 'id'> = {
         resourceType: 'Observation',
+        identifier: [{
+          system: OBSERVATION_IDENTIFIER_SYSTEM,
+          value: buildObservationIdentifierValue(data)
+        }],
         status: data.status,
         code: {
           coding: [{
@@ -114,7 +131,13 @@ export default function ObservationForm({ onSuccess }: Props): React.JSX.Element
       const existingObservationId = resultId ?? resources.observation?.id
       const created = existingObservationId
         ? await putResource<fhir4.Observation>('Observation', existingObservationId, resource)
-        : await postResource<fhir4.Observation>('Observation', resource)
+        : await findOrCreate<fhir4.Observation>(
+            'Observation',
+            {
+              identifier: `${OBSERVATION_IDENTIFIER_SYSTEM}|${buildObservationIdentifierValue(data)}`
+            },
+            resource
+          )
       setResultId(created.id)
       setStatus('success')
       onSuccess(created)

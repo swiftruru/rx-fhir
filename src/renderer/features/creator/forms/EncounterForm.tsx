@@ -9,9 +9,11 @@ import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { postResource, putResource } from '../../../services/fhirClient'
+import { findOrCreate, putResource } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
 import { encounterMocks } from '../../../mocks/mockPools'
+
+const ENCOUNTER_IDENTIFIER_SYSTEM = 'https://rxfhir.app/fhir/encounter-key'
 
 type FormData = {
   class: 'AMB' | 'EMER' | 'IMP'
@@ -83,6 +85,16 @@ export default function EncounterForm({ onSuccess }: Props): React.JSX.Element {
     return dt.length === 16 ? `${dt}:00` : dt
   }
 
+  function buildEncounterIdentifierValue(data: FormData): string {
+    return JSON.stringify({
+      patient: resources.patient?.identifier?.[0]?.value ?? resources.patient?.id ?? '',
+      organization: resources.organization?.identifier?.[0]?.value ?? resources.organization?.id ?? '',
+      class: data.class,
+      periodStart: toFhirDateTime(data.periodStart),
+      periodEnd: data.periodEnd ? toFhirDateTime(data.periodEnd) : ''
+    })
+  }
+
   async function onSubmit(data: FormData): Promise<void> {
     setStatus('loading')
     setErrorMsg(undefined)
@@ -90,6 +102,10 @@ export default function EncounterForm({ onSuccess }: Props): React.JSX.Element {
       const resource: Omit<fhir4.Encounter, 'id'> = {
         resourceType: 'Encounter',
         status: 'finished',
+        identifier: [{
+          system: ENCOUNTER_IDENTIFIER_SYSTEM,
+          value: buildEncounterIdentifierValue(data)
+        }],
         class: {
           system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
           code: data.class,
@@ -112,7 +128,13 @@ export default function EncounterForm({ onSuccess }: Props): React.JSX.Element {
       const existingEncounterId = resultId ?? resources.encounter?.id
       const created = existingEncounterId
         ? await putResource<fhir4.Encounter>('Encounter', existingEncounterId, resource)
-        : await postResource<fhir4.Encounter>('Encounter', resource)
+        : await findOrCreate<fhir4.Encounter>(
+            'Encounter',
+            {
+              identifier: `${ENCOUNTER_IDENTIFIER_SYSTEM}|${buildEncounterIdentifierValue(data)}`
+            },
+            resource
+          )
       setResultId(created.id)
       setStatus('success')
       onSuccess(created)

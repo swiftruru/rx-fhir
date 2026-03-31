@@ -9,9 +9,11 @@ import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { postResource, putResource } from '../../../services/fhirClient'
+import { findOrCreate, putResource } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
 import { medicationRequestMocks } from '../../../mocks/mockPools'
+
+const MEDICATION_REQUEST_IDENTIFIER_SYSTEM = 'https://rxfhir.app/fhir/medication-request-key'
 
 const ROUTE_CODES = ['26643006', '47625008', '78421000', '6064005', '46713006'] as const
 const FREQ_CODES = ['QD', 'BID', 'TID', 'QID', 'PRN'] as const
@@ -78,6 +80,21 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
   const selectedFreq = watch('frequency')
   const selectedRoute = watch('route')
 
+  function buildMedicationRequestIdentifierValue(data: FormData): string {
+    return JSON.stringify({
+      patient: resources.patient?.identifier?.[0]?.value ?? resources.patient?.id ?? '',
+      medication: resources.medication?.code?.coding?.[0]?.code ?? resources.medication?.id ?? '',
+      encounter: resources.encounter?.id ?? '',
+      requester: resources.practitioner?.id ?? '',
+      doseValue: data.doseValue,
+      doseUnit: data.doseUnit,
+      frequency: data.frequency,
+      route: data.route,
+      durationDays: data.durationDays ?? '',
+      note: data.note ?? ''
+    })
+  }
+
   async function onSubmit(data: FormData): Promise<void> {
     setStatus('loading')
     setErrorMsg(undefined)
@@ -119,6 +136,10 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
 
       const resource: Omit<fhir4.MedicationRequest, 'id'> = {
         resourceType: 'MedicationRequest',
+        identifier: [{
+          system: MEDICATION_REQUEST_IDENTIFIER_SYSTEM,
+          value: buildMedicationRequestIdentifierValue(data)
+        }],
         status: 'active',
         intent: 'order',
         medicationReference: {
@@ -149,7 +170,13 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
       const existingMedicationRequestId = resultId ?? resources.medicationRequest?.id
       const created = existingMedicationRequestId
         ? await putResource<fhir4.MedicationRequest>('MedicationRequest', existingMedicationRequestId, resource)
-        : await postResource<fhir4.MedicationRequest>('MedicationRequest', resource)
+        : await findOrCreate<fhir4.MedicationRequest>(
+            'MedicationRequest',
+            {
+              identifier: `${MEDICATION_REQUEST_IDENTIFIER_SYSTEM}|${buildMedicationRequestIdentifierValue(data)}`
+            },
+            resource
+          )
       setResultId(created.id)
       setStatus('success')
       onSuccess(created)

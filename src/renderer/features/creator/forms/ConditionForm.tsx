@@ -8,9 +8,11 @@ import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { postResource, putResource } from '../../../services/fhirClient'
+import { findOrCreate, putResource } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
 import { conditionMocks } from '../../../mocks/mockPools'
+
+const CONDITION_IDENTIFIER_SYSTEM = 'https://rxfhir.app/fhir/condition-key'
 
 const COMMON_ICD10 = [
   { code: 'J06.9', display: '急性上呼吸道感染' },
@@ -70,12 +72,25 @@ export default function ConditionForm({ onSuccess }: Props): React.JSX.Element {
     setValue('icdDisplay', display)
   }
 
+  function buildConditionIdentifierValue(data: FormData): string {
+    return JSON.stringify({
+      patient: resources.patient?.identifier?.[0]?.value ?? resources.patient?.id ?? '',
+      encounter: resources.encounter?.id ?? '',
+      icdCode: data.icdCode,
+      clinicalStatus: data.clinicalStatus
+    })
+  }
+
   async function onSubmit(data: FormData): Promise<void> {
     setStatus('loading')
     setErrorMsg(undefined)
     try {
       const resource: Omit<fhir4.Condition, 'id'> = {
         resourceType: 'Condition',
+        identifier: [{
+          system: CONDITION_IDENTIFIER_SYSTEM,
+          value: buildConditionIdentifierValue(data)
+        }],
         clinicalStatus: {
           coding: [{
             system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
@@ -103,7 +118,13 @@ export default function ConditionForm({ onSuccess }: Props): React.JSX.Element {
       const existingConditionId = resultId ?? resources.condition?.id
       const created = existingConditionId
         ? await putResource<fhir4.Condition>('Condition', existingConditionId, resource)
-        : await postResource<fhir4.Condition>('Condition', resource)
+        : await findOrCreate<fhir4.Condition>(
+            'Condition',
+            {
+              identifier: `${CONDITION_IDENTIFIER_SYSTEM}|${buildConditionIdentifierValue(data)}`
+            },
+            resource
+          )
       setResultId(created.id)
       setStatus('success')
       onSuccess(created)

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { JsonView, allExpanded, defaultStyles } from 'react-json-view-lite'
 import 'react-json-view-lite/dist/index.css'
 import { Copy, Check, ChevronDown, ChevronUp } from 'lucide-react'
@@ -20,6 +20,48 @@ export default function JsonViewer({
 }: JsonViewerProps): React.JSX.Element {
   const [copied, setCopied] = useState(false)
   const [collapsed, setCollapsed] = useState(defaultCollapsed)
+  const [isDark, setIsDark] = useState(() =>
+    typeof document !== 'undefined' ? document.documentElement.classList.contains('dark') : false
+  )
+
+  useEffect(() => {
+    const root = document.documentElement
+    const updateTheme = (): void => setIsDark(root.classList.contains('dark'))
+
+    updateTheme()
+    const observer = new MutationObserver(updateTheme)
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] })
+
+    return () => observer.disconnect()
+  }, [])
+
+  const jsonTheme = useMemo(() => ({
+    ...defaultStyles,
+    container: cn(
+      'font-mono text-[11px] leading-6',
+      isDark ? 'text-slate-100' : 'text-slate-700'
+    ),
+    basicChildStyle: 'ml-4',
+    label: isDark ? 'text-rose-300 mr-1' : 'text-rose-700 mr-1',
+    nullValue: 'text-muted-foreground',
+    undefinedValue: 'text-muted-foreground',
+    numberValue: isDark ? 'text-amber-300' : 'text-amber-700',
+    stringValue: isDark ? 'text-emerald-300' : 'text-emerald-700',
+    booleanValue: isDark ? 'text-fuchsia-300' : 'text-fuchsia-700',
+    otherValue: isDark ? 'text-slate-200' : 'text-slate-700',
+    punctuation: 'text-muted-foreground',
+    expandIcon: 'text-muted-foreground cursor-pointer',
+    collapseIcon: 'text-muted-foreground cursor-pointer',
+    noQuotesForStringValues: false
+  }), [isDark])
+
+  const headerClasses = isDark
+    ? 'bg-card border-border'
+    : 'bg-secondary/70 border-border'
+
+  const contentClasses = isDark
+    ? 'bg-background/95'
+    : 'bg-white/90'
 
   function handleCopy(): void {
     navigator.clipboard.writeText(JSON.stringify(data, null, 2))
@@ -30,12 +72,12 @@ export default function JsonViewer({
   return (
     <div className={cn('rounded-lg border border-border overflow-hidden', className)}>
       {/* Header bar */}
-      <div className="flex items-center justify-between px-3 py-2 bg-slate-800 border-b border-slate-700">
+      <div className={cn('flex items-center justify-between px-3 py-2 border-b transition-colors', headerClasses)}>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setCollapsed(!collapsed)}
-            className="text-slate-300 hover:text-white transition-colors flex items-center gap-1 text-xs"
+            className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 text-xs"
           >
             {collapsed ? (
               <ChevronDown className="h-3.5 w-3.5" />
@@ -49,36 +91,21 @@ export default function JsonViewer({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-6 w-6 text-slate-400 hover:text-white hover:bg-slate-700"
+          className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-background/70"
           onClick={handleCopy}
           title="複製 JSON"
         >
-          {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
         </Button>
       </div>
 
       {/* JSON content */}
       {!collapsed && (
-        <div className="bg-slate-900 p-3 overflow-auto max-h-[500px] text-xs">
+        <div className={cn('p-3 overflow-auto max-h-[500px] text-xs transition-colors', contentClasses)}>
           <JsonView
             data={data as object}
             shouldExpandNode={allExpanded}
-            style={{
-              ...defaultStyles,
-              container: 'font-mono text-xs',
-              basicChildStyle: 'ml-4',
-              label: 'text-blue-300 mr-1',
-              nullValue: 'text-gray-400',
-              undefinedValue: 'text-gray-400',
-              numberValue: 'text-orange-300',
-              stringValue: 'text-green-300',
-              booleanValue: 'text-purple-300',
-              otherValue: 'text-slate-200',
-              punctuation: 'text-slate-400',
-              expandIcon: 'text-slate-400 cursor-pointer',
-              collapseIcon: 'text-slate-400 cursor-pointer',
-              noQuotesForStringValues: false
-            }}
+            style={jsonTheme}
           />
         </div>
       )}

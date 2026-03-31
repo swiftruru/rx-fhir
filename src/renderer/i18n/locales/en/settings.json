@@ -22,7 +22,8 @@
     "tagline":     "℞ + FHIR = RxFHIR",
     "description": "Desktop application for Taiwan Core electronic prescription profiles",
     "spec":        "Based on MOHW EMR-IG Electronic Prescription 2.5 specification",
-    "version":     "Version 1.0.0 · Electron + React + FHIR R4",
+    "version":     "Version 1.0.1 · Electron + React + FHIR R4",
+    "advisorsNote": "Listed alphabetically by English name; no ranking implied.",
     "fields": {
       "author":      "Author",
       "affiliation": "Affiliation",
@@ -37,8 +38,8 @@
       "course":      "Introduction to Healthcare Information Systems"
     },
     "advisors": {
-      "lien": "Prof. Chen-Yueh Lien",
       "kuo":  "Prof. Chen-Tsung Kuo",
+      "lien": "Prof. Chen-Yueh Lien",
       "lee":  "Prof. Siang-Hao Lee"
     }
   }

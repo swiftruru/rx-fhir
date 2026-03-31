@@ -100,6 +100,7 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
         patientName: patient ? `${patient.name?.[0]?.family ?? ''}${patient.name?.[0]?.given?.[0] ?? ''}` : '',
         patientIdentifier: patient?.identifier?.[0]?.value ?? '',
         organizationName: org?.name,
+        organizationIdentifier: org?.identifier?.[0]?.value,
         practitionerName: prac ? `${prac.name?.[0]?.family ?? ''}${prac.name?.[0]?.given?.[0] ?? ''}` : undefined,
         conditionDisplay: cond?.code?.coding?.[0]?.display,
         submittedAt: new Date().toISOString(),

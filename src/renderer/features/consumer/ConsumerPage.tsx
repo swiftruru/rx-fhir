@@ -7,7 +7,18 @@ import RecentRecords from './RecentRecords'
 import type { BundleSummary } from '../../types/fhir.d'
 import type { SubmissionRecord } from '../../store/historyStore'
 
-export type SearchPrefill = { searchBy: 'identifier' | 'name'; value: string }
+export type SearchTab = 'basic' | 'date' | 'complex'
+
+export type SearchPrefill =
+  | { tab: 'basic'; searchBy: 'identifier' | 'name'; value: string }
+  | { tab: 'date'; identifier: string; date: string }
+  | {
+      tab: 'complex'
+      identifier: string
+      complexBy?: 'organization' | 'author'
+      orgId?: string
+      authorName?: string
+    }
 
 export default function ConsumerPage(): React.JSX.Element {
   const { t } = useTranslation('consumer')
@@ -15,6 +26,7 @@ export default function ConsumerPage(): React.JSX.Element {
   const [total, setTotal] = useState(0)
   const [selected, setSelected] = useState<BundleSummary | null>(null)
   const [hasSearched, setHasSearched] = useState(false)
+  const [activeTab, setActiveTab] = useState<SearchTab>('basic')
   const [prefill, setPrefill] = useState<SearchPrefill | null>(null)
 
   function handleResults(r: BundleSummary[], t: number): void {
@@ -24,13 +36,48 @@ export default function ConsumerPage(): React.JSX.Element {
     setHasSearched(true)
   }
 
-  function handleFill(rec: SubmissionRecord): void {
-    setPrefill({ searchBy: 'identifier', value: rec.patientIdentifier || rec.bundleId || '' })
+  function getSearchIdentifier(rec: SubmissionRecord): string {
+    return rec.patientIdentifier || rec.bundleId || ''
   }
 
-  function handleQuery(rec: SubmissionRecord): void {
-    const fill: SearchPrefill = { searchBy: 'identifier', value: rec.patientIdentifier || rec.bundleId || '' }
-    setPrefill(fill)
+  function getSearchDate(rec: SubmissionRecord): string {
+    return rec.submittedAt.slice(0, 10)
+  }
+
+  function handleFill(rec: SubmissionRecord): void {
+    const identifier = getSearchIdentifier(rec)
+
+    if (activeTab === 'date') {
+      setPrefill({ tab: 'date', identifier, date: getSearchDate(rec) })
+      return
+    }
+
+    if (activeTab === 'complex') {
+      if (rec.organizationIdentifier) {
+        setPrefill({
+          tab: 'complex',
+          identifier,
+          complexBy: 'organization',
+          orgId: rec.organizationIdentifier
+        })
+        return
+      }
+
+      if (rec.practitionerName) {
+        setPrefill({
+          tab: 'complex',
+          identifier,
+          complexBy: 'author',
+          authorName: rec.practitionerName
+        })
+        return
+      }
+
+      setPrefill({ tab: 'complex', identifier })
+      return
+    }
+
+    setPrefill({ tab: 'basic', searchBy: 'identifier', value: identifier })
   }
 
   return (
@@ -41,9 +88,15 @@ export default function ConsumerPage(): React.JSX.Element {
           <h1 className="text-base font-bold">{t('page.title')}</h1>
           <p className="text-xs text-muted-foreground mt-0.5">{t('page.description')}</p>
         </div>
-        <RecentRecords onFill={handleFill} onQuery={handleQuery} />
+        <RecentRecords onFill={handleFill} />
         <div className="flex-1 overflow-auto p-4">
-          <SearchForm onResults={handleResults} prefill={prefill} onPrefillConsumed={() => setPrefill(null)} />
+          <SearchForm
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onResults={handleResults}
+            prefill={prefill}
+            onPrefillConsumed={() => setPrefill(null)}
+          />
         </div>
       </div>
 

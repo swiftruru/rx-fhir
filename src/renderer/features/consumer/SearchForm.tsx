@@ -11,19 +11,26 @@ import { Alert, AlertDescription } from '../../components/ui/alert'
 import { searchBundles, buildSearchUrl, type QueryStep } from '../../services/fhirClient'
 import { extractSearchResults } from '../../services/searchService'
 import type { BundleSummary, SearchParams } from '../../types/fhir.d'
-import type { SearchPrefill } from './ConsumerPage'
+import type { SearchPrefill, SearchTab } from './ConsumerPage'
 import { consumerBasicMocks, consumerDateMocks, consumerComplexMocks } from '../../mocks/mockPools'
 
 interface Props {
+  activeTab: SearchTab
+  onTabChange: (tab: SearchTab) => void
   onResults: (results: BundleSummary[], total: number) => void
   prefill?: SearchPrefill | null
   onPrefillConsumed?: () => void
 }
 
-export default function SearchForm({ onResults, prefill, onPrefillConsumed }: Props): React.JSX.Element {
+export default function SearchForm({
+  activeTab,
+  onTabChange,
+  onResults,
+  prefill,
+  onPrefillConsumed
+}: Props): React.JSX.Element {
   const { t } = useTranslation('consumer')
   const { t: tc } = useTranslation('common')
-  const [activeTab, setActiveTab] = useState('basic')
   const [loading, setLoading] = useState(false)
   const [lastUrl, setLastUrl] = useState<string>()
   const [querySteps, setQuerySteps] = useState<QueryStep[]>([])
@@ -60,18 +67,41 @@ export default function SearchForm({ onResults, prefill, onPrefillConsumed }: Pr
 
   useEffect(() => {
     if (!prefill) return
-    basicForm.setValue('searchBy', prefill.searchBy)
-    basicForm.setValue('value', prefill.value)
-    setActiveTab('basic')
+
+    if (prefill.tab === 'basic') {
+      basicForm.setValue('searchBy', prefill.searchBy)
+      basicForm.setValue('value', prefill.value)
+    } else if (prefill.tab === 'date') {
+      dateForm.setValue('identifier', prefill.identifier)
+      dateForm.setValue('date', prefill.date)
+    } else {
+      complexForm.setValue('identifier', prefill.identifier)
+      if (prefill.complexBy) {
+        complexForm.setValue('complexBy', prefill.complexBy)
+      }
+      complexForm.setValue('orgId', prefill.orgId ?? '')
+      complexForm.setValue('authorName', prefill.authorName ?? '')
+    }
+
+    onTabChange(prefill.tab)
     onPrefillConsumed?.()
-  }, [prefill])
+  }, [basicForm, complexForm, dateForm, onPrefillConsumed, onTabChange, prefill])
+
+  function handleTabChange(value: string): void {
+    onTabChange(value as SearchTab)
+  }
 
   async function doSearch(params: SearchParams): Promise<void> {
     setLoading(true)
     setError(undefined)
     setQuerySteps([])
-    const isOrgComplex = params.mode === 'complex' && params.complexSearchBy === 'organization'
-    if (!isOrgComplex) {
+    const isClientFilteredComplex =
+      params.mode === 'complex' &&
+      (
+        (params.complexSearchBy === 'organization' && Boolean(params.organizationId)) ||
+        (params.complexSearchBy === 'author' && Boolean(params.authorName))
+      )
+    if (!isClientFilteredComplex) {
       setLastUrl(buildSearchUrl(params))
     } else {
       setLastUrl(undefined)
@@ -130,7 +160,7 @@ export default function SearchForm({ onResults, prefill, onPrefillConsumed }: Pr
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
         </Button>
       </div>
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="w-full">
           <TabsTrigger value="basic" className="flex-1">{t('search.tabs.basic')}</TabsTrigger>
           <TabsTrigger value="date" className="flex-1">{t('search.tabs.date')}</TabsTrigger>

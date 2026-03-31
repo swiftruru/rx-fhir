@@ -10,6 +10,7 @@ export interface SubmissionRecord {
   patientName: string
   patientIdentifier: string
   organizationName?: string
+  organizationIdentifier?: string
   practitionerName?: string
   conditionDisplay?: string
   submittedAt: string

@@ -3,7 +3,7 @@
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0-d4779a?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.1-d4779a?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/github/license/swiftruru/rx-fhir?style=flat-square&color=d4779a" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-8e8e93?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
@@ -91,6 +91,8 @@ Search and inspect FHIR Bundles on the configured server:
 - **Basic search**: patient identifier or patient name
 - **Date search**: patient identifier + bundle date
 - **Complex search**: patient identifier + author or organization
+- Recent-record magnifier prefills the active search tab instead of forcing a return to basic search
+- Complex search prefills patient identifier and available author / organization context from local submission history
 - Query URL display and multi-step trace for compatibility workarounds
 - Result list with patient, organization, diagnosis, and medication summary
 - Structured detail view and raw JSON viewer
@@ -114,10 +116,10 @@ The current search implementation is optimized for public HAPI FHIR server compa
 | Basic | identifier | `GET /Bundle?identifier={value}` |
 | Basic | name | `GET /Bundle?composition.subject.name={value}` |
 | Date | identifier + date | `GET /Bundle?identifier={id}&timestamp={date}` |
-| Complex | identifier + author | `GET /Bundle?identifier={id}&composition.author:Practitioner.name={author}` |
-| Complex | identifier + organization | resolve organization first, then fetch bundles by identifier, then filter on the client |
+| Complex | identifier + author | fetch bundles by identifier, then filter `Composition.author` / `Practitioner` on the client |
+| Complex | identifier + organization | resolve organization first, then fetch bundles by identifier, then filter `Composition.custodian` on the client |
 
-Note: this is not a strict 1:1 copy of the original assignment query examples. The implementation intentionally uses HAPI-compatible parameters and a client-side organization workaround to improve real-world operability on public demo servers.
+Note: this is not a strict 1:1 copy of the original assignment query examples. The implementation intentionally uses HAPI-compatible parameters and client-side workarounds for organization and author filtering to improve operability on public demo servers.
 
 ---
 

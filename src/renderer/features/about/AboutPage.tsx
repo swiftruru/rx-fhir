@@ -41,8 +41,9 @@ export default function AboutPage(): React.JSX.Element {
             {/* Advisors */}
             <div>
               <p className="text-xs text-muted-foreground mb-2">{t('about.fields.advisors')}</p>
+              <p className="text-[11px] text-muted-foreground/80 mb-2">{t('about.advisorsNote')}</p>
               <div className="flex flex-wrap gap-2">
-                {(['lien', 'kuo', 'lee'] as const).map(key => (
+                {(['kuo', 'lien', 'lee'] as const).map(key => (
                   <span key={key} className="text-xs px-3 py-1.5 rounded-full border border-border bg-muted/40 text-foreground">
                     {t(`about.advisors.${key}`)}
                   </span>

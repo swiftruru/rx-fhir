@@ -7,7 +7,6 @@ import { Badge } from '../../components/ui/badge'
 
 interface Props {
   onFill: (record: SubmissionRecord) => void
-  onQuery?: (record: SubmissionRecord) => void
 }
 
 export default function RecentRecords({ onFill }: Props): React.JSX.Element {

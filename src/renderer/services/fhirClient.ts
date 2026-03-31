@@ -78,6 +78,94 @@ export interface QueryStep {
   note?: string
 }
 
+function buildBundleSearchUrl(params: URLSearchParams): string {
+  const query = params.toString()
+  return query ? `${getFhirBaseUrl()}/Bundle?${query}` : `${getFhirBaseUrl()}/Bundle`
+}
+
+function getDocumentComposition(bundle: fhir4.Bundle): fhir4.Composition | undefined {
+  const composition = bundle.entry?.[0]?.resource
+  return composition?.resourceType === 'Composition' ? composition as fhir4.Composition : undefined
+}
+
+function normalizeReference(reference?: string): string | undefined {
+  if (!reference) return undefined
+
+  const trimmed = reference.trim()
+  if (!trimmed) return undefined
+  if (trimmed.startsWith('urn:uuid:')) return trimmed
+
+  const withoutHistory = trimmed.split('/_history/')[0]
+  const parts = withoutHistory.split('/').filter(Boolean)
+  if (parts.length < 2) return withoutHistory
+
+  return `${parts[parts.length - 2]}/${parts[parts.length - 1]}`
+}
+
+function resolveBundleResource<T extends fhir4.Resource>(
+  bundle: fhir4.Bundle,
+  resourceType: T['resourceType'],
+  reference?: string
+): T | undefined {
+  const normalizedReference = normalizeReference(reference)
+  if (!normalizedReference) return undefined
+
+  return bundle.entry?.find((entry) => {
+    const resource = entry.resource
+    if (!resource || resource.resourceType !== resourceType) return false
+    const resourceRef = resource.id ? `${resourceType}/${resource.id}` : undefined
+    const normalizedResourceRef = normalizeReference(resourceRef)
+    const normalizedFullUrl = normalizeReference(entry.fullUrl)
+    return normalizedReference === normalizedResourceRef || normalizedReference === normalizedFullUrl
+  })?.resource as T | undefined
+}
+
+function normalizeSearchText(value: string): string {
+  return value.trim().replace(/\s+/g, '').toLowerCase()
+}
+
+function getPractitionerSearchNames(practitioner: fhir4.Practitioner | undefined): string[] {
+  if (!practitioner) return []
+
+  return (practitioner.name ?? []).flatMap((name) => {
+    const candidates = [name.text]
+    const joined = `${name.family ?? ''}${name.given?.join('') ?? ''}`.trim()
+    if (joined) candidates.push(joined)
+    const spaced = [name.family, ...(name.given ?? [])].filter(Boolean).join(' ')
+    if (spaced) candidates.push(spaced)
+    return candidates.filter((candidate): candidate is string => Boolean(candidate))
+  })
+}
+
+function matchesAuthorName(bundle: fhir4.Bundle, authorName: string): boolean {
+  const composition = getDocumentComposition(bundle)
+  if (!composition?.author?.length) return false
+
+  const target = normalizeSearchText(authorName)
+  if (!target) return true
+
+  return composition.author.some((author) => {
+    const candidates = new Set<string>()
+    if (author.display) candidates.add(author.display)
+
+    const practitioner = resolveBundleResource<fhir4.Practitioner>(bundle, 'Practitioner', author.reference)
+    getPractitionerSearchNames(practitioner).forEach((name) => candidates.add(name))
+
+    if (!practitioner) {
+      bundle.entry
+        ?.filter((entry) => entry.resource?.resourceType === 'Practitioner')
+        .forEach((entry) => {
+          getPractitionerSearchNames(entry.resource as fhir4.Practitioner).forEach((name) => candidates.add(name))
+        })
+    }
+
+    return [...candidates].some((candidate) => {
+      const normalized = normalizeSearchText(candidate)
+      return normalized.includes(target) || target.includes(normalized)
+    })
+  })
+}
+
 export async function searchBundles(
   params: SearchParams,
   onStep?: (step: QueryStep) => void
@@ -99,7 +187,7 @@ export async function searchBundles(
     // fetch by identifier only, then filter client-side by custodian reference
     const qs = new URLSearchParams()
     if (params.identifier) qs.set('identifier', params.identifier)
-    const searchUrl = `${getFhirBaseUrl()}/Bundle?${qs.toString()}`
+    const searchUrl = buildBundleSearchUrl(qs)
     onStep?.({ step: 2, label: '② 查詢 Bundle', url: searchUrl, note: `(custodian chain 不支援，改用 identifier 撈回後過濾)` })
     const response = await fetch(searchUrl, { method: 'GET', headers: FHIR_HEADERS })
     if (!response.ok) {
@@ -117,6 +205,30 @@ export async function searchBundles(
       step: 3,
       label: '③ Client 端過濾',
       url: `Composition.custodian.reference = "${orgRef}"`,
+      note: `取得 ${allBundles.entry?.length ?? 0} 筆 → 符合 ${filtered.length} 筆`
+    })
+    return { ...allBundles, entry: filtered, total: filtered.length }
+  }
+
+  if (params.mode === 'complex' && params.complexSearchBy === 'author' && params.authorName) {
+    const qs = new URLSearchParams()
+    if (params.identifier) qs.set('identifier', params.identifier)
+    const searchUrl = buildBundleSearchUrl(qs)
+    onStep?.({ step: 1, label: '① 查詢 Bundle', url: searchUrl, note: `(author chain 不支援，改用 identifier 撈回後過濾)` })
+    const response = await fetch(searchUrl, { method: 'GET', headers: FHIR_HEADERS })
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Search failed (${response.status}): ${errorText}`)
+    }
+    const allBundles = await response.json() as fhir4.Bundle
+    const filtered = (allBundles.entry ?? []).filter((entry) => {
+      const inner = entry.resource as fhir4.Bundle | undefined
+      return inner?.resourceType === 'Bundle' && matchesAuthorName(inner, params.authorName!)
+    })
+    onStep?.({
+      step: 2,
+      label: '② Client 端過濾',
+      url: `Practitioner.name ~= "${params.authorName}"`,
       note: `取得 ${allBundles.entry?.length ?? 0} 筆 → 符合 ${filtered.length} 筆`
     })
     return { ...allBundles, entry: filtered, total: filtered.length }

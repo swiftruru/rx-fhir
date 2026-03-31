@@ -10,6 +10,7 @@ import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
 import { findOrCreate, putResource } from '../../../services/fhirClient'
+import { useCreatorStore } from '../../../store/creatorStore'
 import { useHistoryStore } from '../../../store/historyStore'
 import { useAppStore } from '../../../store/appStore'
 import { patientMocks } from '../../../mocks/mockPools'
@@ -27,6 +28,8 @@ interface Props {
 }
 
 export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
+  const existingPatient = useCreatorStore((s) => s.resources.patient as fhir4.Patient | undefined)
+  const existingPatientId = existingPatient?.id
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
   const addRecord = useHistoryStore((s) => s.addRecord)
@@ -42,7 +45,7 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
   }), [t])
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [resultId, setResultId] = useState<string>()
+  const [resultId, setResultId] = useState<string | undefined>(existingPatientId)
   const [errorMsg, setErrorMsg] = useState<string>()
 
   const mockIndexRef = useRef(0)
@@ -52,9 +55,17 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
     Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
   }
 
+  const initialValues = useMemo<Partial<FormData>>(() => ({
+    familyName: existingPatient?.name?.[0]?.family ?? '',
+    givenName: existingPatient?.name?.[0]?.given?.[0] ?? '',
+    studentId: existingPatient?.identifier?.[0]?.value ?? '',
+    gender: existingPatient?.gender as FormData['gender'] | undefined,
+    birthDate: existingPatient?.birthDate ?? ''
+  }), [existingPatient])
+
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { familyName: '', givenName: '', studentId: '', gender: undefined, birthDate: '' }
+    defaultValues: initialValues
   })
 
   const selectedGender = watch('gender')
@@ -76,8 +87,9 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
         birthDate: data.birthDate,
         meta: { profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Patient-EP'] }
       }
-      const created = resultId
-        ? await putResource<fhir4.Patient>('Patient', resultId, resource)
+      const patientId = resultId ?? existingPatientId
+      const created = patientId
+        ? await putResource<fhir4.Patient>('Patient', patientId, resource)
         : await findOrCreate<fhir4.Patient>(
             'Patient',
             { identifier: `https://www.moe.edu.tw/student-id|${data.studentId}` },

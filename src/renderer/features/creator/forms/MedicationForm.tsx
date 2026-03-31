@@ -10,6 +10,7 @@ import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
 import { postResource, putResource } from '../../../services/fhirClient'
+import { useCreatorStore } from '../../../store/creatorStore'
 import { medicationMocks } from '../../../mocks/mockPools'
 
 const COMMON_MEDS = [
@@ -40,6 +41,8 @@ interface Props {
 }
 
 export default function MedicationForm({ onSuccess }: Props): React.JSX.Element {
+  const existingMedication = useCreatorStore((s) => s.resources.medication as fhir4.Medication | undefined)
+  const existingMedicationId = existingMedication?.id
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
   const f = (k: string) => t(`forms.medication.${k}`)
@@ -52,7 +55,7 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
   }), [t])
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [resultId, setResultId] = useState<string>()
+  const [resultId, setResultId] = useState<string | undefined>(existingMedicationId)
   const [errorMsg, setErrorMsg] = useState<string>()
 
   const mockIndexRef = useRef(0)
@@ -62,9 +65,21 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
     Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
   }
 
+  const initialValues = useMemo<Partial<FormData>>(() => {
+    const existingSystem = existingMedication?.code?.coding?.[0]?.system
+    const existingCodeSystem = Object.entries(SYSTEM_MAP).find(([, value]) => value === existingSystem)?.[0] as FormData['codeSystem'] | undefined
+
+    return {
+      code: existingMedication?.code?.coding?.[0]?.code ?? '',
+      display: existingMedication?.code?.coding?.[0]?.display ?? existingMedication?.code?.text ?? '',
+      codeSystem: existingCodeSystem ?? 'atc',
+      form: existingMedication?.form?.coding?.[0]?.code ?? ''
+    }
+  }, [existingMedication])
+
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { code: '', display: '', codeSystem: 'atc', form: '' }
+    defaultValues: initialValues
   })
 
   const codeSystem = watch('codeSystem')
@@ -104,8 +119,9 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
           profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Medication-EP']
         }
       }
-      const created = resultId
-        ? await putResource<fhir4.Medication>('Medication', resultId, resource)
+      const medicationId = resultId ?? existingMedicationId
+      const created = medicationId
+        ? await putResource<fhir4.Medication>('Medication', medicationId, resource)
         : await postResource<fhir4.Medication>('Medication', resource)
       setResultId(created.id)
       setStatus('success')

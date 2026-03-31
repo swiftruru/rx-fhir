@@ -9,6 +9,7 @@ import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
 import { findOrCreate, putResource } from '../../../services/fhirClient'
+import { useCreatorStore } from '../../../store/creatorStore'
 import { practitionerMocks } from '../../../mocks/mockPools'
 
 type FormData = {
@@ -23,6 +24,8 @@ interface Props {
 }
 
 export default function PractitionerForm({ onSuccess }: Props): React.JSX.Element {
+  const existingPractitioner = useCreatorStore((s) => s.resources.practitioner as fhir4.Practitioner | undefined)
+  const existingPractitionerId = existingPractitioner?.id
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
   const f = (k: string) => t(`forms.practitioner.${k}`)
@@ -35,7 +38,7 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
   }), [t])
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [resultId, setResultId] = useState<string>()
+  const [resultId, setResultId] = useState<string | undefined>(existingPractitionerId)
   const [errorMsg, setErrorMsg] = useState<string>()
 
   const mockIndexRef = useRef(0)
@@ -45,9 +48,16 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
     Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
   }
 
+  const initialValues = useMemo<Partial<FormData>>(() => ({
+    familyName: existingPractitioner?.name?.[0]?.family ?? '',
+    givenName: existingPractitioner?.name?.[0]?.given?.[0] ?? '',
+    licenseNumber: existingPractitioner?.identifier?.[0]?.value ?? '',
+    qualification: existingPractitioner?.qualification?.[0]?.code?.text ?? ''
+  }), [existingPractitioner])
+
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { familyName: '', givenName: '', licenseNumber: '', qualification: '' }
+    defaultValues: initialValues
   })
 
   async function onSubmit(data: FormData): Promise<void> {
@@ -85,8 +95,9 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
           profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Practitioner-EP']
         }
       }
-      const created = resultId
-        ? await putResource<fhir4.Practitioner>('Practitioner', resultId, resource)
+      const practitionerId = resultId ?? existingPractitionerId
+      const created = practitionerId
+        ? await putResource<fhir4.Practitioner>('Practitioner', practitionerId, resource)
         : await findOrCreate<fhir4.Practitioner>(
             'Practitioner',
             { identifier: `https://www.mohw.gov.tw/practitioner-license|${data.licenseNumber}` },

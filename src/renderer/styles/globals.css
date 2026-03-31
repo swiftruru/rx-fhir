@@ -5,6 +5,8 @@
 @layer base {
   /* ── Light Mode: Sakura Mist ────────────────────────────────────────────── */
   :root {
+    --font-sans: "Noto Sans TC", "PingFang TC", "PingFang SC", "Hiragino Sans GB",
+      "Microsoft JhengHei UI", "Microsoft JhengHei", "Heiti TC", sans-serif;
     --background: 340 35% 98.5%;
     --foreground: 330 20% 17%;
     --card: 0 0% 100%;
@@ -72,12 +74,27 @@
 }
 
 @layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
   }
 }
 

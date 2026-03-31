@@ -21,6 +21,18 @@ type FormData = {
   date: string
 }
 
+function toDateTimeLocalValue(value?: string): string {
+  if (!value) return ''
+  const normalized = value.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/)?.[1]
+  if (normalized) return normalized
+
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return ''
+
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`
+}
+
 interface Props {
   onBundleSuccess: (bundleId: string) => void
 }
@@ -52,12 +64,14 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
     setValue('date', new Date().toISOString().slice(0, 16))
   }
 
+  const initialValues = useMemo<FormData>(() => ({
+    title: resources.composition?.title ?? f('docTitle.placeholder'),
+    date: toDateTimeLocalValue(resources.composition?.date) || new Date().toISOString().slice(0, 16)
+  }), [f, resources.composition])
+
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      title: f('docTitle.placeholder'),
-      date: new Date().toISOString().slice(0, 16)
-    }
+    defaultValues: initialValues
   })
 
   const formData = watch()

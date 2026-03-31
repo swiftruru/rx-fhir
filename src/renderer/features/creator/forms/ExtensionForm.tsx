@@ -41,7 +41,7 @@ export default function ExtensionForm({ onSuccess }: Props): React.JSX.Element {
   }), [t])
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [resultId, setResultId] = useState<string>()
+  const [resultId, setResultId] = useState<string | undefined>(resources.extension?.id)
   const [errorMsg, setErrorMsg] = useState<string>()
 
   const mockIndexRef = useRef(0)
@@ -51,9 +51,18 @@ export default function ExtensionForm({ onSuccess }: Props): React.JSX.Element {
     Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
   }
 
+  const initialValues = useMemo<Partial<FormData>>(() => ({
+    codeCode: resources.extension?.code?.coding?.[0]?.code ?? '',
+    codeDisplay: resources.extension?.code?.coding?.[0]?.display ?? resources.extension?.code?.text ?? '',
+    ext1Url: resources.extension?.extension?.[0]?.url ?? '',
+    ext1Value: resources.extension?.extension?.[0]?.valueString ?? '',
+    ext2Url: resources.extension?.extension?.[1]?.url ?? '',
+    ext2Value: resources.extension?.extension?.[1]?.valueString ?? ''
+  }), [resources.extension])
+
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { codeCode: '', codeDisplay: '', ext1Url: '', ext1Value: '', ext2Url: '', ext2Value: '' }
+    defaultValues: initialValues
   })
 
   async function onSubmit(data: FormData): Promise<void> {
@@ -82,8 +91,9 @@ export default function ExtensionForm({ onSuccess }: Props): React.JSX.Element {
           : undefined,
         extension: extensions
       }
-      const created = resultId
-        ? await putResource<fhir4.Basic>('Basic', resultId, resource)
+      const existingExtensionId = resultId ?? resources.extension?.id
+      const created = existingExtensionId
+        ? await putResource<fhir4.Basic>('Basic', existingExtensionId, resource)
         : await postResource<fhir4.Basic>('Basic', resource)
       setResultId(created.id)
       setStatus('success')

@@ -10,6 +10,7 @@ import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
 import { findOrCreate, putResource } from '../../../services/fhirClient'
+import { useCreatorStore } from '../../../store/creatorStore'
 import { organizationMocks } from '../../../mocks/mockPools'
 
 type FormData = { name: string; identifier: string; type: 'hospital' | 'clinic' | 'pharmacy' }
@@ -26,6 +27,8 @@ const TYPE_MAP = {
 }
 
 export default function OrganizationForm({ onSuccess, defaultValues }: Props): React.JSX.Element {
+  const existingOrganization = useCreatorStore((s) => s.resources.organization as fhir4.Organization | undefined)
+  const existingOrganizationId = existingOrganization?.id
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
   const f = (k: string) => t(`forms.organization.${k}`)
@@ -37,7 +40,7 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
   }), [t])
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [resultId, setResultId] = useState<string>()
+  const [resultId, setResultId] = useState<string | undefined>(existingOrganizationId)
   const [errorMsg, setErrorMsg] = useState<string>()
 
   const mockIndexRef = useRef(0)
@@ -47,9 +50,22 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
     Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
   }
 
+  const initialValues = useMemo<Partial<FormData>>(() => {
+    const existingType = Object.entries(TYPE_MAP).find(([, value]) => (
+      value.code === existingOrganization?.type?.[0]?.coding?.[0]?.code
+    ))?.[0] as FormData['type'] | undefined
+
+    return {
+      name: existingOrganization?.name ?? '',
+      identifier: existingOrganization?.identifier?.[0]?.value ?? '',
+      type: existingType,
+      ...defaultValues
+    }
+  }, [defaultValues, existingOrganization])
+
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: defaultValues ?? { name: '', identifier: '', type: undefined }
+    defaultValues: initialValues
   })
 
   const selectedType = watch('type')
@@ -68,8 +84,9 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
         identifier: [{ system: 'https://twcore.mohw.gov.tw/ig/emr/CodeSystem/organization-identifier', value: data.identifier }],
         meta: { profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Organization-EP'] }
       }
-      const created = resultId
-        ? await putResource<fhir4.Organization>('Organization', resultId, resource)
+      const organizationId = resultId ?? existingOrganizationId
+      const created = organizationId
+        ? await putResource<fhir4.Organization>('Organization', organizationId, resource)
         : await findOrCreate<fhir4.Organization>(
             'Organization',
             { identifier: `https://twcore.mohw.gov.tw/ig/emr/CodeSystem/organization-identifier|${data.identifier}` },

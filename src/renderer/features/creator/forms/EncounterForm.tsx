@@ -25,6 +25,18 @@ const CLASS_FHIR: Record<'AMB' | 'EMER' | 'IMP', string> = {
   IMP: 'Inpatient'
 }
 
+function toDateTimeLocalValue(value?: string): string {
+  if (!value) return ''
+  const normalized = value.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/)?.[1]
+  if (normalized) return normalized
+
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return ''
+
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`
+}
+
 interface Props {
   onSuccess: (resource: fhir4.Encounter) => void
 }
@@ -42,7 +54,7 @@ export default function EncounterForm({ onSuccess }: Props): React.JSX.Element {
   }), [t])
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [resultId, setResultId] = useState<string>()
+  const [resultId, setResultId] = useState<string | undefined>(resources.encounter?.id)
   const [errorMsg, setErrorMsg] = useState<string>()
 
   const mockIndexRef = useRef(0)
@@ -52,9 +64,15 @@ export default function EncounterForm({ onSuccess }: Props): React.JSX.Element {
     Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
   }
 
+  const initialValues = useMemo<Partial<FormData>>(() => ({
+    class: resources.encounter?.class?.code as FormData['class'] | undefined,
+    periodStart: toDateTimeLocalValue(resources.encounter?.period?.start),
+    periodEnd: toDateTimeLocalValue(resources.encounter?.period?.end)
+  }), [resources.encounter])
+
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { class: undefined, periodStart: '', periodEnd: '' }
+    defaultValues: initialValues
   })
 
   const selectedClass = watch('class')
@@ -91,8 +109,9 @@ export default function EncounterForm({ onSuccess }: Props): React.JSX.Element {
           profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Encounter-EP']
         }
       }
-      const created = resultId
-        ? await putResource<fhir4.Encounter>('Encounter', resultId, resource)
+      const existingEncounterId = resultId ?? resources.encounter?.id
+      const created = existingEncounterId
+        ? await putResource<fhir4.Encounter>('Encounter', existingEncounterId, resource)
         : await postResource<fhir4.Encounter>('Encounter', resource)
       setResultId(created.id)
       setStatus('success')

@@ -44,7 +44,7 @@ export default function ConditionForm({ onSuccess }: Props): React.JSX.Element {
   }), [t])
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [resultId, setResultId] = useState<string>()
+  const [resultId, setResultId] = useState<string | undefined>(resources.condition?.id)
   const [errorMsg, setErrorMsg] = useState<string>()
 
   const mockIndexRef = useRef(0)
@@ -54,9 +54,15 @@ export default function ConditionForm({ onSuccess }: Props): React.JSX.Element {
     Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
   }
 
+  const initialValues = useMemo<Partial<FormData>>(() => ({
+    icdCode: resources.condition?.code?.coding?.[0]?.code ?? '',
+    icdDisplay: resources.condition?.code?.coding?.[0]?.display ?? resources.condition?.code?.text ?? '',
+    clinicalStatus: resources.condition?.clinicalStatus?.coding?.[0]?.code as FormData['clinicalStatus'] | undefined
+  }), [resources.condition])
+
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { icdCode: '', icdDisplay: '', clinicalStatus: 'active' }
+    defaultValues: initialValues
   })
 
   function applyPreset(code: string, display: string): void {
@@ -94,8 +100,9 @@ export default function ConditionForm({ onSuccess }: Props): React.JSX.Element {
           profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Condition-EP']
         }
       }
-      const created = resultId
-        ? await putResource<fhir4.Condition>('Condition', resultId, resource)
+      const existingConditionId = resultId ?? resources.condition?.id
+      const created = existingConditionId
+        ? await putResource<fhir4.Condition>('Condition', existingConditionId, resource)
         : await postResource<fhir4.Condition>('Condition', resource)
       setResultId(created.id)
       setStatus('success')

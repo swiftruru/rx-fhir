@@ -43,7 +43,7 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
   }), [t])
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [resultId, setResultId] = useState<string>()
+  const [resultId, setResultId] = useState<string | undefined>(resources.coverage?.id)
   const [errorMsg, setErrorMsg] = useState<string>()
 
   const mockIndexRef = useRef(0)
@@ -53,9 +53,16 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
     Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
   }
 
+  const initialValues = useMemo<Partial<FormData>>(() => ({
+    type: resources.coverage?.type?.coding?.[0]?.code ?? '',
+    subscriberId: resources.coverage?.subscriberId ?? '',
+    periodStart: resources.coverage?.period?.start ?? '',
+    periodEnd: resources.coverage?.period?.end ?? ''
+  }), [resources.coverage])
+
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { type: '', subscriberId: '', periodStart: '', periodEnd: '' }
+    defaultValues: initialValues
   })
 
   const selectedType = watch('type')
@@ -93,8 +100,9 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
           profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Coverage-EP']
         }
       }
-      const created = resultId
-        ? await putResource<fhir4.Coverage>('Coverage', resultId, resource)
+      const existingCoverageId = resultId ?? resources.coverage?.id
+      const created = existingCoverageId
+        ? await putResource<fhir4.Coverage>('Coverage', existingCoverageId, resource)
         : await postResource<fhir4.Coverage>('Coverage', resource)
       setResultId(created.id)
       setStatus('success')

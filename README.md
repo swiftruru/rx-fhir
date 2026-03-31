@@ -3,7 +3,7 @@
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.1-d4779a?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.2-d4779a?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/github/license/swiftruru/rx-fhir?style=flat-square&color=d4779a" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-8e8e93?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
@@ -80,6 +80,8 @@ Current Creator capabilities:
 - Stepper-based workflow with per-step progress
 - Form validation via `react-hook-form` + `zod`
 - Mock data fill for quick demos
+- Revisiting completed steps restores current resource values back into the form
+- Re-submitting completed steps updates existing FHIR resources instead of duplicating them
 - Live JSON preview of created resources
 - Composition-first, then document bundle submission
 - Recent submission history stored locally for later query prefill
@@ -103,6 +105,7 @@ Search and inspect FHIR Bundles on the configured server:
 - Live server health check via `/metadata`
 - Light / Dark / System theme toggle
 - `zh-TW` / `en` language toggle
+- Embedded `Noto Sans TC` UI font for more consistent offline typography, especially on Windows
 - Custom macOS app naming, icon, and About window
 
 ---
@@ -131,6 +134,7 @@ Note: this is not a strict 1:1 copy of the original assignment query examples. T
 | Frontend | React 18 + TypeScript |
 | Build | electron-vite + Vite 5 |
 | UI | Tailwind CSS + shadcn/ui (Radix UI) |
+| Typography | Embedded Noto Sans TC |
 | State | Zustand |
 | Forms | react-hook-form + zod |
 | i18n | i18next + react-i18next |

@@ -49,7 +49,7 @@ export default function ObservationForm({ onSuccess }: Props): React.JSX.Element
   }), [t])
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [resultId, setResultId] = useState<string>()
+  const [resultId, setResultId] = useState<string | undefined>(resources.observation?.id)
   const [errorMsg, setErrorMsg] = useState<string>()
 
   const mockIndexRef = useRef(0)
@@ -59,9 +59,17 @@ export default function ObservationForm({ onSuccess }: Props): React.JSX.Element
     Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
   }
 
+  const initialValues = useMemo<Partial<FormData>>(() => ({
+    loincCode: resources.observation?.code?.coding?.[0]?.code ?? '',
+    display: resources.observation?.code?.coding?.[0]?.display ?? resources.observation?.code?.text ?? '',
+    value: resources.observation?.valueQuantity?.value,
+    unit: resources.observation?.valueQuantity?.unit ?? '',
+    status: resources.observation?.status as FormData['status'] | undefined
+  }), [resources.observation])
+
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { loincCode: '', display: '', value: undefined, unit: '', status: 'final' }
+    defaultValues: initialValues
   })
 
   const selectedStatus = watch('status')
@@ -103,8 +111,9 @@ export default function ObservationForm({ onSuccess }: Props): React.JSX.Element
           profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Observation-EP']
         }
       }
-      const created = resultId
-        ? await putResource<fhir4.Observation>('Observation', resultId, resource)
+      const existingObservationId = resultId ?? resources.observation?.id
+      const created = existingObservationId
+        ? await putResource<fhir4.Observation>('Observation', existingObservationId, resource)
         : await postResource<fhir4.Observation>('Observation', resource)
       setResultId(created.id)
       setStatus('success')

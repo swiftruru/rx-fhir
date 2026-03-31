@@ -45,7 +45,7 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
   }), [t])
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [resultId, setResultId] = useState<string>()
+  const [resultId, setResultId] = useState<string | undefined>(resources.medicationRequest?.id)
   const [errorMsg, setErrorMsg] = useState<string>()
 
   const mockIndexRef = useRef(0)
@@ -55,9 +55,24 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
     Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
   }
 
+  const initialValues = useMemo<Partial<FormData>>(() => {
+    const dosage = resources.medicationRequest?.dosageInstruction?.[0]
+    const doseQuantity = dosage?.doseAndRate?.[0]?.doseQuantity
+    const supplyDuration = resources.medicationRequest?.dispenseRequest?.expectedSupplyDuration?.value
+
+    return {
+      doseValue: doseQuantity?.value,
+      doseUnit: doseQuantity?.unit ?? 'mg',
+      frequency: dosage?.timing?.code?.coding?.[0]?.code ?? '',
+      route: dosage?.route?.coding?.[0]?.code ?? '',
+      durationDays: typeof supplyDuration === 'number' ? supplyDuration : undefined,
+      note: dosage?.patientInstruction ?? ''
+    }
+  }, [resources.medicationRequest])
+
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { doseValue: undefined, doseUnit: 'mg', frequency: '', route: '', durationDays: undefined, note: '' }
+    defaultValues: initialValues
   })
 
   const selectedFreq = watch('frequency')
@@ -131,8 +146,9 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
         }
       }
 
-      const created = resultId
-        ? await putResource<fhir4.MedicationRequest>('MedicationRequest', resultId, resource)
+      const existingMedicationRequestId = resultId ?? resources.medicationRequest?.id
+      const created = existingMedicationRequestId
+        ? await putResource<fhir4.MedicationRequest>('MedicationRequest', existingMedicationRequestId, resource)
         : await postResource<fhir4.MedicationRequest>('MedicationRequest', resource)
       setResultId(created.id)
       setStatus('success')

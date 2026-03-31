@@ -25,13 +25,14 @@ interface ResourceStepperProps {
 }
 
 export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProps): React.JSX.Element {
-  const { currentStep, setStep, resources, nextStep, prevStep, bundleId, submittingBundle } = useCreatorStore()
+  const { currentStep, setStep, resources, nextStep, prevStep, bundleId, submittingBundle, draftRevision, clearDraft } = useCreatorStore()
   const [showJsonPreview, setShowJsonPreview] = useState(false)
   const [lastCreatedKey, setLastCreatedKey] = useState<string | null>(null)
   const [expandSeq, setExpandSeq] = useState(0)
 
   function onResourceSuccess(key: string, resource: fhir4.Resource): void {
     useCreatorStore.getState().setResource(key as never, resource as never)
+    clearDraft(key as keyof typeof resources)
     setLastCreatedKey(key)
     setExpandSeq(s => s + 1)
     setShowJsonPreview(true)
@@ -47,30 +48,31 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
 
   function renderForm(): React.JSX.Element {
     const step = RESOURCE_STEPS[currentStep]
+    const formKey = `${step.key}-${draftRevision}`
 
     switch (step.key) {
       case 'organization':
-        return <OrganizationForm onSuccess={(r) => onResourceSuccess('organization', r)} />
+        return <OrganizationForm key={formKey} onSuccess={(r) => onResourceSuccess('organization', r)} />
       case 'patient':
-        return <PatientForm onSuccess={(r) => onResourceSuccess('patient', r)} />
+        return <PatientForm key={formKey} onSuccess={(r) => onResourceSuccess('patient', r)} />
       case 'practitioner':
-        return <PractitionerForm onSuccess={(r) => onResourceSuccess('practitioner', r)} />
+        return <PractitionerForm key={formKey} onSuccess={(r) => onResourceSuccess('practitioner', r)} />
       case 'encounter':
-        return <EncounterForm onSuccess={(r) => onResourceSuccess('encounter', r)} />
+        return <EncounterForm key={formKey} onSuccess={(r) => onResourceSuccess('encounter', r)} />
       case 'condition':
-        return <ConditionForm onSuccess={(r) => onResourceSuccess('condition', r)} />
+        return <ConditionForm key={formKey} onSuccess={(r) => onResourceSuccess('condition', r)} />
       case 'observation':
-        return <ObservationForm onSuccess={(r) => onResourceSuccess('observation', r)} />
+        return <ObservationForm key={formKey} onSuccess={(r) => onResourceSuccess('observation', r)} />
       case 'coverage':
-        return <CoverageForm onSuccess={(r) => onResourceSuccess('coverage', r)} />
+        return <CoverageForm key={formKey} onSuccess={(r) => onResourceSuccess('coverage', r)} />
       case 'medication':
-        return <MedicationForm onSuccess={(r) => onResourceSuccess('medication', r)} />
+        return <MedicationForm key={formKey} onSuccess={(r) => onResourceSuccess('medication', r)} />
       case 'medicationRequest':
-        return <MedicationRequestForm onSuccess={(r) => onResourceSuccess('medicationRequest', r)} />
+        return <MedicationRequestForm key={formKey} onSuccess={(r) => onResourceSuccess('medicationRequest', r)} />
       case 'extension':
-        return <ExtensionForm onSuccess={(r) => onResourceSuccess('extension', r)} />
+        return <ExtensionForm key={formKey} onSuccess={(r) => onResourceSuccess('extension', r)} />
       case 'composition':
-        return <CompositionForm onBundleSuccess={onBundleSuccess} />
+        return <CompositionForm key={formKey} onBundleSuccess={onBundleSuccess} />
       default:
         return <div>{t('stepper.unknownStep')}</div>
     }

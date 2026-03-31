@@ -18,10 +18,21 @@
     "unknown": "Not Tested"
   },
   "errors": {
-    "unknown": "An unknown error occurred"
+    "unknown": "An unknown error occurred",
+    "networkFailed": "Unable to connect to the FHIR Server. Please check the server URL and network connection.",
+    "fhirDuplicate": "This data already exists on the FHIR Server, and the server rejected creating a duplicate resource.",
+    "fhirValidation": "FHIR Server validation failed. Please verify that the submitted fields match the expected format.",
+    "fhirForbidden": "The FHIR Server rejected this operation. Please verify server permissions or configuration.",
+    "fhirNotFound": "The FHIR Server could not find the referenced resource. Please verify the submitted references.",
+    "fhirRequestFailed": "The FHIR Server returned an error ({{status}}). Please review the input and expand the raw error if needed.",
+    "serverMessageLabel": "Server message: {{message}}",
+    "showRaw": "Show Raw Error",
+    "hideRaw": "Hide Raw Error",
+    "rawLabel": "Raw Error"
   },
   "fhir": {
-    "resourceCreated": "{{resourceType}} created successfully! ID: {{id}}"
+    "resourceCreated": "{{resourceType}} created successfully! ID: {{id}}",
+    "resourceReused": "Reused existing {{resourceType}}. ID: {{id}}"
   },
   "theme": {
     "light": "Light",

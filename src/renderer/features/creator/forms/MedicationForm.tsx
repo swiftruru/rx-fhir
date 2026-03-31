@@ -2,14 +2,16 @@ import { useState, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, Loader2, AlertCircle, Wand2 } from 'lucide-react'
+import { CheckCircle2, Loader2, Wand2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { findOrCreate, putResource } from '../../../services/fhirClient'
+import FhirErrorAlert from '../../../components/FhirErrorAlert'
+import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
+import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
 import { medicationMocks } from '../../../mocks/mockPools'
 
@@ -43,6 +45,10 @@ interface Props {
 export default function MedicationForm({ onSuccess }: Props): React.JSX.Element {
   const existingMedication = useCreatorStore((s) => s.resources.medication as fhir4.Medication | undefined)
   const existingMedicationId = existingMedication?.id
+  const setFeedback = useCreatorStore((s) => s.setFeedback)
+  const clearFeedback = useCreatorStore((s) => s.clearFeedback)
+  const persistedFeedback = useCreatorStore((s) => s.feedbacks.medication)
+  const draftValues = useCreatorStore((s) => s.drafts.medication as Partial<FormData> | undefined)
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
   const f = (k: string) => t(`forms.medication.${k}`)
@@ -56,7 +62,11 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [resultId, setResultId] = useState<string | undefined>(existingMedicationId)
+  const [saveOutcome, setSaveOutcome] = useState<'created' | 'reused'>('created')
   const [errorMsg, setErrorMsg] = useState<string>()
+  const feedback = status === 'success' && resultId
+    ? { id: resultId, outcome: saveOutcome }
+    : persistedFeedback
 
   const mockIndexRef = useRef(0)
   function fillMock(): void {
@@ -69,19 +79,20 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
     const existingSystem = existingMedication?.code?.coding?.[0]?.system
     const existingCodeSystem = Object.entries(SYSTEM_MAP).find(([, value]) => value === existingSystem)?.[0] as FormData['codeSystem'] | undefined
 
-    return {
+    return mergeDraftValues({
       code: existingMedication?.code?.coding?.[0]?.code ?? '',
       display: existingMedication?.code?.coding?.[0]?.display ?? existingMedication?.code?.text ?? '',
       codeSystem: existingCodeSystem ?? 'atc',
       form: existingMedication?.form?.coding?.[0]?.code ?? ''
-    }
-  }, [existingMedication])
+    }, draftValues)
+  }, [draftValues, existingMedication])
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: initialValues
   })
 
+  useCreatorDraftAutosave('medication', watch)
   const codeSystem = watch('codeSystem')
   const selectedForm = watch('form')
 
@@ -93,6 +104,7 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
   async function onSubmit(data: FormData): Promise<void> {
     setStatus('loading')
     setErrorMsg(undefined)
+    clearFeedback('medication')
     try {
       const formCode = data.form as DoseFormCode
       const formDisplay = t(`forms.medication.form.options.${formCode}`)
@@ -121,15 +133,26 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
       }
       const medicationId = resultId ?? existingMedicationId
       const medicationCodeSystem = SYSTEM_MAP[data.codeSystem]
+      let reused = false
       const created = medicationId
         ? await putResource<fhir4.Medication>('Medication', medicationId, resource)
-        : await findOrCreate<fhir4.Medication>(
-            'Medication',
-            { code: `${medicationCodeSystem}|${data.code}` },
-            resource
-          )
+        : await (async () => {
+            const result = await findOrCreateDetailed<fhir4.Medication>(
+              'Medication',
+              { code: `${medicationCodeSystem}|${data.code}` },
+              resource
+            )
+            reused = result.reused
+            return result.resource
+          })()
+      if (!created.id) throw new Error(tc('errors.unknown'))
+      setSaveOutcome(reused ? 'reused' : 'created')
       setResultId(created.id)
       setStatus('success')
+      setFeedback('medication', {
+        id: created.id,
+        outcome: reused ? 'reused' : 'created'
+      })
       onSuccess(created)
     } catch (e) {
       setStatus('error')
@@ -201,21 +224,22 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
         {errors.form && <p className="text-xs text-destructive">{errors.form.message}</p>}
       </div>
 
-      {status === 'success' && (
-        <Alert variant="success">
+      {feedback && status !== 'loading' && (
+        <Alert variant={feedback.outcome === 'reused' ? 'info' : 'success'}>
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
-            {f('success').replace('{{id}}', '')}
-            <code className="font-mono text-xs">{resultId}</code>
+            {feedback.outcome === 'reused'
+              ? tc('fhir.resourceReused', { resourceType: 'Medication', id: feedback.id })
+              : (
+                  <>
+                    {f('success').replace('{{id}}', '')}
+                    <code className="font-mono text-xs">{feedback.id}</code>
+                  </>
+                )}
           </AlertDescription>
         </Alert>
       )}
-      {status === 'error' && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{errorMsg}</AlertDescription>
-        </Alert>
-      )}
+      {status === 'error' && <FhirErrorAlert error={errorMsg} />}
 
       <Button type="submit" disabled={status === 'loading'} variant={status === 'success' ? 'outline' : 'default'} className="w-full">
         {status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}

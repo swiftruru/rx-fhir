@@ -5,3 +5,4 @@ out
 *.local
 build/icon.iconset/
 RxFHIR-Spec.md
+.claude/

@@ -2,14 +2,16 @@ import { useState, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, Loader2, AlertCircle, Wand2 } from 'lucide-react'
+import { CheckCircle2, Loader2, Wand2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { findOrCreate, putResource } from '../../../services/fhirClient'
+import FhirErrorAlert from '../../../components/FhirErrorAlert'
+import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
+import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
 import { medicationRequestMocks } from '../../../mocks/mockPools'
 
@@ -32,7 +34,9 @@ interface Props {
 }
 
 export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.Element {
-  const { resources } = useCreatorStore()
+  const { resources, setFeedback, clearFeedback } = useCreatorStore()
+  const draftValues = useCreatorStore((s) => s.drafts.medicationRequest as Partial<FormData> | undefined)
+  const persistedFeedback = useCreatorStore((s) => s.feedbacks.medicationRequest)
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
   const f = (k: string) => t(`forms.medicationRequest.${k}`)
@@ -48,7 +52,11 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [resultId, setResultId] = useState<string | undefined>(resources.medicationRequest?.id)
+  const [saveOutcome, setSaveOutcome] = useState<'created' | 'reused'>('created')
   const [errorMsg, setErrorMsg] = useState<string>()
+  const feedback = status === 'success' && resultId
+    ? { id: resultId, outcome: saveOutcome }
+    : persistedFeedback
 
   const mockIndexRef = useRef(0)
   function fillMock(): void {
@@ -62,21 +70,22 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
     const doseQuantity = dosage?.doseAndRate?.[0]?.doseQuantity
     const supplyDuration = resources.medicationRequest?.dispenseRequest?.expectedSupplyDuration?.value
 
-    return {
+    return mergeDraftValues({
       doseValue: doseQuantity?.value,
       doseUnit: doseQuantity?.unit ?? 'mg',
       frequency: dosage?.timing?.code?.coding?.[0]?.code ?? '',
       route: dosage?.route?.coding?.[0]?.code ?? '',
       durationDays: typeof supplyDuration === 'number' ? supplyDuration : undefined,
       note: dosage?.patientInstruction ?? ''
-    }
-  }, [resources.medicationRequest])
+    }, draftValues)
+  }, [draftValues, resources.medicationRequest])
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: initialValues
   })
 
+  useCreatorDraftAutosave('medicationRequest', watch)
   const selectedFreq = watch('frequency')
   const selectedRoute = watch('route')
 
@@ -98,6 +107,7 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
   async function onSubmit(data: FormData): Promise<void> {
     setStatus('loading')
     setErrorMsg(undefined)
+    clearFeedback('medicationRequest')
     try {
       if (!resources.medication) throw new Error(f('missingMedication'))
       if (!resources.patient) throw new Error(tc('errors.unknown'))
@@ -168,17 +178,28 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
       }
 
       const existingMedicationRequestId = resultId ?? resources.medicationRequest?.id
+      let reused = false
       const created = existingMedicationRequestId
         ? await putResource<fhir4.MedicationRequest>('MedicationRequest', existingMedicationRequestId, resource)
-        : await findOrCreate<fhir4.MedicationRequest>(
-            'MedicationRequest',
-            {
-              identifier: `${MEDICATION_REQUEST_IDENTIFIER_SYSTEM}|${buildMedicationRequestIdentifierValue(data)}`
-            },
-            resource
-          )
+        : await (async () => {
+            const result = await findOrCreateDetailed<fhir4.MedicationRequest>(
+              'MedicationRequest',
+              {
+                identifier: `${MEDICATION_REQUEST_IDENTIFIER_SYSTEM}|${buildMedicationRequestIdentifierValue(data)}`
+              },
+              resource
+            )
+            reused = result.reused
+            return result.resource
+          })()
+      if (!created.id) throw new Error(tc('errors.unknown'))
+      setSaveOutcome(reused ? 'reused' : 'created')
       setResultId(created.id)
       setStatus('success')
+      setFeedback('medicationRequest', {
+        id: created.id,
+        outcome: reused ? 'reused' : 'created'
+      })
       onSuccess(created)
     } catch (e) {
       setStatus('error')
@@ -258,21 +279,22 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
         </div>
       </div>
 
-      {status === 'success' && (
-        <Alert variant="success">
+      {feedback && status !== 'loading' && (
+        <Alert variant={feedback.outcome === 'reused' ? 'info' : 'success'}>
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
-            {f('success').replace('{{id}}', '')}
-            <code className="font-mono text-xs">{resultId}</code>
+            {feedback.outcome === 'reused'
+              ? tc('fhir.resourceReused', { resourceType: 'MedicationRequest', id: feedback.id })
+              : (
+                  <>
+                    {f('success').replace('{{id}}', '')}
+                    <code className="font-mono text-xs">{feedback.id}</code>
+                  </>
+                )}
           </AlertDescription>
         </Alert>
       )}
-      {status === 'error' && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{errorMsg}</AlertDescription>
-        </Alert>
-      )}
+      {status === 'error' && <FhirErrorAlert error={errorMsg} />}
 
       <Button type="submit" disabled={status === 'loading' || !resources.medication} className="w-full">
         {status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}

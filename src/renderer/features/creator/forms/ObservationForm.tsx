@@ -2,14 +2,16 @@ import { useState, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, Loader2, AlertCircle, Wand2 } from 'lucide-react'
+import { CheckCircle2, Loader2, Wand2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { findOrCreate, putResource } from '../../../services/fhirClient'
+import FhirErrorAlert from '../../../components/FhirErrorAlert'
+import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
+import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
 import { observationMocks } from '../../../mocks/mockPools'
 
@@ -37,7 +39,9 @@ interface Props {
 }
 
 export default function ObservationForm({ onSuccess }: Props): React.JSX.Element {
-  const { resources } = useCreatorStore()
+  const { resources, setFeedback, clearFeedback } = useCreatorStore()
+  const draftValues = useCreatorStore((s) => s.drafts.observation as Partial<FormData> | undefined)
+  const persistedFeedback = useCreatorStore((s) => s.feedbacks.observation)
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
   const f = (k: string) => t(`forms.observation.${k}`)
@@ -52,7 +56,11 @@ export default function ObservationForm({ onSuccess }: Props): React.JSX.Element
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [resultId, setResultId] = useState<string | undefined>(resources.observation?.id)
+  const [saveOutcome, setSaveOutcome] = useState<'created' | 'reused'>('created')
   const [errorMsg, setErrorMsg] = useState<string>()
+  const feedback = status === 'success' && resultId
+    ? { id: resultId, outcome: saveOutcome }
+    : persistedFeedback
 
   const mockIndexRef = useRef(0)
   function fillMock(): void {
@@ -61,19 +69,20 @@ export default function ObservationForm({ onSuccess }: Props): React.JSX.Element
     Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
   }
 
-  const initialValues = useMemo<Partial<FormData>>(() => ({
+  const initialValues = useMemo<Partial<FormData>>(() => mergeDraftValues({
     loincCode: resources.observation?.code?.coding?.[0]?.code ?? '',
     display: resources.observation?.code?.coding?.[0]?.display ?? resources.observation?.code?.text ?? '',
     value: resources.observation?.valueQuantity?.value,
     unit: resources.observation?.valueQuantity?.unit ?? '',
     status: resources.observation?.status as FormData['status'] | undefined
-  }), [resources.observation])
+  }, draftValues), [draftValues, resources.observation])
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: initialValues
   })
 
+  useCreatorDraftAutosave('observation', watch)
   const selectedStatus = watch('status')
 
   function applyPreset(obs: (typeof COMMON_OBS)[0]): void {
@@ -96,6 +105,7 @@ export default function ObservationForm({ onSuccess }: Props): React.JSX.Element
   async function onSubmit(data: FormData): Promise<void> {
     setStatus('loading')
     setErrorMsg(undefined)
+    clearFeedback('observation')
     try {
       const resource: Omit<fhir4.Observation, 'id'> = {
         resourceType: 'Observation',
@@ -129,17 +139,28 @@ export default function ObservationForm({ onSuccess }: Props): React.JSX.Element
         }
       }
       const existingObservationId = resultId ?? resources.observation?.id
+      let reused = false
       const created = existingObservationId
         ? await putResource<fhir4.Observation>('Observation', existingObservationId, resource)
-        : await findOrCreate<fhir4.Observation>(
-            'Observation',
-            {
-              identifier: `${OBSERVATION_IDENTIFIER_SYSTEM}|${buildObservationIdentifierValue(data)}`
-            },
-            resource
-          )
+        : await (async () => {
+            const result = await findOrCreateDetailed<fhir4.Observation>(
+              'Observation',
+              {
+                identifier: `${OBSERVATION_IDENTIFIER_SYSTEM}|${buildObservationIdentifierValue(data)}`
+              },
+              resource
+            )
+            reused = result.reused
+            return result.resource
+          })()
+      if (!created.id) throw new Error(tc('errors.unknown'))
+      setSaveOutcome(reused ? 'reused' : 'created')
       setResultId(created.id)
       setStatus('success')
+      setFeedback('observation', {
+        id: created.id,
+        outcome: reused ? 'reused' : 'created'
+      })
       onSuccess(created)
     } catch (e) {
       setStatus('error')
@@ -210,21 +231,22 @@ export default function ObservationForm({ onSuccess }: Props): React.JSX.Element
         </Select>
       </div>
 
-      {status === 'success' && (
-        <Alert variant="success">
+      {feedback && status !== 'loading' && (
+        <Alert variant={feedback.outcome === 'reused' ? 'info' : 'success'}>
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
-            {f('success').replace('{{id}}', '')}
-            <code className="font-mono text-xs">{resultId}</code>
+            {feedback.outcome === 'reused'
+              ? tc('fhir.resourceReused', { resourceType: 'Observation', id: feedback.id })
+              : (
+                  <>
+                    {f('success').replace('{{id}}', '')}
+                    <code className="font-mono text-xs">{feedback.id}</code>
+                  </>
+                )}
           </AlertDescription>
         </Alert>
       )}
-      {status === 'error' && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{errorMsg}</AlertDescription>
-        </Alert>
-      )}
+      {status === 'error' && <FhirErrorAlert error={errorMsg} />}
 
       <Button type="submit" disabled={status === 'loading'} variant={status === 'success' ? 'outline' : 'default'} className="w-full">
         {status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}

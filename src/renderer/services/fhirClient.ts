@@ -36,21 +36,41 @@ export async function postResource<T extends fhir4.Resource>(
  * Search for an existing resource; if found return it, otherwise POST a new one.
  * Avoids custom headers (If-None-Exist) that trigger CORS preflight failures.
  */
-export async function findOrCreate<T extends fhir4.Resource>(
+export interface FindOrCreateResult<T extends fhir4.Resource> {
+  resource: T
+  reused: boolean
+}
+
+export async function findOrCreateDetailed<T extends fhir4.Resource>(
   resourceType: string,
   searchParams: Record<string, string>,
   body: Omit<T, 'id'>
-): Promise<T> {
+): Promise<FindOrCreateResult<T>> {
   const qs = new URLSearchParams(searchParams)
   const searchUrl = `${getFhirBaseUrl()}/${resourceType}?${qs}`
   const searchRes = await fetch(searchUrl, { method: 'GET', headers: FHIR_HEADERS })
   if (searchRes.ok) {
     const bundle = await searchRes.json() as fhir4.Bundle
     if (bundle.entry && bundle.entry.length > 0) {
-      return bundle.entry[0].resource as T
+      return {
+        resource: bundle.entry[0].resource as T,
+        reused: true
+      }
     }
   }
-  return postResource<T>(resourceType, body)
+  return {
+    resource: await postResource<T>(resourceType, body),
+    reused: false
+  }
+}
+
+export async function findOrCreate<T extends fhir4.Resource>(
+  resourceType: string,
+  searchParams: Record<string, string>,
+  body: Omit<T, 'id'>
+): Promise<T> {
+  const result = await findOrCreateDetailed(resourceType, searchParams, body)
+  return result.resource
 }
 
 export async function putResource<T extends fhir4.Resource>(

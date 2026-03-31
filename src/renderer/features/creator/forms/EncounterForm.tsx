@@ -2,14 +2,16 @@ import { useState, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, Loader2, AlertCircle, Wand2 } from 'lucide-react'
+import { CheckCircle2, Loader2, Wand2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { findOrCreate, putResource } from '../../../services/fhirClient'
+import FhirErrorAlert from '../../../components/FhirErrorAlert'
+import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
+import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
 import { encounterMocks } from '../../../mocks/mockPools'
 
@@ -44,7 +46,9 @@ interface Props {
 }
 
 export default function EncounterForm({ onSuccess }: Props): React.JSX.Element {
-  const { resources } = useCreatorStore()
+  const { resources, setFeedback, clearFeedback } = useCreatorStore()
+  const draftValues = useCreatorStore((s) => s.drafts.encounter as Partial<FormData> | undefined)
+  const persistedFeedback = useCreatorStore((s) => s.feedbacks.encounter)
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
   const f = (k: string) => t(`forms.encounter.${k}`)
@@ -57,7 +61,11 @@ export default function EncounterForm({ onSuccess }: Props): React.JSX.Element {
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [resultId, setResultId] = useState<string | undefined>(resources.encounter?.id)
+  const [saveOutcome, setSaveOutcome] = useState<'created' | 'reused'>('created')
   const [errorMsg, setErrorMsg] = useState<string>()
+  const feedback = status === 'success' && resultId
+    ? { id: resultId, outcome: saveOutcome }
+    : persistedFeedback
 
   const mockIndexRef = useRef(0)
   function fillMock(): void {
@@ -66,17 +74,18 @@ export default function EncounterForm({ onSuccess }: Props): React.JSX.Element {
     Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
   }
 
-  const initialValues = useMemo<Partial<FormData>>(() => ({
+  const initialValues = useMemo<Partial<FormData>>(() => mergeDraftValues({
     class: resources.encounter?.class?.code as FormData['class'] | undefined,
     periodStart: toDateTimeLocalValue(resources.encounter?.period?.start),
     periodEnd: toDateTimeLocalValue(resources.encounter?.period?.end)
-  }), [resources.encounter])
+  }, draftValues), [draftValues, resources.encounter])
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: initialValues
   })
 
+  useCreatorDraftAutosave('encounter', watch)
   const selectedClass = watch('class')
 
   // datetime-local inputs return "YYYY-MM-DDTHH:MM" (no seconds);
@@ -98,6 +107,7 @@ export default function EncounterForm({ onSuccess }: Props): React.JSX.Element {
   async function onSubmit(data: FormData): Promise<void> {
     setStatus('loading')
     setErrorMsg(undefined)
+    clearFeedback('encounter')
     try {
       const resource: Omit<fhir4.Encounter, 'id'> = {
         resourceType: 'Encounter',
@@ -126,17 +136,28 @@ export default function EncounterForm({ onSuccess }: Props): React.JSX.Element {
         }
       }
       const existingEncounterId = resultId ?? resources.encounter?.id
+      let reused = false
       const created = existingEncounterId
         ? await putResource<fhir4.Encounter>('Encounter', existingEncounterId, resource)
-        : await findOrCreate<fhir4.Encounter>(
-            'Encounter',
-            {
-              identifier: `${ENCOUNTER_IDENTIFIER_SYSTEM}|${buildEncounterIdentifierValue(data)}`
-            },
-            resource
-          )
+        : await (async () => {
+            const result = await findOrCreateDetailed<fhir4.Encounter>(
+              'Encounter',
+              {
+                identifier: `${ENCOUNTER_IDENTIFIER_SYSTEM}|${buildEncounterIdentifierValue(data)}`
+              },
+              resource
+            )
+            reused = result.reused
+            return result.resource
+          })()
+      if (!created.id) throw new Error(tc('errors.unknown'))
+      setSaveOutcome(reused ? 'reused' : 'created')
       setResultId(created.id)
       setStatus('success')
+      setFeedback('encounter', {
+        id: created.id,
+        outcome: reused ? 'reused' : 'created'
+      })
       onSuccess(created)
     } catch (e) {
       setStatus('error')
@@ -186,21 +207,22 @@ export default function EncounterForm({ onSuccess }: Props): React.JSX.Element {
         </p>
       )}
 
-      {status === 'success' && (
-        <Alert variant="success">
+      {feedback && status !== 'loading' && (
+        <Alert variant={feedback.outcome === 'reused' ? 'info' : 'success'}>
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
-            {f('success').replace('{{id}}', '')}
-            <code className="font-mono text-xs">{resultId}</code>
+            {feedback.outcome === 'reused'
+              ? tc('fhir.resourceReused', { resourceType: 'Encounter', id: feedback.id })
+              : (
+                  <>
+                    {f('success').replace('{{id}}', '')}
+                    <code className="font-mono text-xs">{feedback.id}</code>
+                  </>
+                )}
           </AlertDescription>
         </Alert>
       )}
-      {status === 'error' && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{errorMsg}</AlertDescription>
-        </Alert>
-      )}
+      {status === 'error' && <FhirErrorAlert error={errorMsg} />}
 
       <Button type="submit" disabled={status === 'loading'} variant={status === 'success' ? 'outline' : 'default'} className="w-full">
         {status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}

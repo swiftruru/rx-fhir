@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, AlertCircle, Wand2 } from 'lucide-react'
+import { CheckCircle2, Wand2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/button'
 import { useHistoryStore } from '../../../store/historyStore'
@@ -11,10 +11,13 @@ import { compositionMocks } from '../../../mocks/mockPools'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
+import FhirErrorAlert from '../../../components/FhirErrorAlert'
 import JsonViewer from '../../../components/JsonViewer'
+import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
 import { postResource } from '../../../services/fhirClient'
 import { buildComposition, assembleDocumentBundle } from '../../../services/bundleService'
 import { useCreatorStore } from '../../../store/creatorStore'
+import PrescriptionSummaryCard from '../components/PrescriptionSummaryCard'
 
 type FormData = {
   title: string
@@ -38,7 +41,8 @@ interface Props {
 }
 
 export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.Element {
-  const { resources, setResource, setBundleId, setBundleError, setSubmittingBundle } = useCreatorStore()
+  const { resources, setResource, setBundleId, setBundleError, setSubmittingBundle, clearDraft } = useCreatorStore()
+  const draftValues = useCreatorStore((s) => s.drafts.composition as Partial<FormData> | undefined)
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
   const f = (k: string) => t(`forms.composition.${k}`)
@@ -64,16 +68,17 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
     setValue('date', new Date().toISOString().slice(0, 16))
   }
 
-  const initialValues = useMemo<FormData>(() => ({
+  const initialValues = useMemo<FormData>(() => mergeDraftValues({
     title: resources.composition?.title ?? f('docTitle.placeholder'),
     date: toDateTimeLocalValue(resources.composition?.date) || new Date().toISOString().slice(0, 16)
-  }), [f, resources.composition])
+  }, draftValues) as FormData, [draftValues, f, resources.composition])
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: initialValues
   })
 
+  useCreatorDraftAutosave('composition', watch)
   const formData = watch()
 
   function getPreview(): fhir4.Bundle | null {
@@ -90,6 +95,7 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
       const composition = buildComposition(resources, data.title, fhirDate)
       const createdComp = await postResource<fhir4.Composition>('Composition', composition)
       setResource('composition', createdComp)
+      clearDraft('composition')
       setCompId(createdComp.id)
       setCompStatus('success')
 
@@ -156,6 +162,12 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
           {errors.date && <p className="text-xs text-destructive">{errors.date.message}</p>}
         </div>
 
+        <PrescriptionSummaryCard
+          resources={resources}
+          title={formData.title}
+          date={formData.date}
+        />
+
         <div className="p-3 rounded-md bg-muted space-y-1.5">
           <p className="text-xs font-medium text-muted-foreground mb-2">{f('resourcesTitle')}</p>
           {RESOURCE_CHECKLIST.map((key) => {
@@ -183,12 +195,7 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
           </Alert>
         )}
 
-        {errorMsg && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{errorMsg}</AlertDescription>
-          </Alert>
-        )}
+        <FhirErrorAlert error={errorMsg} />
 
         {preview && (
           <JsonViewer

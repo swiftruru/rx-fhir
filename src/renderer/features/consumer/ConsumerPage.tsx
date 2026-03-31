@@ -1,38 +1,50 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import SearchForm from './SearchForm'
 import ResultList from './ResultList'
 import PrescriptionDetail from './PrescriptionDetail'
 import RecentRecords from './RecentRecords'
-import type { BundleSummary } from '../../types/fhir.d'
+import type { BundleSummary, SearchParams } from '../../types/fhir.d'
 import type { SubmissionRecord } from '../../store/historyStore'
-
-export type SearchTab = 'basic' | 'date' | 'complex'
-
-export type SearchPrefill =
-  | { tab: 'basic'; searchBy: 'identifier' | 'name'; value: string }
-  | { tab: 'date'; identifier: string; date: string }
-  | {
-      tab: 'complex'
-      identifier: string
-      complexBy?: 'organization' | 'author'
-      orgId?: string
-      authorName?: string
-    }
+import type { ConsumerLaunchState, SearchPrefill, SearchTab } from './searchState'
 
 export default function ConsumerPage(): React.JSX.Element {
   const { t } = useTranslation('consumer')
+  const location = useLocation()
+  const navigate = useNavigate()
   const [results, setResults] = useState<BundleSummary[]>([])
   const [total, setTotal] = useState(0)
   const [selected, setSelected] = useState<BundleSummary | null>(null)
   const [hasSearched, setHasSearched] = useState(false)
   const [activeTab, setActiveTab] = useState<SearchTab>('basic')
   const [prefill, setPrefill] = useState<SearchPrefill | null>(null)
+  const [autoSearch, setAutoSearch] = useState<SearchParams | null>(null)
+  const [targetBundleId, setTargetBundleId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const launchState = location.state as ConsumerLaunchState | null
+    if (!launchState) return
+
+    if (launchState.prefill) {
+      setActiveTab(launchState.prefill.tab)
+      setPrefill(launchState.prefill)
+    }
+    if (launchState.autoSearch) setAutoSearch(launchState.autoSearch)
+    if (launchState.targetBundleId) setTargetBundleId(launchState.targetBundleId)
+
+    navigate('/consumer', { replace: true, state: null })
+  }, [location.state, navigate])
 
   function handleResults(r: BundleSummary[], t: number): void {
     setResults(r)
     setTotal(t)
-    setSelected(null)
+    if (targetBundleId) {
+      setSelected(r.find((summary) => summary.id === targetBundleId) ?? (r.length === 1 ? r[0] : null))
+      setTargetBundleId(null)
+    } else {
+      setSelected(null)
+    }
     setHasSearched(true)
   }
 
@@ -96,6 +108,8 @@ export default function ConsumerPage(): React.JSX.Element {
             onResults={handleResults}
             prefill={prefill}
             onPrefillConsumed={() => setPrefill(null)}
+            autoSearch={autoSearch}
+            onAutoSearchConsumed={() => setAutoSearch(null)}
           />
         </div>
       </div>

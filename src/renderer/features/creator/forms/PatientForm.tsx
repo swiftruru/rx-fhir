@@ -2,14 +2,16 @@ import { useState, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, Loader2, AlertCircle, Wand2 } from 'lucide-react'
+import { CheckCircle2, Loader2, Wand2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { findOrCreate, putResource } from '../../../services/fhirClient'
+import FhirErrorAlert from '../../../components/FhirErrorAlert'
+import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
+import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
 import { useHistoryStore } from '../../../store/historyStore'
 import { useAppStore } from '../../../store/appStore'
@@ -30,6 +32,10 @@ interface Props {
 export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
   const existingPatient = useCreatorStore((s) => s.resources.patient as fhir4.Patient | undefined)
   const existingPatientId = existingPatient?.id
+  const setFeedback = useCreatorStore((s) => s.setFeedback)
+  const clearFeedback = useCreatorStore((s) => s.clearFeedback)
+  const persistedFeedback = useCreatorStore((s) => s.feedbacks.patient)
+  const draftValues = useCreatorStore((s) => s.drafts.patient as Partial<FormData> | undefined)
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
   const addRecord = useHistoryStore((s) => s.addRecord)
@@ -46,7 +52,11 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [resultId, setResultId] = useState<string | undefined>(existingPatientId)
+  const [saveOutcome, setSaveOutcome] = useState<'created' | 'reused'>('created')
   const [errorMsg, setErrorMsg] = useState<string>()
+  const feedback = status === 'success' && resultId
+    ? { id: resultId, outcome: saveOutcome }
+    : persistedFeedback
 
   const mockIndexRef = useRef(0)
   function fillMock(): void {
@@ -55,24 +65,26 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
     Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
   }
 
-  const initialValues = useMemo<Partial<FormData>>(() => ({
+  const initialValues = useMemo<Partial<FormData>>(() => mergeDraftValues({
     familyName: existingPatient?.name?.[0]?.family ?? '',
     givenName: existingPatient?.name?.[0]?.given?.[0] ?? '',
     studentId: existingPatient?.identifier?.[0]?.value ?? '',
     gender: existingPatient?.gender as FormData['gender'] | undefined,
     birthDate: existingPatient?.birthDate ?? ''
-  }), [existingPatient])
+  }, draftValues), [draftValues, existingPatient])
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: initialValues
   })
 
+  useCreatorDraftAutosave('patient', watch)
   const selectedGender = watch('gender')
 
   async function onSubmit(data: FormData): Promise<void> {
     setStatus('loading')
     setErrorMsg(undefined)
+    clearFeedback('patient')
     try {
       const resource: Omit<fhir4.Patient, 'id'> = {
         resourceType: 'Patient',
@@ -88,15 +100,26 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
         meta: { profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Patient-EP'] }
       }
       const patientId = resultId ?? existingPatientId
+      let reused = false
       const created = patientId
         ? await putResource<fhir4.Patient>('Patient', patientId, resource)
-        : await findOrCreate<fhir4.Patient>(
-            'Patient',
-            { identifier: `https://www.moe.edu.tw/student-id|${data.studentId}` },
-            resource
-          )
+        : await (async () => {
+            const result = await findOrCreateDetailed<fhir4.Patient>(
+              'Patient',
+              { identifier: `https://www.moe.edu.tw/student-id|${data.studentId}` },
+              resource
+            )
+            reused = result.reused
+            return result.resource
+          })()
+      if (!created.id) throw new Error(tc('errors.unknown'))
+      setSaveOutcome(reused ? 'reused' : 'created')
       setResultId(created.id)
       setStatus('success')
+      setFeedback('patient', {
+        id: created.id,
+        outcome: reused ? 'reused' : 'created'
+      })
       onSuccess(created)
       addRecord({
         id: crypto.randomUUID(),
@@ -162,21 +185,22 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
         {errors.birthDate && <p className="text-xs text-destructive">{errors.birthDate.message}</p>}
       </div>
 
-      {status === 'success' && (
-        <Alert variant="success">
+      {feedback && status !== 'loading' && (
+        <Alert variant={feedback.outcome === 'reused' ? 'info' : 'success'}>
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
-            {f('success').replace('{{id}}', '')}
-            <code className="font-mono text-xs">{resultId}</code>
+            {feedback.outcome === 'reused'
+              ? tc('fhir.resourceReused', { resourceType: 'Patient', id: feedback.id })
+              : (
+                  <>
+                    {f('success').replace('{{id}}', '')}
+                    <code className="font-mono text-xs">{feedback.id}</code>
+                  </>
+                )}
           </AlertDescription>
         </Alert>
       )}
-      {status === 'error' && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{errorMsg}</AlertDescription>
-        </Alert>
-      )}
+      {status === 'error' && <FhirErrorAlert error={errorMsg} />}
 
       <Button type="submit" disabled={status === 'loading'} variant={status === 'success' ? 'outline' : 'default'} className="w-full">
         {status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}

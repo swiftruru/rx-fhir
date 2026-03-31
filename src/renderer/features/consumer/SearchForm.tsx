@@ -7,11 +7,11 @@ import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
-import { Alert, AlertDescription } from '../../components/ui/alert'
+import FhirErrorAlert from '../../components/FhirErrorAlert'
 import { searchBundles, buildSearchUrl, type QueryStep } from '../../services/fhirClient'
 import { extractSearchResults } from '../../services/searchService'
 import type { BundleSummary, SearchParams } from '../../types/fhir.d'
-import type { SearchPrefill, SearchTab } from './ConsumerPage'
+import type { SearchPrefill, SearchTab } from './searchState'
 import { consumerBasicMocks, consumerDateMocks, consumerComplexMocks } from '../../mocks/mockPools'
 
 interface Props {
@@ -20,6 +20,8 @@ interface Props {
   onResults: (results: BundleSummary[], total: number) => void
   prefill?: SearchPrefill | null
   onPrefillConsumed?: () => void
+  autoSearch?: SearchParams | null
+  onAutoSearchConsumed?: () => void
 }
 
 export default function SearchForm({
@@ -27,7 +29,9 @@ export default function SearchForm({
   onTabChange,
   onResults,
   prefill,
-  onPrefillConsumed
+  onPrefillConsumed,
+  autoSearch,
+  onAutoSearchConsumed
 }: Props): React.JSX.Element {
   const { t } = useTranslation('consumer')
   const { t: tc } = useTranslation('common')
@@ -43,6 +47,7 @@ export default function SearchForm({
   const basicMockRef   = useRef(0)
   const dateMockRef    = useRef(0)
   const complexMockRef = useRef(0)
+  const consumedAutoSearchKeyRef = useRef<string>()
 
   function fillMock(): void {
     if (activeTab === 'basic') {
@@ -86,6 +91,20 @@ export default function SearchForm({
     onTabChange(prefill.tab)
     onPrefillConsumed?.()
   }, [basicForm, complexForm, dateForm, onPrefillConsumed, onTabChange, prefill])
+
+  useEffect(() => {
+    if (!autoSearch) {
+      consumedAutoSearchKeyRef.current = undefined
+      return
+    }
+
+    const key = JSON.stringify(autoSearch)
+    if (consumedAutoSearchKeyRef.current === key) return
+    consumedAutoSearchKeyRef.current = key
+
+    void doSearch(autoSearch)
+    onAutoSearchConsumed?.()
+  }, [autoSearch, onAutoSearchConsumed])
 
   function handleTabChange(value: string): void {
     onTabChange(value as SearchTab)
@@ -301,11 +320,7 @@ export default function SearchForm({
         </div>
       )}
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      <FhirErrorAlert error={error} />
     </div>
   )
 }

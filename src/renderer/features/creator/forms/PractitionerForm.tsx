@@ -2,13 +2,15 @@ import { useState, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, Loader2, AlertCircle, Wand2 } from 'lucide-react'
+import { CheckCircle2, Loader2, Wand2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { findOrCreate, putResource } from '../../../services/fhirClient'
+import FhirErrorAlert from '../../../components/FhirErrorAlert'
+import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
+import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
 import { practitionerMocks } from '../../../mocks/mockPools'
 
@@ -26,6 +28,10 @@ interface Props {
 export default function PractitionerForm({ onSuccess }: Props): React.JSX.Element {
   const existingPractitioner = useCreatorStore((s) => s.resources.practitioner as fhir4.Practitioner | undefined)
   const existingPractitionerId = existingPractitioner?.id
+  const setFeedback = useCreatorStore((s) => s.setFeedback)
+  const clearFeedback = useCreatorStore((s) => s.clearFeedback)
+  const persistedFeedback = useCreatorStore((s) => s.feedbacks.practitioner)
+  const draftValues = useCreatorStore((s) => s.drafts.practitioner as Partial<FormData> | undefined)
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
   const f = (k: string) => t(`forms.practitioner.${k}`)
@@ -39,7 +45,11 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [resultId, setResultId] = useState<string | undefined>(existingPractitionerId)
+  const [saveOutcome, setSaveOutcome] = useState<'created' | 'reused'>('created')
   const [errorMsg, setErrorMsg] = useState<string>()
+  const feedback = status === 'success' && resultId
+    ? { id: resultId, outcome: saveOutcome }
+    : persistedFeedback
 
   const mockIndexRef = useRef(0)
   function fillMock(): void {
@@ -48,21 +58,24 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
     Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
   }
 
-  const initialValues = useMemo<Partial<FormData>>(() => ({
+  const initialValues = useMemo<Partial<FormData>>(() => mergeDraftValues({
     familyName: existingPractitioner?.name?.[0]?.family ?? '',
     givenName: existingPractitioner?.name?.[0]?.given?.[0] ?? '',
     licenseNumber: existingPractitioner?.identifier?.[0]?.value ?? '',
     qualification: existingPractitioner?.qualification?.[0]?.code?.text ?? ''
-  }), [existingPractitioner])
+  }, draftValues), [draftValues, existingPractitioner])
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: initialValues
   })
 
+  useCreatorDraftAutosave('practitioner', watch)
+
   async function onSubmit(data: FormData): Promise<void> {
     setStatus('loading')
     setErrorMsg(undefined)
+    clearFeedback('practitioner')
     try {
       const resource: Omit<fhir4.Practitioner, 'id'> = {
         resourceType: 'Practitioner',
@@ -96,15 +109,26 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
         }
       }
       const practitionerId = resultId ?? existingPractitionerId
+      let reused = false
       const created = practitionerId
         ? await putResource<fhir4.Practitioner>('Practitioner', practitionerId, resource)
-        : await findOrCreate<fhir4.Practitioner>(
-            'Practitioner',
-            { identifier: `https://www.mohw.gov.tw/practitioner-license|${data.licenseNumber}` },
-            resource
-          )
+        : await (async () => {
+            const result = await findOrCreateDetailed<fhir4.Practitioner>(
+              'Practitioner',
+              { identifier: `https://www.mohw.gov.tw/practitioner-license|${data.licenseNumber}` },
+              resource
+            )
+            reused = result.reused
+            return result.resource
+          })()
+      if (!created.id) throw new Error(tc('errors.unknown'))
+      setSaveOutcome(reused ? 'reused' : 'created')
       setResultId(created.id)
       setStatus('success')
+      setFeedback('practitioner', {
+        id: created.id,
+        outcome: reused ? 'reused' : 'created'
+      })
       onSuccess(created)
     } catch (e) {
       setStatus('error')
@@ -144,21 +168,22 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
         {errors.qualification && <p className="text-xs text-destructive">{errors.qualification.message}</p>}
       </div>
 
-      {status === 'success' && (
-        <Alert variant="success">
+      {feedback && status !== 'loading' && (
+        <Alert variant={feedback.outcome === 'reused' ? 'info' : 'success'}>
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
-            {f('success').replace('{{id}}', '')}
-            <code className="font-mono text-xs">{resultId}</code>
+            {feedback.outcome === 'reused'
+              ? tc('fhir.resourceReused', { resourceType: 'Practitioner', id: feedback.id })
+              : (
+                  <>
+                    {f('success').replace('{{id}}', '')}
+                    <code className="font-mono text-xs">{feedback.id}</code>
+                  </>
+                )}
           </AlertDescription>
         </Alert>
       )}
-      {status === 'error' && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{errorMsg}</AlertDescription>
-        </Alert>
-      )}
+      {status === 'error' && <FhirErrorAlert error={errorMsg} />}
 
       <Button type="submit" disabled={status === 'loading'} variant={status === 'success' ? 'outline' : 'default'} className="w-full">
         {status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}

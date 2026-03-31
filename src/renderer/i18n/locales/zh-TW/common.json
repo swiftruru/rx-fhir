@@ -18,10 +18,21 @@
     "unknown": "未測試"
   },
   "errors": {
-    "unknown": "發生未知錯誤"
+    "unknown": "發生未知錯誤",
+    "networkFailed": "無法連線到 FHIR Server，請確認伺服器位址與網路連線。",
+    "fhirDuplicate": "此資料已存在於 FHIR Server，伺服器拒絕重複建立。",
+    "fhirValidation": "FHIR Server 驗證未通過，請確認欄位內容是否符合規範。",
+    "fhirForbidden": "FHIR Server 拒絕這次操作，請確認伺服器權限或設定。",
+    "fhirNotFound": "FHIR Server 找不到指定資源，請確認送出的參照是否正確。",
+    "fhirRequestFailed": "FHIR Server 回傳錯誤（{{status}}）。請檢查輸入資料，必要時可展開原始錯誤。",
+    "serverMessageLabel": "伺服器訊息：{{message}}",
+    "showRaw": "查看原始錯誤",
+    "hideRaw": "隱藏原始錯誤",
+    "rawLabel": "原始錯誤"
   },
   "fhir": {
-    "resourceCreated": "{{resourceType}} 已成功建立！ID: {{id}}"
+    "resourceCreated": "{{resourceType}} 已成功建立！ID: {{id}}",
+    "resourceReused": "已重用既有 {{resourceType}}！ID: {{id}}"
   },
   "theme": {
     "light": "亮色",

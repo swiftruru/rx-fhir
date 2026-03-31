@@ -2,14 +2,16 @@ import { useState, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, Loader2, AlertCircle, Wand2 } from 'lucide-react'
+import { CheckCircle2, Loader2, Wand2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { findOrCreate, putResource } from '../../../services/fhirClient'
+import FhirErrorAlert from '../../../components/FhirErrorAlert'
+import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
+import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
 import { organizationMocks } from '../../../mocks/mockPools'
 
@@ -29,6 +31,10 @@ const TYPE_MAP = {
 export default function OrganizationForm({ onSuccess, defaultValues }: Props): React.JSX.Element {
   const existingOrganization = useCreatorStore((s) => s.resources.organization as fhir4.Organization | undefined)
   const existingOrganizationId = existingOrganization?.id
+  const setFeedback = useCreatorStore((s) => s.setFeedback)
+  const clearFeedback = useCreatorStore((s) => s.clearFeedback)
+  const persistedFeedback = useCreatorStore((s) => s.feedbacks.organization)
+  const draftValues = useCreatorStore((s) => s.drafts.organization as Partial<FormData> | undefined)
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
   const f = (k: string) => t(`forms.organization.${k}`)
@@ -41,7 +47,11 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [resultId, setResultId] = useState<string | undefined>(existingOrganizationId)
+  const [saveOutcome, setSaveOutcome] = useState<'created' | 'reused'>('created')
   const [errorMsg, setErrorMsg] = useState<string>()
+  const feedback = status === 'success' && resultId
+    ? { id: resultId, outcome: saveOutcome }
+    : persistedFeedback
 
   const mockIndexRef = useRef(0)
   function fillMock(): void {
@@ -55,24 +65,26 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
       value.code === existingOrganization?.type?.[0]?.coding?.[0]?.code
     ))?.[0] as FormData['type'] | undefined
 
-    return {
+    return mergeDraftValues({
       name: existingOrganization?.name ?? '',
       identifier: existingOrganization?.identifier?.[0]?.value ?? '',
       type: existingType,
       ...defaultValues
-    }
-  }, [defaultValues, existingOrganization])
+    }, draftValues)
+  }, [defaultValues, draftValues, existingOrganization])
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: initialValues
   })
 
+  useCreatorDraftAutosave('organization', watch)
   const selectedType = watch('type')
 
   async function onSubmit(data: FormData): Promise<void> {
     setStatus('loading')
     setErrorMsg(undefined)
+    clearFeedback('organization')
     try {
       const typeCode = TYPE_MAP[data.type].code
       const typeDisplay = t(`forms.organization.type.options.${data.type}`)
@@ -85,15 +97,26 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
         meta: { profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Organization-EP'] }
       }
       const organizationId = resultId ?? existingOrganizationId
+      let reused = false
       const created = organizationId
         ? await putResource<fhir4.Organization>('Organization', organizationId, resource)
-        : await findOrCreate<fhir4.Organization>(
-            'Organization',
-            { identifier: `https://twcore.mohw.gov.tw/ig/emr/CodeSystem/organization-identifier|${data.identifier}` },
-            resource
-          )
+        : await (async () => {
+          const result = await findOrCreateDetailed<fhir4.Organization>(
+          'Organization',
+          { identifier: `https://twcore.mohw.gov.tw/ig/emr/CodeSystem/organization-identifier|${data.identifier}` },
+          resource
+        )
+          reused = result.reused
+          return result.resource
+        })()
+      if (!created.id) throw new Error(tc('errors.unknown'))
+      setSaveOutcome(reused ? 'reused' : 'created')
       setResultId(created.id)
       setStatus('success')
+      setFeedback('organization', {
+        id: created.id,
+        outcome: reused ? 'reused' : 'created'
+      })
       onSuccess(created)
     } catch (e) {
       setStatus('error')
@@ -135,21 +158,22 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
         {errors.type && <p className="text-xs text-destructive">{errors.type.message}</p>}
       </div>
 
-      {status === 'success' && (
-        <Alert variant="success">
+      {feedback && status !== 'loading' && (
+        <Alert variant={feedback.outcome === 'reused' ? 'info' : 'success'}>
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
-            {f('success').replace('{{id}}', '')}
-            <code className="font-mono text-xs">{resultId}</code>
+            {feedback.outcome === 'reused'
+              ? tc('fhir.resourceReused', { resourceType: 'Organization', id: feedback.id })
+              : (
+                  <>
+                    {f('success').replace('{{id}}', '')}
+                    <code className="font-mono text-xs">{feedback.id}</code>
+                  </>
+                )}
           </AlertDescription>
         </Alert>
       )}
-      {status === 'error' && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{errorMsg}</AlertDescription>
-        </Alert>
-      )}
+      {status === 'error' && <FhirErrorAlert error={errorMsg} />}
 
       <Button type="submit" disabled={status === 'loading'} variant={status === 'success' ? 'outline' : 'default'} className="w-full">
         {status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}

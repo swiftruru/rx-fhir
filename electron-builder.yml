@@ -20,6 +20,7 @@ win:
   icon: build/icon.png
   target:
     - nsis
+    - portable
 
 linux:
   icon: build/icon.png
@@ -32,3 +33,6 @@ nsis:
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+
+portable:
+  artifactName: ${productName}-Portable-${version}.${ext}

@@ -4,3 +4,4 @@ out
 .DS_Store
 *.local
 build/icon.iconset/
+RxFHIR-Spec.md

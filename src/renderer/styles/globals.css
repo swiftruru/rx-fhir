@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* ── Light Mode: Sakura Mist ────────────────────────────────────────────── */
+  :root {
+    --background: 340 35% 98.5%;
+    --foreground: 330 20% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 330 20% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 330 20% 17%;
+    --primary: 352 38% 62%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 350 28% 94%;
+    --secondary-foreground: 350 20% 36%;
+    --muted: 340 18% 95%;
+    --muted-foreground: 330 8% 50%;
+    --accent: 350 24% 93%;
+    --accent-foreground: 350 22% 30%;
+    --destructive: 3 72% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 340 20% 90%;
+    --input: 340 20% 90%;
+    --ring: 352 38% 62%;
+    --radius: 0.5rem;
+
+    /* Sidebar — 淡粉灰面板（light mode 用淺色 sidebar） */
+    --sidebar-background: 335 18% 91%;
+    --sidebar-foreground: 330 18% 26%;
+    --sidebar-primary: 352 40% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 335 16% 86%;
+    --sidebar-accent-foreground: 330 18% 26%;
+    --sidebar-border: 335 14% 84%;
+    --sidebar-ring: 352 40% 55%;
+  }
+
+  /* ── Dark Mode: Twilight Mauve ──────────────────────────────────────────── */
+  .dark {
+    --background: 330 12% 10%;
+    --foreground: 30 12% 87%;
+    --card: 330 10% 14%;
+    --card-foreground: 30 12% 87%;
+    --popover: 330 10% 14%;
+    --popover-foreground: 30 12% 87%;
+    --primary: 350 38% 68%;
+    --primary-foreground: 350 20% 16%;
+    --secondary: 330 8% 20%;
+    --secondary-foreground: 30 10% 80%;
+    --muted: 330 8% 17%;
+    --muted-foreground: 330 6% 56%;
+    --accent: 330 8% 22%;
+    --accent-foreground: 30 10% 82%;
+    --destructive: 3 62% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 330 8% 22%;
+    --input: 330 8% 22%;
+    --ring: 350 36% 64%;
+
+    /* Sidebar — 暖暗玫瑰炭（比 background 略深略帶粉） */
+    --sidebar-background: 330 14% 13%;
+    --sidebar-foreground: 30 10% 84%;
+    --sidebar-primary: 350 38% 68%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 330 10% 20%;
+    --sidebar-accent-foreground: 30 10% 84%;
+    --sidebar-border: 330 8% 17%;
+    --sidebar-ring: 350 36% 64%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* macOS titlebar: drag zone inside the Sidebar (dark bg, blends seamlessly) */
+.titlebar-drag-region {
+  -webkit-app-region: drag;
+  height: 28px;
+  min-height: 28px;
+  flex-shrink: 0;
+  /* background inherits from sidebar */
+}
+
+/* macOS titlebar: transparent spacer in the main content column */
+.titlebar-spacer {
+  -webkit-app-region: drag;
+  height: 28px;
+  min-height: 28px;
+  flex-shrink: 0;
+  background: hsl(var(--background));
+}
+
+/* Prevent interactive elements from blocking window drag */
+.titlebar-drag-region button,
+.titlebar-drag-region a,
+.titlebar-spacer button,
+.titlebar-spacer a {
+  -webkit-app-region: no-drag;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-border rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/40;
+}

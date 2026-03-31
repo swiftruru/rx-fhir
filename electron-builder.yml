@@ -1,0 +1,34 @@
+appId: com.rxfhir.app
+productName: RxFHIR
+copyright: Copyright © 2025 RxFHIR
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - out/**/*
+
+mac:
+  category: public.app-category.healthcare-fitness
+  icon: build/icon.png
+  target:
+    - dmg
+    - zip
+
+win:
+  icon: build/icon.png
+  target:
+    - nsis
+
+linux:
+  icon: build/icon.png
+  target:
+    - AppImage
+    - deb
+
+nsis:
+  artifactName: ${productName}-Setup-${version}.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always

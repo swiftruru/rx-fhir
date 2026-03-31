@@ -9,7 +9,7 @@ import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { postResource, putResource } from '../../../services/fhirClient'
+import { findOrCreate, putResource } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
 import { medicationMocks } from '../../../mocks/mockPools'
 
@@ -120,9 +120,14 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
         }
       }
       const medicationId = resultId ?? existingMedicationId
+      const medicationCodeSystem = SYSTEM_MAP[data.codeSystem]
       const created = medicationId
         ? await putResource<fhir4.Medication>('Medication', medicationId, resource)
-        : await postResource<fhir4.Medication>('Medication', resource)
+        : await findOrCreate<fhir4.Medication>(
+            'Medication',
+            { code: `${medicationCodeSystem}|${data.code}` },
+            resource
+          )
       setResultId(created.id)
       setStatus('success')
       onSuccess(created)

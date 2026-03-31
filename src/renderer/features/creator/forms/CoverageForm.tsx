@@ -9,7 +9,7 @@ import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { postResource, putResource } from '../../../services/fhirClient'
+import { findOrCreate, putResource } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
 import { coverageMocks } from '../../../mocks/mockPools'
 
@@ -17,6 +17,7 @@ const COVERAGE_TYPE_CODES = ['EHCPOL', 'PAY', 'PUBLICPOL'] as const
 type CoverageTypeCode = (typeof COVERAGE_TYPE_CODES)[number]
 
 const COVERAGE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v3-ActCode'
+const COVERAGE_IDENTIFIER_SYSTEM = 'https://www.nhi.gov.tw/coverage-id'
 
 type FormData = {
   type: string
@@ -76,6 +77,10 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
       const resource: Omit<fhir4.Coverage, 'id'> = {
         resourceType: 'Coverage',
         status: 'active',
+        identifier: [{
+          system: COVERAGE_IDENTIFIER_SYSTEM,
+          value: data.subscriberId
+        }],
         type: {
           coding: [{
             system: COVERAGE_SYSTEM,
@@ -103,7 +108,11 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
       const existingCoverageId = resultId ?? resources.coverage?.id
       const created = existingCoverageId
         ? await putResource<fhir4.Coverage>('Coverage', existingCoverageId, resource)
-        : await postResource<fhir4.Coverage>('Coverage', resource)
+        : await findOrCreate<fhir4.Coverage>(
+            'Coverage',
+            { identifier: `${COVERAGE_IDENTIFIER_SYSTEM}|${data.subscriberId}` },
+            resource
+          )
       setResultId(created.id)
       setStatus('success')
       onSuccess(created)

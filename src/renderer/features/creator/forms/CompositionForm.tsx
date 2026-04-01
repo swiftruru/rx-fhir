@@ -12,7 +12,8 @@ import { Label } from '../../../components/ui/label'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
 import JsonViewer from '../../../components/JsonViewer'
-import { useCreatorMockFill } from '../../../hooks/useCreatorMockFill'
+import { useCreatorMockFill, useLiveDemoTypedMockFill } from '../../../hooks/useCreatorMockFill'
+import { useLiveDemoFormController } from '../../../hooks/useLiveDemoFormController'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
 import { exportBundleJson, getBundleFileErrorMessage } from '../../../services/bundleFileService'
 import { postResource, resetLoggedRequests } from '../../../services/fhirClient'
@@ -74,6 +75,9 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
   })
 
   const fillMock = useCreatorMockFill<FormData>('composition', (key, value) => {
+    setValue(key as keyof FormData, value as never)
+  })
+  const fillDemo = useLiveDemoTypedMockFill<FormData>('composition', (key, value) => {
     setValue(key as keyof FormData, value as never)
   })
 
@@ -155,6 +159,8 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
       setSubmittingBundle(false)
     }
   }
+
+  useLiveDemoFormController('composition', fillMock, handleSubmit, onSubmit, fillDemo)
 
   const preview = getPreview()
   const RESOURCE_CHECKLIST = [

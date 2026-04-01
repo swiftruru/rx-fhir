@@ -88,12 +88,48 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build Linux artifacts
+        run: |
+          npm run build
+          npx electron-builder --linux AppImage deb --x64 --publish never
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: rxfhir-linux
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+          if-no-files-found: error
+          retention-days: 14
+
   release:
     name: Publish GitHub Release
     runs-on: ubuntu-latest
     needs:
       - build-macos
       - build-windows
+      - build-linux
     if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
@@ -135,17 +171,24 @@ jobs:
           name: rxfhir-windows
           path: release-assets/windows
 
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: rxfhir-linux
+          path: release-assets/linux
+
       - name: Publish or update GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
-            gh release upload "$TAG_NAME" release-assets/macos/* release-assets/windows/* --clobber
+            gh release upload "$TAG_NAME" release-assets/macos/* release-assets/windows/* release-assets/linux/* --clobber
             gh release edit "$TAG_NAME" --title "$RELEASE_TITLE" --notes-file "$RELEASE_NOTES_FILE"
           else
             gh release create "$TAG_NAME" \
               release-assets/macos/* \
               release-assets/windows/* \
+              release-assets/linux/* \
               --title "$RELEASE_TITLE" \
               --notes-file "$RELEASE_NOTES_FILE" \
               --verify-tag

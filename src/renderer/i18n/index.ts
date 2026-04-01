@@ -6,12 +6,14 @@ import zhNav      from './locales/zh-TW/nav.json'
 import zhCreator  from './locales/zh-TW/creator.json'
 import zhConsumer from './locales/zh-TW/consumer.json'
 import zhSettings from './locales/zh-TW/settings.json'
+import zhShowcase from './locales/zh-TW/showcase.json'
 
 import enCommon   from './locales/en/common.json'
 import enNav      from './locales/en/nav.json'
 import enCreator  from './locales/en/creator.json'
 import enConsumer from './locales/en/consumer.json'
 import enSettings from './locales/en/settings.json'
+import enShowcase from './locales/en/showcase.json'
 
 export type SupportedLocale = 'zh-TW' | 'en'
 
@@ -33,19 +35,21 @@ i18n.use(initReactI18next).init({
       nav:      zhNav,
       creator:  zhCreator,
       consumer: zhConsumer,
-      settings: zhSettings
+      settings: zhSettings,
+      showcase: zhShowcase
     },
     en: {
       common:   enCommon,
       nav:      enNav,
       creator:  enCreator,
       consumer: enConsumer,
-      settings: enSettings
+      settings: enSettings,
+      showcase: enShowcase
     }
   },
   lng: detectLanguage(),
   fallbackLng: 'zh-TW',
-  ns: ['common', 'nav', 'creator', 'consumer', 'settings'],
+  ns: ['common', 'nav', 'creator', 'consumer', 'settings', 'showcase'],
   defaultNS: 'common',
   interpolation: { escapeValue: false }
 })

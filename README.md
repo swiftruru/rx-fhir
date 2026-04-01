@@ -3,7 +3,7 @@
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.7-d4779a?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.8-d4779a?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/github/license/swiftruru/rx-fhir?style=flat-square&color=d4779a" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-8e8e93?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
@@ -66,6 +66,12 @@ Listed in alphabetical order by English name; no ranking implied.
 
 Step-by-step wizard to build and submit a FHIR Document Bundle:
 
+<p align="center">
+  <img src="docs/screenshots/creator-stepper-overview.png" alt="Creator step-by-step workflow" width="100%" />
+  <br />
+  <em>Creator workspace with the step-by-step prescription workflow.</em>
+</p>
+
 | Step | Resource | Description |
 |------|----------|-------------|
 | 1 | Organization | Medical institution |
@@ -97,6 +103,8 @@ Current Creator capabilities:
 - Step success / reuse alerts now remain visible when you leave a completed step and come back later
 - Human-friendly FHIR `OperationOutcome` messages are shown first, with expandable raw error details for troubleshooting
 - Most Creator forms now include consistent inline guide cards with examples and field-level hints for identifiers, encounter timing, ICD-10, LOINC, insurance, medication coding, medication route, and supplemental extensions
+- Live Demo mode provides a guided, step-by-step teaching flow with manual-first pacing, optional autoplay, and human-like typed mock input
+- Feature Showcase mode provides a spotlight-style product tour with target highlighting, background dimming, and feature-by-feature coaching text
 - Live JSON preview of created resources
 - JSON preview now follows the active light / dark theme instead of staying fixed in a dark-only style
 - JSON preview now includes a compact toolbar with font-size switching, collapse, and all/latest-resource toggles for demos
@@ -108,9 +116,30 @@ Current Creator capabilities:
 - After a successful bundle submission, Creator can jump directly into Consumer, auto-run the query, and focus the newly created bundle
 - Recent submission history stored locally for later query prefill
 
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/creator-request-inspector.png" alt="Creator JSON preview and FHIR request inspector" width="100%" />
+      <br />
+      <em>JSON preview and Postman-style FHIR request inspector.</em>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/creator-document-bundle.png" alt="Creator document bundle assembly and submission" width="100%" />
+      <br />
+      <em>Composition review and final Document Bundle assembly.</em>
+    </td>
+  </tr>
+</table>
+
 ### Consumer Module
 
 Search and inspect FHIR Bundles on the configured server:
+
+<p align="center">
+  <img src="docs/screenshots/consumer-query-workspace.png" alt="Consumer query workspace and results" width="100%" />
+  <br />
+  <em>Consumer workspace for query, shortcuts, results, and prescription review.</em>
+</p>
 
 - **Basic search**: patient identifier or patient name
 - **Date search**: patient identifier + bundle date
@@ -118,6 +147,7 @@ Search and inspect FHIR Bundles on the configured server:
 - The left panel now focuses on search input only, so the query form remains visible even on narrower windows
 - The middle panel now includes `Results` and `Query Helpers` tabs, so recent submissions and saved searches stay available after a query has already been run
 - Consumer can import local FHIR Bundle JSON files for offline or ad hoc inspection without querying the server
+- Query examples and local Bundle import are now grouped under `Query Helpers`, keeping the main search form focused on real search tasks
 - Recent-record magnifier prefills the active search tab instead of forcing a return to basic search
 - Complex search prefills patient identifier and available author / organization context from local submission history, and can backfill missing context by re-reading a stored bundle when needed
 - Search conditions are now stored locally as recent searches, and any search can be pinned into favorites for quick reruns
@@ -295,6 +325,8 @@ This repository now follows a version-scoped release process:
    - macOS app artifacts
    - Windows installer
    - Windows portable executable
+   - Linux AppImage
+   - Linux deb package
 5. GitHub Release notes will use only that version's changelog file from the tagged commit, so release descriptions stay focused and do not accumulate old history.
 
 ---

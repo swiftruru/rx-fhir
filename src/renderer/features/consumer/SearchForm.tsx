@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Search, Loader2, Wand2, Upload } from 'lucide-react'
+import { Search, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -31,7 +31,12 @@ interface Props {
   onAutoSearchConsumed?: () => void
 }
 
-export default function SearchForm({
+export interface SearchFormHandle {
+  fillMock: () => void
+  importBundle: () => Promise<void>
+}
+
+const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   activeTab,
   onTabChange,
   onComplexByChange,
@@ -42,7 +47,7 @@ export default function SearchForm({
   onPrefillConsumed,
   autoSearch,
   onAutoSearchConsumed
-}: Props): React.JSX.Element {
+}, ref): React.JSX.Element {
   const { t } = useTranslation('consumer')
   const { t: tc } = useTranslation('common')
   const locale = useAppStore((s) => s.locale)
@@ -231,18 +236,13 @@ export default function SearchForm({
     onComplexByChange?.((complexBy as 'organization' | 'author') ?? 'organization')
   }, [complexBy, onComplexByChange])
 
+  useImperativeHandle(ref, () => ({
+    fillMock,
+    importBundle: handleImportBundle
+  }), [activeTab, consumerBasicMocks, consumerComplexMocks, consumerDateMocks, importing, loading])
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={handleImportBundle} disabled={isBusy} className="h-7 px-2 text-xs">
-          {importing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-          {t('search.importButton')}
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={fillMock} disabled={isBusy} className="h-7 px-2 text-xs text-muted-foreground">
-          <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
-        </Button>
-      </div>
-
       {importMessage && (
         <Alert variant="success">
           <AlertDescription>{importMessage}</AlertDescription>
@@ -404,4 +404,6 @@ export default function SearchForm({
       <FhirErrorAlert error={error} />
     </div>
   )
-}
+})
+
+export default SearchForm

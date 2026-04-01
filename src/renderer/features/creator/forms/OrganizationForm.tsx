@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import FormGuideCard from '../../../components/FormGuideCard'
 import CreatorFeedbackAlert from '../../../components/CreatorFeedbackAlert'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
-import { useCreatorMockFill } from '../../../hooks/useCreatorMockFill'
+import { useCreatorMockFill, useLiveDemoTypedMockFill } from '../../../hooks/useCreatorMockFill'
+import { useLiveDemoFormController } from '../../../hooks/useLiveDemoFormController'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
 import { findOrCreateDetailed, putResource, resetLoggedRequests } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
@@ -25,7 +26,7 @@ interface Props {
 
 const TYPE_MAP = {
   hospital: { code: 'HOSP' },
-  clinic:   { code: 'PROV' },
+  clinic: { code: 'PROV' },
   pharmacy: { code: 'PHARM' }
 }
 
@@ -41,9 +42,9 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
   const f = (k: string) => t(`forms.organization.${k}`)
 
   const schema = useMemo(() => z.object({
-    name:       z.string().min(1, f('name.required')),
+    name: z.string().min(1, f('name.required')),
     identifier: z.string().min(1, f('identifier.required')),
-    type:       z.enum(['hospital', 'clinic', 'pharmacy'], { required_error: f('type.required') })
+    type: z.enum(['hospital', 'clinic', 'pharmacy'], { required_error: f('type.required') })
   }), [t])
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
@@ -76,6 +77,9 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
   const fillMock = useCreatorMockFill<FormData>('organization', (key, value) => {
     setValue(key as keyof FormData, value as never)
   })
+  const fillDemo = useLiveDemoTypedMockFill<FormData>('organization', (key, value) => {
+    setValue(key as keyof FormData, value as never)
+  })
 
   useCreatorDraftAutosave('organization', watch)
   const selectedType = watch('type')
@@ -102,10 +106,10 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
         ? await putResource<fhir4.Organization>('Organization', organizationId, resource)
         : await (async () => {
           const result = await findOrCreateDetailed<fhir4.Organization>(
-          'Organization',
-          { identifier: `https://twcore.mohw.gov.tw/ig/emr/CodeSystem/organization-identifier|${data.identifier}` },
-          resource
-        )
+            'Organization',
+            { identifier: `https://twcore.mohw.gov.tw/ig/emr/CodeSystem/organization-identifier|${data.identifier}` },
+            resource
+          )
           reused = result.reused
           return result.resource
         })()
@@ -127,6 +131,8 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
       setErrorMsg(e instanceof Error ? e.message : tc('errors.unknown'))
     }
   }
+
+  useLiveDemoFormController('organization', fillMock, handleSubmit, onSubmit, fillDemo)
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

@@ -17,6 +17,47 @@
     "resetConfirmOk": "確定清除",
     "resetConfirmCancel": "取消"
   },
+  "liveDemo": {
+    "panelTitle": "Live Demo 教學模式",
+    "startButton": "開始 Live Demo",
+    "runningButton": "Live Demo 進行中",
+    "preparingTitle": "準備示範流程",
+    "preparingDescription": "系統正在整理示範情境、重設 Creator 狀態，並準備依序播放整段 RxFHIR 操作流程。",
+    "progress": "第 {{current}} / {{total}} 步",
+    "completedTitle": "Live Demo 已完成",
+    "completedDescription": "Creator 建立、Bundle 提交與 Consumer 查詢示範都已播放完成，現在可以重新播放或關閉教學面板。",
+    "completedBadge": "示範完成",
+    "errorTitle": "Live Demo 中斷",
+    "errorBadge": "示範失敗",
+    "errorFallback": "Live Demo 執行失敗。",
+    "controls": {
+      "pause": "暫停",
+      "resume": "繼續",
+      "next": "下一步",
+      "enableAuto": "自動播放",
+      "switchToManual": "改成手動",
+      "collapse": "折疊教學視窗",
+      "expand": "展開教學視窗",
+      "stop": "停止",
+      "replay": "重新播放",
+      "close": "關閉"
+    },
+    "sections": {
+      "action": "目前操作",
+      "concept": "FHIR 概念",
+      "practical": "實務意義",
+      "relation": "和 Bundle 的關聯"
+    },
+    "phase": {
+      "preparing": "準備中",
+      "intro": "步驟說明",
+      "filling": "自動填入",
+      "submitting": "提交資源",
+      "navigating": "切換畫面",
+      "searching": "查詢結果",
+      "reviewing": "結果停留"
+    }
+  },
   "stepper": {
     "progress": "進度",
     "progressCount": "{{completed}} / {{total}} 完成",

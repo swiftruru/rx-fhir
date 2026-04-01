@@ -138,3 +138,36 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-muted-foreground/40;
 }
+
+@keyframes feature-showcase-spotlight-shift {
+  0% {
+    opacity: 0;
+    transform: scale(0.985);
+    filter: saturate(0.9);
+  }
+  35% {
+    opacity: 0.68;
+    transform: scale(0.994);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: saturate(1);
+  }
+}
+
+@keyframes feature-showcase-coach-shift {
+  0% {
+    opacity: 0;
+    transform: translate3d(var(--showcase-coach-translate-x, 0), var(--showcase-coach-translate-y, 0), 0) scale(0.985);
+    filter: saturate(0.92);
+  }
+  45% {
+    opacity: 0.78;
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: saturate(1);
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "startButton": "Feature Tour",
+  "runningButton": "Showcase Running",
+  "panelTitle": "Feature Showcase",
+  "progress": "Step {{current}} / {{total}}",
+  "preparing": {
+    "title": "Preparing the showcase",
+    "description": "RxFHIR is switching into showcase mode and loading a stable demo snapshot."
+  },
+  "completed": {
+    "title": "Showcase completed",
+    "description": "The main product highlights have been presented. You can close the tour or replay it."
+  },
+  "error": {
+    "title": "Showcase interrupted"
+  },
+  "sections": {
+    "feature": "What it is",
+    "problem": "What it solves",
+    "role": "Role in RxFHIR"
+  },
+  "controls": {
+    "previous": "Previous",
+    "next": "Next",
+    "finish": "Finish",
+    "autoplay": "Autoplay",
+    "pause": "Pause",
+    "resume": "Resume",
+    "stop": "Stop",
+    "replay": "Replay",
+    "close": "Close"
+  },
+  "steps": {
+    "appShell": {
+      "title": "App Shell",
+      "summary": "The showcase begins with the overall layout so viewers can understand the product structure first.",
+      "feature": "The sidebar, top utility controls, and bottom status bar form a consistent app shell across Creator, Consumer, Settings, and About.",
+      "problem": "Multi-page tools are hard to present when users cannot quickly build a spatial model of the product.",
+      "role": "The app shell is the shared frame for every workflow and keeps navigation stable throughout the demo."
+    },
+    "creatorWorkflow": {
+      "title": "Creator Step-by-Step Workflow",
+      "summary": "This area demonstrates how RxFHIR builds each resource in a guided sequence.",
+      "feature": "The stepper breaks Organization, Patient, Practitioner, and other resources into a clear sequence with completion status and summaries.",
+      "problem": "FHIR documents are complex, and a single large form would make the structure much harder to teach and operate.",
+      "role": "Creator is the primary authoring experience that takes users from individual resources to a final document bundle."
+    },
+    "fillMock": {
+      "title": "Fill Mock",
+      "summary": "Mock data can populate realistic scenarios quickly for teaching, testing, and live demos.",
+      "feature": "The mock system is scenario-based rather than random field stuffing, and it stays consistent across resources and locales.",
+      "problem": "Typing every clinical value by hand slows down demonstrations and makes repeatable teaching harder.",
+      "role": "Fill Mock is the accelerator that moves Creator into a realistic working state in seconds."
+    },
+    "jsonPreview": {
+      "title": "Resource JSON Preview",
+      "summary": "The right panel lets viewers inspect the FHIR resource structure as the form evolves.",
+      "feature": "The JSON panel supports font size control, collapse behavior, and latest-resource focus, making the data model visible and teachable.",
+      "problem": "A form alone hides the FHIR structure and makes it difficult to connect UI fields to resource content.",
+      "role": "This panel bridges the UI and the actual FHIR resource representation."
+    },
+    "requestInspector": {
+      "title": "FHIR Request Inspector",
+      "summary": "This panel shows how the app actually talks to the FHIR server.",
+      "feature": "The inspector presents request flow, HTTP methods, URLs, and request/response details in a compact Postman-like view.",
+      "problem": "Without visible HTTP traffic, it is hard to explain what the app is really doing with the server.",
+      "role": "It turns front-end actions into observable FHIR API interactions."
+    },
+    "bundleAssembly": {
+      "title": "Composition and Document Bundle",
+      "summary": "The final step assembles individual resources into a complete electronic prescription document.",
+      "feature": "RxFHIR creates Composition and then assembles a document Bundle while keeping identifiers and submission results visible.",
+      "problem": "A document is more than a list of resources; it needs document-level meaning and relationships.",
+      "role": "This is the final packaging step that converts the authoring workflow into a full FHIR document."
+    },
+    "consumerSearch": {
+      "title": "Consumer Search Modes",
+      "summary": "Consumer supports multiple search modes for different usage scenarios.",
+      "feature": "Basic, date-based, and complex search are organized in a single panel, with mock fill and prefill support for fast lookup.",
+      "problem": "Real searches rarely rely on one single condition, so users need more than one search path.",
+      "role": "Consumer is the retrieval side of the system and brings submitted bundles back into view."
+    },
+    "consumerQuickStart": {
+      "title": "Search Helpers",
+      "summary": "Recent submissions and saved searches help users return to meaningful queries quickly.",
+      "feature": "The quick-start pane gathers recent complete bundles, favorite searches, and recent searches into one recovery surface.",
+      "problem": "Rebuilding the same queries repeatedly slows down demos and everyday validation work.",
+      "role": "This area shortens the path from previous work to a new search."
+    },
+    "consumerResults": {
+      "title": "Search Results",
+      "summary": "Bundle search results are summarized in a card-based list for fast scanning.",
+      "feature": "Each result highlights patient, date, organization, and medication clues so users can identify the right prescription quickly.",
+      "problem": "Raw results or sparse labels make it hard to distinguish one prescription from another.",
+      "role": "The result list connects search input with the detail viewer."
+    },
+    "consumerStructuredDetail": {
+      "title": "Structured Detail View",
+      "summary": "The detail panel turns a technical bundle into a readable clinical summary.",
+      "feature": "Patient, practitioner, organization, condition, and medication data are grouped into readable sections instead of raw JSON only.",
+      "problem": "A raw FHIR bundle is complete but not ideal for teaching or quick review.",
+      "role": "Structured detail is the main reading mode for Consumer."
+    },
+    "consumerRawJson": {
+      "title": "Raw JSON View",
+      "summary": "The same prescription can also be inspected as raw bundle JSON.",
+      "feature": "Structured and JSON views can be switched instantly, supporting both human-readable demos and technical validation.",
+      "problem": "A single display mode cannot satisfy both non-technical and technical audiences.",
+      "role": "Raw JSON provides a direct view into the source bundle structure."
+    },
+    "settingsServer": {
+      "title": "FHIR Server Settings",
+      "summary": "Settings allow the app to switch between target FHIR environments.",
+      "feature": "Users can edit the server URL, apply presets, and persist the preferred environment.",
+      "problem": "Teaching, testing, and showcasing often require switching servers quickly.",
+      "role": "This is the environment control center for the entire app."
+    },
+    "settingsStatus": {
+      "title": "Health Check and Status",
+      "summary": "The app continuously exposes environment status for better observability.",
+      "feature": "Health check results show online/offline state, server name, and FHIR version in one place.",
+      "problem": "Without clear environment status, it is difficult to tell whether an issue comes from data, connectivity, or the server itself.",
+      "role": "This area provides system observability and confidence when working across environments."
+    },
+    "appControls": {
+      "title": "Theme and Language Controls",
+      "summary": "RxFHIR supports quick visual and language switching for demos and real usage.",
+      "feature": "The app can switch between Chinese and English as well as light, dark, and system themes while keeping the experience consistent.",
+      "problem": "A teaching-oriented app needs to adapt quickly to different audiences and display conditions.",
+      "role": "These controls demonstrate product flexibility beyond the core FHIR workflow."
+    },
+    "statusBar": {
+      "title": "Status Bar",
+      "summary": "The bottom status bar keeps critical environment information visible at all times.",
+      "feature": "It surfaces server health, FHIR version, and the current module in a compact persistent layer.",
+      "problem": "Users can lose context quickly in multi-page tools if system status is hidden.",
+      "role": "The status bar is the persistent context layer that supports every page in the app."
+    }
+  }
+}

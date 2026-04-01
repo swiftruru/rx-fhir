@@ -3,6 +3,7 @@ import { FilePlus2, Search, Settings, Activity, Info } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../lib/utils'
 import { useAppStore } from '../store/appStore'
+import FeatureShowcaseTarget from './FeatureShowcaseTarget'
 
 type NavKey = 'creator' | 'consumer' | 'settings' | 'about'
 
@@ -20,9 +21,13 @@ export default function Sidebar(): React.JSX.Element {
   const shortUrl = serverUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
 
   return (
-    <aside className="w-56 flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border shrink-0">
-      {/* macOS traffic-light drag zone — same bg as sidebar so it blends in */}
-      <div className="titlebar-drag-region" />
+    <FeatureShowcaseTarget
+      id="app.sidebar"
+      className="w-56 shrink-0 border-r border-sidebar-border bg-sidebar"
+    >
+      <aside className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
+        {/* macOS traffic-light drag zone — same bg as sidebar so it blends in */}
+        <div className="titlebar-drag-region" />
 
       {/* Logo */}
       <div className="px-4 py-4 border-b border-sidebar-border">
@@ -70,6 +75,7 @@ export default function Sidebar(): React.JSX.Element {
           </span>
         </div>
       </div>
-    </aside>
+      </aside>
+    </FeatureShowcaseTarget>
   )
 }

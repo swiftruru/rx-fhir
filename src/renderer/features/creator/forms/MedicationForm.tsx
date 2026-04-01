@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import FormGuideCard from '../../../components/FormGuideCard'
 import CreatorFeedbackAlert from '../../../components/CreatorFeedbackAlert'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
-import { useCreatorMockFill } from '../../../hooks/useCreatorMockFill'
+import { useCreatorMockFill, useLiveDemoTypedMockFill } from '../../../hooks/useCreatorMockFill'
+import { useLiveDemoFormController } from '../../../hooks/useLiveDemoFormController'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
 import { findOrCreateDetailed, putResource, resetLoggedRequests } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
@@ -90,6 +91,9 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
   const fillMock = useCreatorMockFill<FormData>('medication', (key, value) => {
     setValue(key as keyof FormData, value as never)
   })
+  const fillDemo = useLiveDemoTypedMockFill<FormData>('medication', (key, value) => {
+    setValue(key as keyof FormData, value as never)
+  })
 
   useCreatorDraftAutosave('medication', watch)
   const codeSystem = watch('codeSystem')
@@ -163,6 +167,8 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
       setErrorMsg(e instanceof Error ? e.message : tc('errors.unknown'))
     }
   }
+
+  useLiveDemoFormController('medication', fillMock, handleSubmit, onSubmit, fillDemo)
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

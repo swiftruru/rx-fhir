@@ -10,7 +10,8 @@ import { Label } from '../../../components/ui/label'
 import FormGuideCard from '../../../components/FormGuideCard'
 import CreatorFeedbackAlert from '../../../components/CreatorFeedbackAlert'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
-import { useCreatorMockFill } from '../../../hooks/useCreatorMockFill'
+import { useCreatorMockFill, useLiveDemoTypedMockFill } from '../../../hooks/useCreatorMockFill'
+import { useLiveDemoFormController } from '../../../hooks/useLiveDemoFormController'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
 import { findOrCreateDetailed, putResource, resetLoggedRequests } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
@@ -71,6 +72,9 @@ export default function ConditionForm({ onSuccess }: Props): React.JSX.Element {
   })
 
   const fillMock = useCreatorMockFill<FormData>('condition', (key, value) => {
+    setValue(key as keyof FormData, value as never)
+  })
+  const fillDemo = useLiveDemoTypedMockFill<FormData>('condition', (key, value) => {
     setValue(key as keyof FormData, value as never)
   })
 
@@ -159,6 +163,8 @@ export default function ConditionForm({ onSuccess }: Props): React.JSX.Element {
       setErrorMsg(e instanceof Error ? e.message : tc('errors.unknown'))
     }
   }
+
+  useLiveDemoFormController('condition', fillMock, handleSubmit, onSubmit, fillDemo)
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

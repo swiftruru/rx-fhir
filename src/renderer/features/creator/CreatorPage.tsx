@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { CheckCircle2, RotateCcw, AlertTriangle, Save } from 'lucide-react'
+import { CheckCircle2, RotateCcw, AlertTriangle, Save, GraduationCap } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/button'
@@ -7,11 +7,17 @@ import { Alert, AlertDescription } from '../../components/ui/alert'
 import ResourceStepper from './ResourceStepper'
 import { useCreatorStore } from '../../store/creatorStore'
 import { useMockStore } from '../../store/mockStore'
+import { LIVE_DEMO_STEPS } from '../../demo/liveDemoScript'
+import { useLiveDemoStore } from '../../store/liveDemoStore'
+import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
 import type { ConsumerLaunchState } from '../consumer/searchState'
 
 export default function CreatorPage(): React.JSX.Element {
   const { bundleId, resources, reset, draftRestored, dismissDraftRestored, draftSavedAt, draftHydrated } = useCreatorStore()
   const resetMockScenario = useMockStore((s) => s.reset)
+  const liveDemoStatus = useLiveDemoStore((s) => s.status)
+  const startLiveDemo = useLiveDemoStore((s) => s.start)
+  const featureShowcaseStatus = useFeatureShowcaseStore((s) => s.status)
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
   const navigate = useNavigate()
@@ -61,6 +67,13 @@ export default function CreatorPage(): React.JSX.Element {
     navigate('/consumer', { state: launchState })
   }
 
+  function handleStartLiveDemo(): void {
+    startLiveDemo(LIVE_DEMO_STEPS.length, 'manual')
+  }
+
+  const liveDemoActive = liveDemoStatus === 'running' || liveDemoStatus === 'paused'
+  const featureShowcaseActive = featureShowcaseStatus === 'running' || featureShowcaseStatus === 'paused'
+
   return (
     <div className="flex flex-col h-full">
       {/* Page header */}
@@ -88,10 +101,16 @@ export default function CreatorPage(): React.JSX.Element {
             </div>
           </div>
         ) : (
-          <Button variant="outline" size="sm" onClick={handleResetClick}>
-            <RotateCcw className="h-4 w-4" />
-            {tc('buttons.reset')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleStartLiveDemo} disabled={liveDemoActive || featureShowcaseActive}>
+              <GraduationCap className="h-4 w-4" />
+              {liveDemoActive ? t('liveDemo.runningButton') : t('liveDemo.startButton')}
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleResetClick} disabled={liveDemoActive || featureShowcaseActive}>
+              <RotateCcw className="h-4 w-4" />
+              {tc('buttons.reset')}
+            </Button>
+          </div>
         )}
       </div>
 

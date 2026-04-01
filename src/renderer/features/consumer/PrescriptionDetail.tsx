@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { X, Code2, Braces, Download } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
@@ -10,6 +10,7 @@ import FhirErrorAlert from '../../components/FhirErrorAlert'
 import JsonViewer from '../../components/JsonViewer'
 import type { BundleSummary } from '../../types/fhir.d'
 import { exportBundleJson, getBundleFileErrorMessage } from '../../services/bundleFileService'
+import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
 
 interface Props {
   summary: BundleSummary
@@ -38,10 +39,14 @@ function Field({ label, value }: { label: string; value?: string }): React.JSX.E
 export default function PrescriptionDetail({ summary, onClose }: Props): React.JSX.Element {
   const { t } = useTranslation('consumer')
   const { t: tc } = useTranslation('common')
+  const showcaseStatus = useFeatureShowcaseStore((state) => state.status)
+  const showcaseUi = useFeatureShowcaseStore((state) => state.ui)
   const [showJson, setShowJson] = useState(false)
   const [fileMessage, setFileMessage] = useState<string>()
   const [fileError, setFileError] = useState<string>()
   const [exporting, setExporting] = useState(false)
+  const showcaseBackupRef = useRef<boolean>()
+  const showcaseActive = showcaseStatus === 'running' || showcaseStatus === 'paused'
   const bundle = summary.raw
 
   const entries = bundle.entry || []
@@ -60,6 +65,26 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
   const composition = getResource<fhir4.Composition>('Composition')
 
   const s = (section: string, key: string) => t(`detail.sections.${section}.${key}`)
+
+  useEffect(() => {
+    if (showcaseActive && showcaseBackupRef.current === undefined) {
+      showcaseBackupRef.current = showJson
+      return
+    }
+
+    if (!showcaseActive && showcaseBackupRef.current !== undefined) {
+      setShowJson(showcaseBackupRef.current)
+      showcaseBackupRef.current = undefined
+    }
+  }, [showJson, showcaseActive])
+
+  useEffect(() => {
+    if (!showcaseActive) return
+    const detailView = showcaseUi.consumer?.detailView
+    if (detailView) {
+      setShowJson(detailView === 'json')
+    }
+  }, [showcaseActive, showcaseUi.consumer?.detailView])
 
   async function handleExport(): Promise<void> {
     setExporting(true)

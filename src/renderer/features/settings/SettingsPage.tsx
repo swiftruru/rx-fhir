@@ -7,6 +7,7 @@ import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
 import { Alert, AlertDescription } from '../../components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
+import FeatureShowcaseTarget from '../../components/FeatureShowcaseTarget'
 import { useAppStore } from '../../store/appStore'
 import { checkServerHealth } from '../../services/fhirClient'
 
@@ -56,13 +57,14 @@ export default function SettingsPage(): React.JSX.Element {
         <p className="text-sm text-muted-foreground mt-1">{t('page.description')}</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t('server.title')}</CardTitle>
-          <CardDescription>{t('server.description')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(handleSave)} className="space-y-4">
+      <FeatureShowcaseTarget id="settings.serverCard">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t('server.title')}</CardTitle>
+            <CardDescription>{t('server.description')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(handleSave)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="server-url">{t('server.urlLabel')}</Label>
               <Input
@@ -140,28 +142,31 @@ export default function SettingsPage(): React.JSX.Element {
                 <AlertDescription>{t('server.saved')}</AlertDescription>
               </Alert>
             )}
-          </form>
-        </CardContent>
-      </Card>
+            </form>
+          </CardContent>
+        </Card>
+      </FeatureShowcaseTarget>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t('status.title')}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${
-              serverStatus === 'online' ? 'bg-green-500' :
-              serverStatus === 'offline' ? 'bg-red-500' :
-              serverStatus === 'checking' ? 'bg-yellow-500 animate-pulse' : 'bg-gray-400'
-            }`} />
-            <span className="capitalize">{serverStatus}</span>
-          </div>
-          <div className="font-mono text-xs text-muted-foreground break-all">{serverUrl}</div>
-          {serverName && <div className="text-muted-foreground">{t('status.serverInfo')}: {serverName}</div>}
-          {serverVersion && <div className="text-muted-foreground">{t('status.fhirVersion')}: R{serverVersion}</div>}
-        </CardContent>
-      </Card>
+      <FeatureShowcaseTarget id="settings.statusCard">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t('status.title')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${
+                serverStatus === 'online' ? 'bg-green-500' :
+                serverStatus === 'offline' ? 'bg-red-500' :
+                serverStatus === 'checking' ? 'bg-yellow-500 animate-pulse' : 'bg-gray-400'
+              }`} />
+              <span className="capitalize">{serverStatus}</span>
+            </div>
+            <div className="font-mono text-xs text-muted-foreground break-all">{serverUrl}</div>
+            {serverName && <div className="text-muted-foreground">{t('status.serverInfo')}: {serverName}</div>}
+            {serverVersion && <div className="text-muted-foreground">{t('status.fhirVersion')}: R{serverVersion}</div>}
+          </CardContent>
+        </Card>
+      </FeatureShowcaseTarget>
 
     </div>
     </div>

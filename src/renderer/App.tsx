@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { Sun, Moon, Monitor } from 'lucide-react'
+import { Sun, Moon, Monitor, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import i18n from './i18n'
 import { TooltipProvider } from './components/ui/tooltip'
@@ -10,11 +10,20 @@ import CreatorPage from './features/creator/CreatorPage'
 import ConsumerPage from './features/consumer/ConsumerPage'
 import SettingsPage from './features/settings/SettingsPage'
 import AboutPage from './features/about/AboutPage'
+import LiveDemoCoach from './components/LiveDemoCoach'
+import LiveDemoRunner from './components/LiveDemoRunner'
+import FeatureShowcaseCoach from './components/FeatureShowcaseCoach'
+import FeatureShowcaseRunner from './components/FeatureShowcaseRunner'
+import FeatureShowcaseOverlay from './components/FeatureShowcaseOverlay'
+import FeatureShowcaseTarget from './components/FeatureShowcaseTarget'
 import { useAppStore, type ThemeMode } from './store/appStore'
+import { useLiveDemoStore } from './store/liveDemoStore'
+import { useFeatureShowcaseStore } from './store/featureShowcaseStore'
+import { FEATURE_SHOWCASE_STEPS } from './showcase/featureShowcaseScript'
 
 const THEME_CYCLE: ThemeMode[] = ['light', 'dark', 'system']
 
-function ThemeToggle(): React.JSX.Element {
+function ThemeToggle({ disabled = false }: { disabled?: boolean }): React.JSX.Element {
   const { theme, setTheme } = useAppStore()
   const { t } = useTranslation('common')
 
@@ -30,7 +39,8 @@ function ThemeToggle(): React.JSX.Element {
     <button
       onClick={cycleTheme}
       title={label}
-      className="flex items-center gap-1.5 px-2 h-full text-foreground/50 hover:text-foreground transition-colors"
+      disabled={disabled}
+      className="flex items-center gap-1.5 px-2 h-full text-foreground/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
       style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
     >
       <Icon className="h-3.5 w-3.5" />
@@ -39,7 +49,7 @@ function ThemeToggle(): React.JSX.Element {
   )
 }
 
-function LanguageToggle(): React.JSX.Element {
+function LanguageToggle({ disabled = false }: { disabled?: boolean }): React.JSX.Element {
   const { locale, setLocale } = useAppStore()
   const { t } = useTranslation('common')
 
@@ -53,7 +63,8 @@ function LanguageToggle(): React.JSX.Element {
     <button
       onClick={toggle}
       title={t('lang.current')}
-      className="flex items-center px-2 h-full text-foreground/50 hover:text-foreground transition-colors text-[11px] font-medium"
+      disabled={disabled}
+      className="flex items-center px-2 h-full text-foreground/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 transition-colors text-[11px] font-medium"
       style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
     >
       {t('lang.toggle')}
@@ -64,6 +75,12 @@ function LanguageToggle(): React.JSX.Element {
 export default function App(): React.JSX.Element {
   const theme = useAppStore((s) => s.theme)
   const locale = useAppStore((s) => s.locale)
+  const { t } = useTranslation('showcase')
+  const liveDemoStatus = useLiveDemoStore((state) => state.status)
+  const featureShowcaseStatus = useFeatureShowcaseStore((state) => state.status)
+  const startFeatureShowcase = useFeatureShowcaseStore((state) => state.start)
+  const featureShowcaseActive = featureShowcaseStatus === 'running' || featureShowcaseStatus === 'paused'
+  const liveDemoActive = liveDemoStatus === 'running' || liveDemoStatus === 'paused'
 
   // Sync locale from persisted store on mount
   useEffect(() => {
@@ -100,12 +117,28 @@ export default function App(): React.JSX.Element {
           <Sidebar />
 
           {/* Main content column */}
-          <div className="flex flex-col flex-1 overflow-hidden">
+          <div className="relative flex flex-col flex-1 overflow-hidden">
             {/* macOS titlebar spacer — draggable, with controls pinned right */}
             <div className="titlebar-spacer flex items-center justify-end pr-1">
-              <ThemeToggle />
-              <div className="w-px h-3 bg-foreground/20 mx-1" />
-              <LanguageToggle />
+              <FeatureShowcaseTarget id="app.utilityControls">
+                <div className="flex h-full items-center">
+                  <button
+                    type="button"
+                    onClick={() => startFeatureShowcase(FEATURE_SHOWCASE_STEPS.length)}
+                    title={t('startButton')}
+                    disabled={liveDemoActive || featureShowcaseActive}
+                    className="flex items-center gap-1.5 px-2 h-full text-foreground/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 transition-colors text-[11px] font-medium"
+                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>{featureShowcaseActive ? t('runningButton') : t('startButton')}</span>
+                  </button>
+                  <div className="w-px h-3 bg-foreground/20 mx-1" />
+                  <ThemeToggle disabled={featureShowcaseActive} />
+                  <div className="w-px h-3 bg-foreground/20 mx-1" />
+                  <LanguageToggle disabled={featureShowcaseActive} />
+                </div>
+              </FeatureShowcaseTarget>
             </div>
 
             <main className="flex-1 overflow-auto">
@@ -117,6 +150,12 @@ export default function App(): React.JSX.Element {
                 <Route path="/about" element={<AboutPage />} />
               </Routes>
             </main>
+
+            <LiveDemoRunner />
+            <LiveDemoCoach />
+            <FeatureShowcaseRunner />
+            <FeatureShowcaseOverlay />
+            <FeatureShowcaseCoach />
 
             {/* Status bar at bottom */}
             <StatusBar />

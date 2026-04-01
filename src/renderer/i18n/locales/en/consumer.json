@@ -6,6 +6,15 @@
     "quickStartTitle": "Recent Submissions & Saved Searches",
     "quickStartDescription": "Reuse recent submissions or saved searches here, then refine the query on the left.",
     "quickStartEmpty": "No search helpers are available yet.",
+    "shortcuts": {
+      "sourceLabel": "Data Source",
+      "importTitle": "Import a Local Bundle",
+      "importDescription": "Open a local FHIR Bundle JSON file and inspect it directly in Consumer without going back to Creator or resubmitting it to the FHIR Server.",
+      "examplesLabel": "Query Examples",
+      "examplesTitle": "Apply a Query Example",
+      "examplesDescription": "Fill the current Basic / Date / Complex tab with a sample query so demos and feature checks can start faster.",
+      "examplesButton": "Apply Query Example"
+    },
     "middleTabs": {
       "results": "Results",
       "quickStart": "Shortcuts"

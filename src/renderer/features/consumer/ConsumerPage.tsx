@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Upload, Wand2 } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs'
-import SearchForm from './SearchForm'
+import { Button } from '../../components/ui/button'
+import FeatureShowcaseTarget from '../../components/FeatureShowcaseTarget'
+import SearchForm, { type SearchFormHandle } from './SearchForm'
 import ResultList from './ResultList'
 import PrescriptionDetail from './PrescriptionDetail'
 import RecentRecords from './RecentRecords'
@@ -10,6 +13,8 @@ import SavedSearches from './SavedSearches'
 import type { BundleSummary, SearchParams } from '../../types/fhir.d'
 import { useHistoryStore, type SubmissionRecord } from '../../store/historyStore'
 import { useSearchHistoryStore } from '../../store/searchHistoryStore'
+import { useLiveDemoStore } from '../../store/liveDemoStore'
+import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
 import { fetchBundleById } from '../../services/fhirClient'
 import { extractBundleHistoryMetadata } from '../../services/searchService'
 import {
@@ -21,6 +26,23 @@ import {
   type SearchTab
 } from './searchState'
 
+interface ConsumerPageBackup {
+  results: BundleSummary[]
+  total: number
+  selected: BundleSummary | null
+  hasSearched: boolean
+  activeTab: SearchTab
+  prefill: SearchPrefill | null
+  autoSearch: SearchParams | null
+  targetBundleId: string | null
+  searchExecution: ConsumerSearchExecution | null
+  dashboardRecentOpen: boolean
+  dashboardSavedOpen: boolean
+  middleTab: 'results' | 'quickstart'
+  activeComplexBy: 'organization' | 'author'
+  prefillNotice: { message: string; variant?: 'info' | 'warning' } | null
+}
+
 export default function ConsumerPage(): React.JSX.Element {
   const { t } = useTranslation('consumer')
   const location = useLocation()
@@ -30,6 +52,10 @@ export default function ConsumerPage(): React.JSX.Element {
   const historyCount = records.filter((record) => record.type === 'bundle').length
   const savedSearchCount = useSearchHistoryStore((state) => state.records.length)
   const recordSearch = useSearchHistoryStore((state) => state.recordSearch)
+  const markConsumerSearchReady = useLiveDemoStore((state) => state.markConsumerSearchReady)
+  const showcaseStatus = useFeatureShowcaseStore((state) => state.status)
+  const showcaseUi = useFeatureShowcaseStore((state) => state.ui)
+  const showcaseSnapshot = useFeatureShowcaseStore((state) => state.snapshot)
   const [results, setResults] = useState<BundleSummary[]>([])
   const [total, setTotal] = useState(0)
   const [selected, setSelected] = useState<BundleSummary | null>(null)
@@ -44,6 +70,9 @@ export default function ConsumerPage(): React.JSX.Element {
   const [middleTab, setMiddleTab] = useState<'results' | 'quickstart'>('quickstart')
   const [activeComplexBy, setActiveComplexBy] = useState<'organization' | 'author'>('organization')
   const [prefillNotice, setPrefillNotice] = useState<{ message: string; variant?: 'info' | 'warning' } | null>(null)
+  const showcaseBackupRef = useRef<ConsumerPageBackup>()
+  const searchFormRef = useRef<SearchFormHandle>(null)
+  const showcaseActive = showcaseStatus === 'running' || showcaseStatus === 'paused'
 
   useEffect(() => {
     const launchState = location.state as ConsumerLaunchState | null
@@ -67,6 +96,91 @@ export default function ConsumerPage(): React.JSX.Element {
     setDashboardSavedOpen(savedSearchCount > 0)
   }, [savedSearchCount])
 
+  useEffect(() => {
+    if (showcaseActive && !showcaseBackupRef.current) {
+      showcaseBackupRef.current = {
+        results,
+        total,
+        selected,
+        hasSearched,
+        activeTab,
+        prefill,
+        autoSearch,
+        targetBundleId,
+        searchExecution,
+        dashboardRecentOpen,
+        dashboardSavedOpen,
+        middleTab,
+        activeComplexBy,
+        prefillNotice
+      }
+      return
+    }
+
+    if (!showcaseActive && showcaseBackupRef.current) {
+      const backup = showcaseBackupRef.current
+      setResults(backup.results)
+      setTotal(backup.total)
+      setSelected(backup.selected)
+      setHasSearched(backup.hasSearched)
+      setActiveTab(backup.activeTab)
+      setPrefill(backup.prefill)
+      setAutoSearch(backup.autoSearch)
+      setTargetBundleId(backup.targetBundleId)
+      setSearchExecution(backup.searchExecution)
+      setDashboardRecentOpen(backup.dashboardRecentOpen)
+      setDashboardSavedOpen(backup.dashboardSavedOpen)
+      setMiddleTab(backup.middleTab)
+      setActiveComplexBy(backup.activeComplexBy)
+      setPrefillNotice(backup.prefillNotice)
+      showcaseBackupRef.current = undefined
+    }
+  }, [
+    activeComplexBy,
+    activeTab,
+    autoSearch,
+    dashboardRecentOpen,
+    dashboardSavedOpen,
+    hasSearched,
+    middleTab,
+    prefill,
+    prefillNotice,
+    results,
+    searchExecution,
+    selected,
+    showcaseActive,
+    targetBundleId,
+    total
+  ])
+
+  useEffect(() => {
+    if (!showcaseActive || !showcaseSnapshot) return
+
+    const consumerUi = showcaseUi.consumer ?? {}
+    const nextMiddleTab = consumerUi.middleTab ?? 'quickstart'
+    const nextPrefill = consumerUi.prefill ?? showcaseSnapshot.consumer.quickSearchPrefill
+    const nextActiveTab = consumerUi.activeTab ?? nextPrefill.tab
+    const nextSelectedId = consumerUi.selectedBundleId ?? showcaseSnapshot.consumer.selectedBundleId
+    const nextSelected = nextSelectedId
+      ? showcaseSnapshot.consumer.results.find((summary) => summary.id === nextSelectedId) ?? null
+      : null
+
+    setResults(showcaseSnapshot.consumer.results)
+    setTotal(showcaseSnapshot.consumer.total)
+    setSearchExecution(nextMiddleTab === 'results' ? showcaseSnapshot.consumer.quickSearchExecution : null)
+    setHasSearched(nextMiddleTab === 'results')
+    setActiveTab(nextActiveTab)
+    setPrefill(nextPrefill)
+    setAutoSearch(null)
+    setTargetBundleId(null)
+    setDashboardRecentOpen(true)
+    setDashboardSavedOpen(true)
+    setMiddleTab(nextMiddleTab)
+    setActiveComplexBy(nextPrefill.tab === 'complex' ? nextPrefill.complexBy ?? 'organization' : 'organization')
+    setPrefillNotice(null)
+    setSelected(consumerUi.showDetail && nextMiddleTab === 'results' ? nextSelected : null)
+  }, [showcaseActive, showcaseSnapshot, showcaseUi.consumer])
+
   function handleResults(r: BundleSummary[], t: number, execution: ConsumerSearchExecution): void {
     setResults(r)
     setTotal(t)
@@ -81,6 +195,7 @@ export default function ConsumerPage(): React.JSX.Element {
       setSelected(null)
     }
     setHasSearched(true)
+    markConsumerSearchReady()
   }
 
   function handleImportedBundle(summary: BundleSummary): void {
@@ -256,33 +371,44 @@ export default function ConsumerPage(): React.JSX.Element {
     setPrefillNotice(null)
   }
 
+  function handleImportBundleFromShortcuts(): void {
+    void searchFormRef.current?.importBundle()
+  }
+
+  function handleApplyQueryExample(): void {
+    searchFormRef.current?.fillMock()
+  }
+
   const showDetail = middleTab === 'results' && Boolean(selected)
 
   return (
     <div className="flex h-full">
       {/* Left panel: Search form */}
-      <div className="w-72 border-r flex flex-col shrink-0">
-        <div className="px-4 py-4 border-b bg-background shrink-0">
-          <h1 className="text-base font-bold">{t('page.title')}</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">{t('page.description')}</p>
-        </div>
-        <div className="flex-1 overflow-auto bg-muted/10 px-4 py-4">
-          <div className="rounded-xl border border-border/70 bg-background/95 p-3 shadow-sm">
-            <SearchForm
-              activeTab={activeTab}
-              onTabChange={handleSearchTabChange}
-              onComplexByChange={setActiveComplexBy}
-              onResults={handleResults}
-              onImportBundle={handleImportedBundle}
-              prefill={prefill}
-              prefillNotice={prefillNotice}
-              onPrefillConsumed={() => setPrefill(null)}
-              autoSearch={autoSearch}
-              onAutoSearchConsumed={() => setAutoSearch(null)}
-            />
+      <FeatureShowcaseTarget id="consumer.searchPanel" className="w-72 border-r flex flex-col shrink-0">
+        <div className="h-full">
+          <div className="px-4 py-4 border-b bg-background shrink-0">
+            <h1 className="text-base font-bold">{t('page.title')}</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">{t('page.description')}</p>
+          </div>
+          <div className="flex-1 overflow-auto bg-muted/10 px-4 py-4">
+            <div className="rounded-xl border border-border/70 bg-background/95 p-3 shadow-sm">
+              <SearchForm
+                ref={searchFormRef}
+                activeTab={activeTab}
+                onTabChange={handleSearchTabChange}
+                onComplexByChange={setActiveComplexBy}
+                onResults={handleResults}
+                onImportBundle={handleImportedBundle}
+                prefill={prefill}
+                prefillNotice={prefillNotice}
+                onPrefillConsumed={() => setPrefill(null)}
+                autoSearch={autoSearch}
+                onAutoSearchConsumed={() => setAutoSearch(null)}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      </FeatureShowcaseTarget>
 
       {/* Middle panel: Result list */}
       <div className="flex-1 min-w-0 border-r flex flex-col shrink-0">
@@ -296,66 +422,100 @@ export default function ConsumerPage(): React.JSX.Element {
         </div>
 
         {middleTab === 'results' ? (
-          hasSearched ? (
-            <ResultList
-              results={results}
-              total={total}
-              searchExecution={searchExecution}
-              selected={selected}
-              onSelect={setSelected}
-            />
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground">
-              <div className="text-center space-y-2">
-                <div className="text-4xl opacity-20">🔍</div>
-                <p className="text-sm">{t('page.emptyPrompt')}</p>
-              </div>
-            </div>
-          )
-        ) : (
-          <div className="flex-1 overflow-auto bg-muted/10 p-5">
-            <div className="mx-auto max-w-5xl space-y-4">
-              <div className="rounded-2xl border border-dashed border-border/70 bg-background/80 px-5 py-4">
-                <p className="text-sm font-semibold text-foreground">{t('page.quickStartTitle')}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{t('page.quickStartDescription')}</p>
-              </div>
-
-              {historyCount > 0 || savedSearchCount > 0 ? (
-                <div className="grid gap-4 xl:grid-cols-2">
-                  <RecentRecords
-                    onFill={handleFill}
-                    open={dashboardRecentOpen}
-                    onToggle={() => setDashboardRecentOpen((value) => !value)}
-                    variant="dashboard"
-                  />
-                  <SavedSearches
-                    onRun={handleRunSavedSearch}
-                    open={dashboardSavedOpen}
-                    onToggle={() => setDashboardSavedOpen((value) => !value)}
-                    variant="dashboard"
-                  />
+          <FeatureShowcaseTarget id="consumer.resultsPane" className="flex-1 min-h-0">
+            {hasSearched ? (
+              <ResultList
+                results={results}
+                total={total}
+                searchExecution={searchExecution}
+                selected={selected}
+                onSelect={setSelected}
+              />
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                <div className="text-center space-y-2">
+                  <div className="text-4xl opacity-20">🔍</div>
+                  <p className="text-sm">{t('page.emptyPrompt')}</p>
                 </div>
-              ) : (
-                <div className="flex items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/70 px-6 py-10 text-muted-foreground">
-                  <div className="text-center space-y-2">
-                    <div className="text-4xl opacity-20">🗂️</div>
-                    <p className="text-sm">{t('page.quickStartEmpty')}</p>
+              </div>
+            )}
+          </FeatureShowcaseTarget>
+        ) : (
+          <FeatureShowcaseTarget id="consumer.quickStartPane" className="flex-1 min-h-0">
+            <div className="h-full overflow-auto bg-muted/10 p-5">
+              <div className="mx-auto max-w-5xl space-y-4">
+                <div className="rounded-2xl border border-dashed border-border/70 bg-background/80 px-5 py-4">
+                  <p className="text-sm font-semibold text-foreground">{t('page.quickStartTitle')}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t('page.quickStartDescription')}</p>
+                </div>
+
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <div className="rounded-xl border border-border bg-background px-4 py-4 shadow-sm">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-primary/15 bg-primary/5 px-2 py-0.5 text-[10px] font-medium tracking-wide text-primary">
+                      <Upload className="h-3 w-3" />
+                      {t('page.shortcuts.sourceLabel')}
+                    </span>
+                    <p className="mt-3 text-sm font-semibold text-foreground">{t('page.shortcuts.importTitle')}</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('page.shortcuts.importDescription')}</p>
+                    <Button type="button" variant="outline" className="mt-4 w-full justify-start" onClick={handleImportBundleFromShortcuts}>
+                      <Upload className="h-4 w-4" />
+                      {t('search.importButton')}
+                    </Button>
+                  </div>
+
+                  <div className="rounded-xl border border-border bg-background px-4 py-4 shadow-sm">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium tracking-wide text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+                      <Wand2 className="h-3 w-3" />
+                      {t('page.shortcuts.examplesLabel')}
+                    </span>
+                    <p className="mt-3 text-sm font-semibold text-foreground">{t('page.shortcuts.examplesTitle')}</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('page.shortcuts.examplesDescription')}</p>
+                    <Button type="button" variant="outline" className="mt-4 w-full justify-start" onClick={handleApplyQueryExample}>
+                      <Wand2 className="h-4 w-4" />
+                      {t('page.shortcuts.examplesButton')}
+                    </Button>
                   </div>
                 </div>
-              )}
+
+                {historyCount > 0 || savedSearchCount > 0 ? (
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    <RecentRecords
+                      onFill={handleFill}
+                      open={dashboardRecentOpen}
+                      onToggle={() => setDashboardRecentOpen((value) => !value)}
+                      variant="dashboard"
+                    />
+                    <SavedSearches
+                      onRun={handleRunSavedSearch}
+                      open={dashboardSavedOpen}
+                      onToggle={() => setDashboardSavedOpen((value) => !value)}
+                      variant="dashboard"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/70 px-6 py-10 text-muted-foreground">
+                    <div className="text-center space-y-2">
+                      <div className="text-4xl opacity-20">🗂️</div>
+                      <p className="text-sm">{t('page.quickStartEmpty')}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </FeatureShowcaseTarget>
         )}
       </div>
 
       {/* Right panel: Detail */}
       {showDetail && selected && (
-        <div className="w-[clamp(26rem,42vw,44rem)] min-w-[26rem] max-w-[44rem] flex flex-col shrink-0">
-          <PrescriptionDetail
-            summary={selected}
-            onClose={() => setSelected(null)}
-          />
-        </div>
+        <FeatureShowcaseTarget id="consumer.detailPane" className="w-[clamp(26rem,42vw,44rem)] min-w-[26rem] max-w-[44rem] flex flex-col shrink-0">
+          <div className="h-full">
+            <PrescriptionDetail
+              summary={selected}
+              onClose={() => setSelected(null)}
+            />
+          </div>
+        </FeatureShowcaseTarget>
       )}
     </div>
   )

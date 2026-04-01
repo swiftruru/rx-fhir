@@ -12,6 +12,8 @@ import FormGuideCard from '../../../components/FormGuideCard'
 import CreatorFeedbackAlert from '../../../components/CreatorFeedbackAlert'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
+import { useLiveDemoTypedMockFill } from '../../../hooks/useCreatorMockFill'
+import { useLiveDemoFormController } from '../../../hooks/useLiveDemoFormController'
 import { getPrimaryDemoScenarioId, getScenarioMock } from '../../../mocks/selectors'
 import { findOrCreateDetailed, putResource, resetLoggedRequests } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
@@ -99,6 +101,9 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
 
     applyMock(getRandomCreatorMock('patient', locale))
   }
+  const fillDemo = useLiveDemoTypedMockFill<FormData>('patient', (key, value) => {
+    setValue(key as keyof FormData, value as never)
+  })
 
   useCreatorDraftAutosave('patient', watch)
   const selectedGender = watch('gender')
@@ -166,6 +171,8 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
       setErrorMsg(e instanceof Error ? e.message : tc('errors.unknown'))
     }
   }
+
+  useLiveDemoFormController('patient', fillMock, handleSubmit, onSubmit, fillDemo)
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

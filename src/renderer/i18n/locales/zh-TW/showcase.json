@@ -1,0 +1,140 @@
+{
+  "startButton": "特色導覽",
+  "runningButton": "導覽進行中",
+  "panelTitle": "Feature Showcase",
+  "progress": "第 {{current}} / {{total}} 步",
+  "preparing": {
+    "title": "準備展示畫面",
+    "description": "系統正在切換到展示模式，並載入穩定的示範畫面。"
+  },
+  "completed": {
+    "title": "特色導覽完成",
+    "description": "已完成 RxFHIR 主要亮點展示。你可以關閉導覽，或重新播放一次。"
+  },
+  "error": {
+    "title": "特色導覽中斷"
+  },
+  "sections": {
+    "feature": "這是什麼",
+    "problem": "解決什麼問題",
+    "role": "在系統中的角色"
+  },
+  "controls": {
+    "previous": "上一步",
+    "next": "下一步",
+    "finish": "完成",
+    "autoplay": "自動播放",
+    "pause": "暫停",
+    "resume": "繼續",
+    "stop": "停止",
+    "replay": "重新播放",
+    "close": "關閉"
+  },
+  "steps": {
+    "appShell": {
+      "title": "整體 App Shell",
+      "summary": "先從整體框架開始，讓觀眾理解 RxFHIR 的資訊分區與導覽方式。",
+      "feature": "左側 Sidebar、上方工具列與底部狀態列組成穩定的 App Shell，讓 Creator、Consumer、Settings 與 About 的切換保持一致。",
+      "problem": "多頁工具若缺乏明確骨架，使用者很難快速建立空間感與功能定位。",
+      "role": "App Shell 是整個系統的基礎容器，後續所有示範與操作都在這個一致框架中完成。"
+    },
+    "creatorWorkflow": {
+      "title": "Creator 逐步建立流程",
+      "summary": "這裡展示 Resource step-by-step 的建立方式，讓資料組裝過程更清楚。",
+      "feature": "Creator 用 stepper 把 Organization、Patient、Practitioner 到 Composition 拆成明確步驟，並顯示完成狀態與摘要。",
+      "problem": "FHIR 文件結構層次深，如果一次塞進單一大表單，學習與操作成本都會很高。",
+      "role": "這是建立電子處方箋的主要入口，也是從單一 Resource 走到 Document Bundle 的核心流程。"
+    },
+    "fillMock": {
+      "title": "Fill Mock 示範資料",
+      "summary": "系統可快速帶入完整情境的 mock data，加速展示、教學與測試。",
+      "feature": "Mock Data 不是零散欄位，而是以情境包為核心，能保持跨 Resource 的一致性，且支援中英文語系切換。",
+      "problem": "若每次都手動輸入完整醫療資料，示範與驗證流程會過慢，也難以重現固定情境。",
+      "role": "Fill Mock 讓 Creator 能快速進入可操作狀態，是教學與展示模式的重要加速器。"
+    },
+    "jsonPreview": {
+      "title": "資源 JSON 預覽",
+      "summary": "右側可即時查看目前已建立的 Resource JSON，並切換顯示模式。",
+      "feature": "JSON 面板支援字級、收合與最新資源聚焦，讓資料模型可視化，不只看表單欄位。",
+      "problem": "若只有表單 UI，學生很難把欄位輸入和 FHIR Resource 結構對起來。",
+      "role": "這塊面板把 UI 操作直接對映到 FHIR 資料，有助於理解資料模型與組裝結果。"
+    },
+    "requestInspector": {
+      "title": "FHIR 請求檢視",
+      "summary": "這裡會顯示實際和 FHIR Server 互動的流程、URL、方法與內容。",
+      "feature": "右側 Request Inspector 會整理 GET、POST、PUT 的請求流程，並保留 Request / Response 詳細內容。",
+      "problem": "若看不到真實 HTTP 請求，使用者很難理解系統到底如何與 FHIR Server 交換資料。",
+      "role": "這是從前端操作走向 FHIR API 的橋樑，讓展示不只停留在畫面，而能看到實際資料交換。"
+    },
+    "bundleAssembly": {
+      "title": "Composition 與 Bundle 組裝",
+      "summary": "最後一步會把前面建立的 Resource 組成可提交的電子處方箋文件。",
+      "feature": "系統會先建立 Composition，再組裝 Document Bundle，並保留 Bundle 提交結果與後續查詢用識別資訊。",
+      "problem": "FHIR 文件不只是把資源丟在一起，而需要有文件核心描述與明確關聯。",
+      "role": "這一步把前面分散的資源整合成完整電子處方箋文件，是 Creator 流程的終點。"
+    },
+    "consumerSearch": {
+      "title": "Consumer 查詢模式",
+      "summary": "Consumer 提供基本、日期與複合查詢，適合不同使用情境。",
+      "feature": "查詢區集中整理多種搜尋入口，並可帶入 mock 與已儲存條件，加快檢索流程。",
+      "problem": "真實查詢需求不只一種條件，若每次都從零組裝查詢，體驗會很破碎。",
+      "role": "Consumer 是查看與驗證電子處方箋結果的主要入口，負責把 Bundle 找出來並呈現。"
+    },
+    "consumerQuickStart": {
+      "title": "查詢輔助面板",
+      "summary": "這裡聚合近期提交與常用查詢，讓示範與回填更順手。",
+      "feature": "近期完整 Bundle、常用查詢與最近查詢會集中顯示，能快速帶入條件或回看最近成果。",
+      "problem": "如果每次查詢都要重打條件，展示過程容易中斷，也不利課堂示範。",
+      "role": "查詢輔助面板扮演加速器角色，幫助使用者從既有成果快速回到查詢流程。"
+    },
+    "consumerResults": {
+      "title": "搜尋結果列表",
+      "summary": "查詢後的 Bundle 結果會在中間列表集中呈現。",
+      "feature": "結果卡片會摘要病人、日期、機構與藥品等重點資訊，讓使用者能快速判讀哪一筆是目標處方。",
+      "problem": "若結果只顯示原始 JSON 或過少資訊，使用者很難在多筆處方中快速辨識。",
+      "role": "這是 Consumer 的中樞，連接查詢輸入與右側詳情呈現。"
+    },
+    "consumerStructuredDetail": {
+      "title": "Structured Detail View",
+      "summary": "右側詳情頁會用結構化方式整理處方內容，方便教學與閱讀。",
+      "feature": "系統把 Patient、Practitioner、Organization、Condition、Medication 等內容整理成可讀區塊，而不是只顯示原始 JSON。",
+      "problem": "FHIR Bundle 雖然完整，但直接閱讀原始結構對多數人而言負擔很高。",
+      "role": "結構化詳情是 Consumer 的主要閱讀模式，負責把 Bundle 轉成教學與臨床都容易理解的畫面。"
+    },
+    "consumerRawJson": {
+      "title": "Raw JSON 檢視",
+      "summary": "除了結構化畫面，也能直接切到原始 Bundle JSON。",
+      "feature": "Structured 與 JSON 可快速切換，方便同時兼顧展示易讀性與技術驗證需求。",
+      "problem": "示範時常需要兼顧非技術觀眾與技術觀眾，單一呈現方式很難滿足兩邊。",
+      "role": "Raw JSON 是驗證資料內容與對照 FHIR 文件結構的重要視角。"
+    },
+    "settingsServer": {
+      "title": "FHIR Server 設定",
+      "summary": "Settings 可調整目標 FHIR Server，讓系統能切換不同環境。",
+      "feature": "可編輯 server URL、快速套用預設環境，並保留目前設定於本機狀態中。",
+      "problem": "教學、測試與發表常常需要切換不同 FHIR 環境，如果設定流程太繁瑣會拖慢節奏。",
+      "role": "Settings 提供基礎環境切換能力，是整套 App 能對接不同 FHIR Server 的關鍵。"
+    },
+    "settingsStatus": {
+      "title": "Health Check 與狀態資訊",
+      "summary": "這裡會顯示目前連線狀態與伺服器基本資訊。",
+      "feature": "Health check 會把 online / offline / checking 狀態、server name 與 FHIR version 一起呈現。",
+      "problem": "如果看不到環境狀態，使用者很難判斷問題來自資料、網路還是 FHIR Server。",
+      "role": "這塊狀態資訊提供系統診斷入口，也強化了整個 App 的可觀察性。"
+    },
+    "appControls": {
+      "title": "語系與主題切換",
+      "summary": "App 提供語言與主題切換，支援展示與教學情境中的快速切換。",
+      "feature": "可在同一套介面中切換中英語系與 light / dark / system 主題，並立即反映到 UI 與 mock 顯示。",
+      "problem": "示範時如果缺乏快速切換能力，很難說明 App 在不同使用者情境下的適應性。",
+      "role": "這組控制讓 RxFHIR 不只可用，也能在多語與多視覺情境中保持一致體驗。"
+    },
+    "statusBar": {
+      "title": "底部狀態列",
+      "summary": "狀態列會持續顯示目前連線與所在模式，是整體資訊提示的收斂區。",
+      "feature": "底部 status bar 會顯示 server health、FHIR version 與目前所在模組，讓使用者始終知道當前環境。",
+      "problem": "多頁面系統若缺乏持續性的環境提示，使用者容易失去目前脈絡。",
+      "role": "這是全域資訊提示層，補足頁面本身沒有持續顯示的系統狀態。"
+    }
+  }
+}

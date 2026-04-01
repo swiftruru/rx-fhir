@@ -158,7 +158,7 @@ export const mockScenarioPackSources: MockScenarioPackSource[] = [
     category: 'foundation',
     label: {
       'zh-TW': '預設示範病人：潘小如',
-      en: 'Primary Demo Patient: Pan Xiao-Ru'
+      en: 'Primary Demo Patient: Pan RuRu'
     },
     description: {
       'zh-TW': '預設示範病人情境，用於 Creator 的第一筆病人 Fill Mock，並保留常見腸胃不適門診脈絡。',
@@ -181,7 +181,7 @@ export const mockScenarioPackSources: MockScenarioPackSource[] = [
         birthDate: '2000-06-09',
         text: {
           'zh-TW': { familyName: '潘', givenName: '小如' },
-          en: { familyName: 'Pan', givenName: 'Xiao-Ru' }
+          en: { familyName: 'Pan', givenName: 'RuRu' }
         }
       },
       practitioner: {

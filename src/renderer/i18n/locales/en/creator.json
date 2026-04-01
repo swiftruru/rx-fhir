@@ -17,6 +17,47 @@
     "resetConfirmOk": "Clear All",
     "resetConfirmCancel": "Cancel"
   },
+  "liveDemo": {
+    "panelTitle": "Live Demo Coach",
+    "startButton": "Start Live Demo",
+    "runningButton": "Live Demo Running",
+    "preparingTitle": "Preparing Demo Flow",
+    "preparingDescription": "The app is resetting Creator state, loading the demo scenario, and preparing to play the full RxFHIR walkthrough step by step.",
+    "progress": "Step {{current}} / {{total}}",
+    "completedTitle": "Live Demo Complete",
+    "completedDescription": "The Creator flow, Bundle submission, and Consumer query walkthrough have all finished. You can replay the demo or close the coach panel.",
+    "completedBadge": "Completed",
+    "errorTitle": "Live Demo Interrupted",
+    "errorBadge": "Failed",
+    "errorFallback": "The Live Demo could not finish.",
+    "controls": {
+      "pause": "Pause",
+      "resume": "Resume",
+      "next": "Next Step",
+      "enableAuto": "Auto Play",
+      "switchToManual": "Manual Mode",
+      "collapse": "Collapse coach panel",
+      "expand": "Expand coach panel",
+      "stop": "Stop",
+      "replay": "Replay",
+      "close": "Close"
+    },
+    "sections": {
+      "action": "Current Action",
+      "concept": "FHIR Concept",
+      "practical": "Why It Matters",
+      "relation": "Bundle Relation"
+    },
+    "phase": {
+      "preparing": "Preparing",
+      "intro": "Step Intro",
+      "filling": "Auto-fill",
+      "submitting": "Submitting",
+      "navigating": "Navigating",
+      "searching": "Searching",
+      "reviewing": "Reviewing"
+    }
+  },
   "stepper": {
     "progress": "Progress",
     "progressCount": "{{completed}} / {{total}} completed",

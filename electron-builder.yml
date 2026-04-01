@@ -23,6 +23,8 @@ win:
     - portable
 
 linux:
+  category: Utility
+  maintainer: Yu-Ru Pan <ruru@swift.moe>
   icon: build/icon.png
   target:
     - AppImage

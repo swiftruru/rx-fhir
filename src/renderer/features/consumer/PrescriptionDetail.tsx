@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Code2 } from 'lucide-react'
+import { X, Code2, Braces } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
@@ -56,31 +56,59 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
 
   return (
     <div className="flex flex-col h-full border-l">
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-background shrink-0">
-        <div>
+      <div className="flex items-start justify-between gap-3 px-4 py-3 border-b bg-background shrink-0">
+        <div className="min-w-0 flex-1 space-y-2">
           <h2 className="text-sm font-semibold">{t('detail.title')}</h2>
-          <code className="text-[11px] text-muted-foreground font-mono">{summary.id}</code>
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <code className="rounded-md bg-muted/40 px-2 py-1 text-[11px] text-muted-foreground font-mono">
+              {summary.id}
+            </code>
+            <div className="inline-flex items-center rounded-lg border bg-muted/40 p-1">
+              <Button
+                type="button"
+                variant={!showJson ? 'secondary' : 'ghost'}
+                size="sm"
+                className="h-8 gap-1.5 px-3"
+                aria-pressed={!showJson}
+                onClick={() => setShowJson(false)}
+              >
+                <Code2 className="h-3.5 w-3.5" />
+                {t('detail.toggleStructured')}
+              </Button>
+              <Button
+                type="button"
+                variant={showJson ? 'secondary' : 'ghost'}
+                size="sm"
+                className="h-8 gap-1.5 px-3"
+                aria-pressed={showJson}
+                onClick={() => setShowJson(true)}
+              >
+                <Braces className="h-3.5 w-3.5" />
+                {t('detail.toggleJson')}
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={showJson ? 'secondary' : 'outline'}
-            size="sm"
-            onClick={() => setShowJson(!showJson)}
-          >
-            <Code2 className="h-3.5 w-3.5" />
-            {showJson ? t('detail.toggleStructured') : t('detail.toggleJson')}
-          </Button>
+        <div className="flex items-center gap-2 shrink-0">
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
-        <div className="p-4">
-          {showJson ? (
-            <JsonViewer data={bundle} title="Raw FHIR JSON" defaultCollapsed={false} />
-          ) : (
+      {showJson ? (
+        <div className="flex-1 min-h-0 p-4">
+          <JsonViewer
+            data={bundle}
+            title="Raw FHIR JSON"
+            defaultCollapsed={false}
+            fillHeight
+            className="h-full"
+          />
+        </div>
+      ) : (
+        <ScrollArea className="flex-1">
+          <div className="p-4">
             <div className="space-y-5">
               {composition && (
                 <Section title={s('prescription', 'title')}>
@@ -201,9 +229,9 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
                 </>
               )}
             </div>
-          )}
-        </div>
-      </ScrollArea>
+          </div>
+        </ScrollArea>
+      )}
     </div>
   )
 }

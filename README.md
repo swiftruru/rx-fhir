@@ -104,12 +104,16 @@ Search and inspect FHIR Bundles on the configured server:
 - **Basic search**: patient identifier or patient name
 - **Date search**: patient identifier + bundle date
 - **Complex search**: patient identifier + author or organization
+- The left panel now focuses on search input only, so the query form remains visible even on narrower windows
+- The middle panel now includes `Results` and `Shortcuts` tabs, so recent submissions and saved searches stay available after a query has already been run
 - Recent-record magnifier prefills the active search tab instead of forcing a return to basic search
 - Complex search prefills patient identifier and available author / organization context from local submission history
 - Search conditions are now stored locally as recent searches, and any search can be pinned into favorites for quick reruns
+- Recent submissions and saved searches are shown as separate helper sections with clearer visual hierarchy
 - Query URL display and multi-step trace for compatibility workarounds
 - Result list with patient, organization, diagnosis, and medication summary
 - Empty-result states now explain likely causes and suggest next actions based on the actual search mode
+- Prescription detail view now uses a fixed-width detail pane with a clearer `Structured / JSON` toggle in the header
 - Structured detail view and raw JSON viewer
 - Supports Creator-to-Consumer handoff with automatic query prefill, auto-search, and newly created bundle focus
 

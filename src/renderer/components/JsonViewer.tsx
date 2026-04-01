@@ -11,6 +11,7 @@ interface JsonViewerProps {
   defaultCollapsed?: boolean
   className?: string
   fontSize?: 'sm' | 'md' | 'lg'
+  fillHeight?: boolean
   collapseSync?: {
     value: boolean
     token: number
@@ -23,6 +24,7 @@ export default function JsonViewer({
   defaultCollapsed = false,
   className,
   fontSize = 'sm',
+  fillHeight = false,
   collapseSync
 }: JsonViewerProps): React.JSX.Element {
   const [copied, setCopied] = useState(false)
@@ -50,7 +52,7 @@ export default function JsonViewer({
   const jsonTheme = useMemo(() => ({
     ...defaultStyles,
     container: cn(
-      'font-mono leading-6',
+      'font-mono leading-6 !whitespace-pre-wrap !break-normal',
       fontSize === 'sm' && 'text-[11px]',
       fontSize === 'md' && 'text-xs',
       fontSize === 'lg' && 'text-[13px]',
@@ -85,7 +87,7 @@ export default function JsonViewer({
   }
 
   return (
-    <div className={cn('rounded-lg border border-border overflow-hidden', className)}>
+    <div className={cn('flex flex-col rounded-lg border border-border bg-background overflow-hidden shadow-sm', className)}>
       {/* Header bar */}
       <div className={cn('flex items-center justify-between px-3 py-2 border-b transition-colors', headerClasses)}>
         <div className="flex items-center gap-2">
@@ -116,12 +118,20 @@ export default function JsonViewer({
 
       {/* JSON content */}
       {!collapsed && (
-        <div className={cn('p-3 overflow-auto max-h-[500px] text-xs transition-colors', contentClasses)}>
-          <JsonView
-            data={data as object}
-            shouldExpandNode={allExpanded}
-            style={jsonTheme}
-          />
+        <div
+          className={cn(
+            'overflow-x-auto overflow-y-auto rounded-b-lg text-xs transition-colors',
+            fillHeight ? 'flex-1 min-h-0' : 'max-h-[500px]',
+            contentClasses
+          )}
+        >
+          <div className="w-fit min-w-full p-3 align-top">
+            <JsonView
+              data={data as object}
+              shouldExpandNode={allExpanded}
+              style={jsonTheme}
+            />
+          </div>
         </div>
       )}
     </div>

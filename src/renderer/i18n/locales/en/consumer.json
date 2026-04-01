@@ -2,7 +2,14 @@
   "page": {
     "title": "Consumer — Query Prescriptions",
     "description": "Search prescriptions on the FHIR Server using various criteria",
-    "emptyPrompt": "Enter search criteria to get started"
+    "emptyPrompt": "Enter search criteria to get started",
+    "quickStartTitle": "Recent Submissions & Saved Searches",
+    "quickStartDescription": "Reuse recent submissions or saved searches here, then refine the query on the left.",
+    "quickStartEmpty": "No search helpers are available yet.",
+    "middleTabs": {
+      "results": "Results",
+      "quickStart": "Shortcuts"
+    }
   },
   "search": {
     "tabs": {
@@ -48,6 +55,9 @@
   },
   "recent": {
     "title":      "Recent Submissions",
+    "typeLabel":  "Source",
+    "description": "Recently created prescriptions stay here so you can quickly reuse them in search.",
+    "countLabel": "Submissions {{count}}",
     "empty":      "No submissions yet",
     "clearAll":   "Clear All",
     "fillSearch":   "Fill Search",
@@ -55,9 +65,13 @@
     "deleteRecord": "Delete"
   },
   "saved": {
-    "title": "Search History",
+    "title": "Favorites / Recent Searches",
+    "typeLabel": "Search Criteria",
+    "description": "Click to rerun a search, or star it to keep it as a favorite.",
     "favorites": "Favorites",
     "recent": "Recent Searches",
+    "favoritesCount": "Favorites {{count}}",
+    "recentCount": "Recent {{count}}",
     "runSearch": "Run Search",
     "pin": "Add to Favorites",
     "unpin": "Remove from Favorites",

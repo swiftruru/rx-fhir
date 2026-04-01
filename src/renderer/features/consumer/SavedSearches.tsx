@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { ChevronDown, ChevronRight, Search, Star, Trash2 } from 'lucide-react'
+import { useMemo } from 'react'
+import { ChevronDown, ChevronRight, Clock3, Search, Star, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
@@ -8,6 +8,9 @@ import type { SearchParams } from '../../types/fhir.d'
 
 interface Props {
   onRun: (params: SearchParams) => void
+  open: boolean
+  onToggle: () => void
+  variant?: 'sidebar' | 'dashboard'
 }
 
 function formatSearchTitle(record: SavedSearchRecord, t: (key: string, options?: Record<string, unknown>) => string): string {
@@ -55,9 +58,15 @@ function SearchRow({
   const { t } = useTranslation('consumer')
   const togglePinned = useSearchHistoryStore((state) => state.togglePinned)
   const removeSearch = useSearchHistoryStore((state) => state.removeSearch)
+  const rowClassName = record.pinned
+    ? 'border-amber-200/70 bg-amber-50/70 dark:border-amber-500/30 dark:bg-amber-500/10'
+    : 'border-border/70 bg-background/70 hover:bg-muted/50'
+  const actionsClassName = record.pinned
+    ? 'opacity-100'
+    : 'opacity-60 group-hover:opacity-100'
 
   return (
-    <div className="flex items-center justify-between gap-2 px-3 py-2 hover:bg-muted/50 transition-colors group">
+    <div className={`group flex items-center justify-between gap-2 rounded-lg border px-3 py-2 transition-colors ${rowClassName}`}>
       <button
         type="button"
         onClick={() => onRun(record.params)}
@@ -67,7 +76,7 @@ function SearchRow({
         <div className="text-[10px] text-muted-foreground truncate">{formatSearchMeta(record, t)}</div>
       </button>
 
-      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className={`flex items-center gap-1 shrink-0 transition-opacity ${actionsClassName}`}>
         <Button
           type="button"
           variant="ghost"
@@ -103,10 +112,18 @@ function SearchRow({
   )
 }
 
-export default function SavedSearches({ onRun }: Props): React.JSX.Element {
+export default function SavedSearches({
+  onRun,
+  open,
+  onToggle,
+  variant = 'sidebar'
+}: Props): React.JSX.Element {
   const { t } = useTranslation('consumer')
   const { records, clearRecentSearches } = useSearchHistoryStore()
-  const [open, setOpen] = useState(records.length > 0)
+  const rootClassName = variant === 'dashboard'
+    ? 'overflow-hidden rounded-xl border border-border bg-background shadow-sm'
+    : 'border-b border-border bg-gradient-to-b from-muted/35 to-background'
+  const contentMaxHeightClass = variant === 'dashboard' ? 'max-h-80' : 'max-h-44'
 
   const { pinnedRecords, recentRecords } = useMemo(() => ({
     pinnedRecords: records.filter((record) => record.pinned),
@@ -116,17 +133,36 @@ export default function SavedSearches({ onRun }: Props): React.JSX.Element {
   if (records.length === 0) return <></>
 
   return (
-    <div className="border-b border-border">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <span className="flex items-center gap-1.5">
-          {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-          {t('saved.title')}
-          <Badge variant="secondary" className="h-4 text-[10px] px-1">{records.length}</Badge>
-        </span>
+    <div className={rootClassName}>
+      <div className="flex items-start gap-3 px-3 py-3">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="min-w-0 flex-1 text-left hover:text-foreground transition-colors"
+        >
+          <span className="mb-2 inline-flex items-center gap-1 rounded-full border border-border bg-background/90 px-2 py-0.5 text-[10px] font-medium tracking-wide text-muted-foreground shadow-sm">
+            <Search className="h-3 w-3" />
+            {t('saved.typeLabel')}
+          </span>
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+            {open ? <ChevronDown className="h-3 w-3 shrink-0" /> : <ChevronRight className="h-3 w-3 shrink-0" />}
+            {t('saved.title')}
+            <Badge variant="secondary" className="h-4 text-[10px] px-1.5">{records.length}</Badge>
+          </span>
+          <span className="mt-1 block text-[11px] text-muted-foreground">
+            {t('saved.description')}
+          </span>
+          <span className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
+            <Badge variant="outline" className="h-5 gap-1 rounded-full px-2 font-normal">
+              <Star className="h-3 w-3 text-amber-500" />
+              {t('saved.favoritesCount', { count: pinnedRecords.length })}
+            </Badge>
+            <Badge variant="outline" className="h-5 gap-1 rounded-full px-2 font-normal">
+              <Clock3 className="h-3 w-3" />
+              {t('saved.recentCount', { count: recentRecords.length })}
+            </Badge>
+          </span>
+        </button>
         {recentRecords.length > 0 && (
           <button
             type="button"
@@ -134,35 +170,43 @@ export default function SavedSearches({ onRun }: Props): React.JSX.Element {
               event.stopPropagation()
               clearRecentSearches()
             }}
-            className="text-muted-foreground/60 hover:text-destructive transition-colors"
+            className="mt-0.5 shrink-0 rounded-md p-1 text-muted-foreground/60 hover:bg-background hover:text-destructive transition-colors"
             title={t('saved.clearRecent')}
           >
             <Trash2 className="h-3 w-3" />
           </button>
         )}
-      </button>
+      </div>
 
       {open && (
-        <div className="max-h-56 overflow-y-auto">
+        <div className={`${contentMaxHeightClass} space-y-3 overflow-y-auto border-t border-border/60 px-3 pb-3 pt-3`}>
           {pinnedRecords.length > 0 && (
-            <div className="py-1">
-              <div className="px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                <Star className="h-3 w-3 fill-current" />
                 {t('saved.favorites')}
+                <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">{pinnedRecords.length}</Badge>
               </div>
-              {pinnedRecords.map((record) => (
-                <SearchRow key={record.id} record={record} onRun={onRun} />
-              ))}
+              <div className="space-y-2">
+                {pinnedRecords.map((record) => (
+                  <SearchRow key={record.id} record={record} onRun={onRun} />
+                ))}
+              </div>
             </div>
           )}
 
           {recentRecords.length > 0 && (
-            <div className="py-1">
-              <div className="px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <Clock3 className="h-3 w-3" />
                 {t('saved.recent')}
+                <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">{recentRecords.length}</Badge>
               </div>
-              {recentRecords.map((record) => (
-                <SearchRow key={record.id} record={record} onRun={onRun} />
-              ))}
+              <div className="space-y-2">
+                {recentRecords.map((record) => (
+                  <SearchRow key={record.id} record={record} onRun={onRun} />
+                ))}
+              </div>
             </div>
           )}
         </div>

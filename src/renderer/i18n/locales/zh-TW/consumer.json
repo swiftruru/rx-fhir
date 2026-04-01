@@ -2,7 +2,14 @@
   "page": {
     "title": "Consumer — 查詢處方箋",
     "description": "以多種條件查詢 FHIR Server 上的處方箋",
-    "emptyPrompt": "請輸入查詢條件"
+    "emptyPrompt": "請輸入查詢條件",
+    "quickStartTitle": "近期提交與常用查詢",
+    "quickStartDescription": "可直接帶入近期提交或常用查詢，再回到左側調整條件。",
+    "quickStartEmpty": "目前還沒有可用的查詢輔助項目。",
+    "middleTabs": {
+      "results": "搜尋結果",
+      "quickStart": "查詢輔助"
+    }
   },
   "search": {
     "tabs": {
@@ -48,6 +55,9 @@
   },
   "recent": {
     "title":      "近期提交",
+    "typeLabel":  "資料來源",
+    "description": "這裡保留最近建立成功的處方，可快速帶入查詢條件。",
+    "countLabel": "提交 {{count}}",
     "empty":      "尚無提交紀錄",
     "clearAll":   "清除全部",
     "fillSearch":    "填入搜尋",
@@ -55,9 +65,13 @@
     "deleteRecord":  "刪除此筆"
   },
   "saved": {
-    "title": "查詢記錄",
+    "title": "常用 / 最近查詢",
+    "typeLabel": "查詢條件",
+    "description": "點一下可直接重新查詢，星號可加入常用。",
     "favorites": "常用查詢",
     "recent": "最近查詢",
+    "favoritesCount": "常用 {{count}}",
+    "recentCount": "最近 {{count}}",
     "runSearch": "重新查詢",
     "pin": "加入常用查詢",
     "unpin": "移出常用查詢",

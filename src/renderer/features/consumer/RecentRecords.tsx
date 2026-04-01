@@ -19,12 +19,13 @@ export default function RecentRecords({
 }: Props): React.JSX.Element {
   const { t } = useTranslation('consumer')
   const { records, clearHistory, removeRecord } = useHistoryStore()
+  const bundleRecords = records.filter((record) => record.type === 'bundle')
   const rootClassName = variant === 'dashboard'
     ? 'overflow-hidden rounded-xl border border-border bg-background shadow-sm'
     : 'border-b border-border bg-gradient-to-b from-primary/8 to-background'
   const contentMaxHeightClass = variant === 'dashboard' ? 'max-h-80' : 'max-h-40'
 
-  if (records.length === 0) return <></>
+  if (bundleRecords.length === 0) return <></>
 
   return (
     <div className={rootClassName}>
@@ -41,7 +42,7 @@ export default function RecentRecords({
           <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
             {open ? <ChevronDown className="h-3 w-3 shrink-0" /> : <ChevronRight className="h-3 w-3 shrink-0" />}
             {t('recent.title')}
-            <Badge variant="secondary" className="h-4 text-[10px] px-1.5">{records.length}</Badge>
+            <Badge variant="secondary" className="h-4 text-[10px] px-1.5">{bundleRecords.length}</Badge>
           </span>
           <span className="mt-1 block text-[11px] text-muted-foreground">
             {t('recent.description')}
@@ -49,7 +50,7 @@ export default function RecentRecords({
           <span className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
             <Badge variant="outline" className="h-5 gap-1 rounded-full border-primary/20 bg-background/80 px-2 font-normal">
               <FileText className="h-3 w-3 text-primary" />
-              {t('recent.countLabel', { count: records.length })}
+              {t('recent.countLabel', { count: bundleRecords.length })}
             </Badge>
           </span>
         </button>
@@ -65,7 +66,7 @@ export default function RecentRecords({
 
       {open && (
         <div className={`${contentMaxHeightClass} space-y-2 overflow-y-auto border-t border-primary/10 px-3 pb-3 pt-3`}>
-          {records.map((rec) => (
+          {bundleRecords.map((rec) => (
             <div
               key={rec.id}
               className="group flex items-center justify-between gap-2 rounded-lg border border-primary/15 bg-background/85 px-3 py-2 transition-colors hover:bg-background"

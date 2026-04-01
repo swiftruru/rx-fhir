@@ -10,6 +10,8 @@ import SavedSearches from './SavedSearches'
 import type { BundleSummary, SearchParams } from '../../types/fhir.d'
 import { useHistoryStore, type SubmissionRecord } from '../../store/historyStore'
 import { useSearchHistoryStore } from '../../store/searchHistoryStore'
+import { fetchBundleById } from '../../services/fhirClient'
+import { extractBundleHistoryMetadata } from '../../services/searchService'
 import {
   buildSearchPrefillFromParams,
   getSearchTabFromParams,
@@ -23,7 +25,9 @@ export default function ConsumerPage(): React.JSX.Element {
   const { t } = useTranslation('consumer')
   const location = useLocation()
   const navigate = useNavigate()
-  const historyCount = useHistoryStore((state) => state.records.length)
+  const records = useHistoryStore((state) => state.records)
+  const updateRecord = useHistoryStore((state) => state.updateRecord)
+  const historyCount = records.filter((record) => record.type === 'bundle').length
   const savedSearchCount = useSearchHistoryStore((state) => state.records.length)
   const recordSearch = useSearchHistoryStore((state) => state.recordSearch)
   const [results, setResults] = useState<BundleSummary[]>([])
@@ -38,6 +42,8 @@ export default function ConsumerPage(): React.JSX.Element {
   const [dashboardRecentOpen, setDashboardRecentOpen] = useState(false)
   const [dashboardSavedOpen, setDashboardSavedOpen] = useState(false)
   const [middleTab, setMiddleTab] = useState<'results' | 'quickstart'>('quickstart')
+  const [activeComplexBy, setActiveComplexBy] = useState<'organization' | 'author'>('organization')
+  const [prefillNotice, setPrefillNotice] = useState<{ message: string; variant?: 'info' | 'warning' } | null>(null)
 
   useEffect(() => {
     const launchState = location.state as ConsumerLaunchState | null
@@ -67,6 +73,7 @@ export default function ConsumerPage(): React.JSX.Element {
     setSearchExecution(execution)
     recordSearch(execution.params)
     setMiddleTab('results')
+    setPrefillNotice(null)
     if (targetBundleId) {
       setSelected(r.find((summary) => summary.id === targetBundleId) ?? (r.length === 1 ? r[0] : null))
       setTargetBundleId(null)
@@ -74,6 +81,17 @@ export default function ConsumerPage(): React.JSX.Element {
       setSelected(null)
     }
     setHasSearched(true)
+  }
+
+  function handleImportedBundle(summary: BundleSummary): void {
+    setResults([summary])
+    setTotal(1)
+    setSelected(summary)
+    setHasSearched(true)
+    setSearchExecution(null)
+    setTargetBundleId(null)
+    setMiddleTab('results')
+    setPrefillNotice(null)
   }
 
   function getSearchIdentifier(rec: SubmissionRecord): string {
@@ -84,8 +102,73 @@ export default function ConsumerPage(): React.JSX.Element {
     return rec.submittedAt.slice(0, 10)
   }
 
-  function handleFill(rec: SubmissionRecord): void {
+  function findRelatedBundleRecord(
+    rec: SubmissionRecord,
+    target: 'organization' | 'author'
+  ): SubmissionRecord | undefined {
+    if (!rec.patientIdentifier) return undefined
+
+    return records.find((candidate) => (
+      candidate.type === 'bundle'
+      && candidate.id !== rec.id
+      && candidate.patientIdentifier === rec.patientIdentifier
+      && (target === 'organization'
+        ? Boolean(candidate.organizationIdentifier)
+        : Boolean(candidate.practitionerName))
+    ))
+  }
+
+  async function hydrateBundleRecordForComplexSearch(
+    rec: SubmissionRecord,
+    target: 'organization' | 'author'
+  ): Promise<{ record: SubmissionRecord; hydrated: boolean }> {
+    if (rec.type !== 'bundle' || !rec.bundleId) {
+      return { record: rec, hydrated: false }
+    }
+
+    const alreadyHasTarget = target === 'organization'
+      ? Boolean(rec.organizationIdentifier)
+      : Boolean(rec.practitionerName)
+
+    if (alreadyHasTarget) {
+      return { record: rec, hydrated: false }
+    }
+
+    try {
+      const bundle = await fetchBundleById(rec.bundleId, rec.serverUrl)
+      const metadata = extractBundleHistoryMetadata(bundle)
+      const patch: Partial<SubmissionRecord> = {
+        patientName: metadata.patientName ?? rec.patientName,
+        patientIdentifier: metadata.patientIdentifier ?? rec.patientIdentifier,
+        organizationName: metadata.organizationName ?? rec.organizationName,
+        organizationIdentifier: metadata.organizationIdentifier ?? rec.organizationIdentifier,
+        practitionerName: metadata.practitionerName ?? rec.practitionerName,
+        conditionDisplay: metadata.conditionDisplay ?? rec.conditionDisplay
+      }
+
+      const hydratedRecord = { ...rec, ...patch }
+
+      if (
+        patch.organizationIdentifier !== rec.organizationIdentifier
+        || patch.practitionerName !== rec.practitionerName
+        || patch.organizationName !== rec.organizationName
+        || patch.patientName !== rec.patientName
+        || patch.patientIdentifier !== rec.patientIdentifier
+        || patch.conditionDisplay !== rec.conditionDisplay
+      ) {
+        updateRecord(rec.id, patch)
+        return { record: hydratedRecord, hydrated: true }
+      }
+
+      return { record: hydratedRecord, hydrated: false }
+    } catch {
+      return { record: rec, hydrated: false }
+    }
+  }
+
+  async function handleFill(rec: SubmissionRecord): Promise<void> {
     const identifier = getSearchIdentifier(rec)
+    setPrefillNotice(null)
 
     if (activeTab === 'date') {
       setPrefill({ tab: 'date', identifier, date: getSearchDate(rec) })
@@ -93,27 +176,68 @@ export default function ConsumerPage(): React.JSX.Element {
     }
 
     if (activeTab === 'complex') {
-      if (rec.organizationIdentifier) {
+      const hydrated = await hydrateBundleRecordForComplexSearch(rec, activeComplexBy)
+      const identifierForComplex = getSearchIdentifier(hydrated.record)
+      const relatedBundle = rec.type === 'bundle'
+        ? undefined
+        : findRelatedBundleRecord(rec, activeComplexBy)
+      const source = rec.type === 'bundle' ? hydrated.record : relatedBundle ?? rec
+
+      if (activeComplexBy === 'organization' && source.organizationIdentifier) {
         setPrefill({
           tab: 'complex',
-          identifier,
+          identifier: identifierForComplex,
           complexBy: 'organization',
-          orgId: rec.organizationIdentifier
+          orgId: source.organizationIdentifier,
+          authorName: source.practitionerName
         })
+        if (hydrated.hydrated) {
+          setPrefillNotice({
+            variant: 'info',
+            message: t('recent.fillComplexHydratedOrganization')
+          })
+          return
+        }
+        if (rec.type !== 'bundle' && relatedBundle?.organizationIdentifier) {
+          setPrefillNotice({
+            variant: 'info',
+            message: t('recent.fillComplexFromBundleOrganization')
+          })
+        }
         return
       }
 
-      if (rec.practitionerName) {
+      if (activeComplexBy === 'author' && source.practitionerName) {
         setPrefill({
           tab: 'complex',
-          identifier,
+          identifier: identifierForComplex,
           complexBy: 'author',
-          authorName: rec.practitionerName
+          orgId: source.organizationIdentifier,
+          authorName: source.practitionerName
         })
+        if (hydrated.hydrated) {
+          setPrefillNotice({
+            variant: 'info',
+            message: t('recent.fillComplexHydratedAuthor')
+          })
+          return
+        }
+        if (rec.type !== 'bundle' && relatedBundle?.practitionerName) {
+          setPrefillNotice({
+            variant: 'info',
+            message: t('recent.fillComplexFromBundleAuthor')
+          })
+        }
         return
       }
 
-      setPrefill({ tab: 'complex', identifier })
+      setPrefill({ tab: 'complex', identifier: identifierForComplex, complexBy: activeComplexBy })
+      setPrefillNotice({
+        variant: 'warning',
+        message: activeComplexBy === 'organization'
+          ? t('recent.fillComplexOrganizationUnavailable')
+          : t('recent.fillComplexAuthorUnavailable')
+      })
       return
     }
 
@@ -124,6 +248,12 @@ export default function ConsumerPage(): React.JSX.Element {
     setActiveTab(getSearchTabFromParams(params))
     setPrefill(buildSearchPrefillFromParams(params))
     setAutoSearch(params)
+    setPrefillNotice(null)
+  }
+
+  function handleSearchTabChange(tab: SearchTab): void {
+    setActiveTab(tab)
+    setPrefillNotice(null)
   }
 
   const showDetail = middleTab === 'results' && Boolean(selected)
@@ -140,9 +270,12 @@ export default function ConsumerPage(): React.JSX.Element {
           <div className="rounded-xl border border-border/70 bg-background/95 p-3 shadow-sm">
             <SearchForm
               activeTab={activeTab}
-              onTabChange={setActiveTab}
+              onTabChange={handleSearchTabChange}
+              onComplexByChange={setActiveComplexBy}
               onResults={handleResults}
+              onImportBundle={handleImportedBundle}
               prefill={prefill}
+              prefillNotice={prefillNotice}
               onPrefillConsumed={() => setPrefill(null)}
               autoSearch={autoSearch}
               onAutoSearchConsumed={() => setAutoSearch(null)}

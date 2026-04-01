@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react'
-import { Check, ChevronRight, ChevronsUpDown, Layers3, Loader2, Package, Target, Type } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Check, ChevronRight, ChevronsUpDown, Layers3, Loader2, Package, SendHorizontal, Target, Type } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
 import { ScrollArea } from '../../components/ui/scroll-area'
 import { Badge } from '../../components/ui/badge'
 import JsonViewer from '../../components/JsonViewer'
+import FhirRequestInspector from '../../components/FhirRequestInspector'
 import { cn } from '../../lib/utils'
 import { useCreatorStore } from '../../store/creatorStore'
+import { useFhirInspectorStore } from '../../store/fhirInspectorStore'
 import { RESOURCE_STEPS } from '../../types/fhir.d'
 import type { CreatedResources, ResourceKey } from '../../types/fhir.d'
 
@@ -171,7 +173,10 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
     clearDraft,
     lastUpdatedResourceKey
   } = useCreatorStore()
-  const [showJsonPreview, setShowJsonPreview] = useState(false)
+  const latestRequest = useFhirInspectorStore((state) => state.latest)
+  const requestHistory = useFhirInspectorStore((state) => state.history)
+  const [showRightPanel, setShowRightPanel] = useState(false)
+  const [rightPanelMode, setRightPanelMode] = useState<'json' | 'request'>('json')
   const [expandSeq, setExpandSeq] = useState(0)
   const [jsonFontSize, setJsonFontSize] = useState<'sm' | 'md' | 'lg'>('sm')
   const [showOnlyLastResource, setShowOnlyLastResource] = useState(false)
@@ -183,10 +188,17 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
     clearDraft(key as keyof typeof resources)
     setExpandSeq(s => s + 1)
     setCollapseAll(false)
-    setShowJsonPreview(true)
+    setShowRightPanel(true)
   }
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
+
+  useEffect(() => {
+    if (!latestRequest?.id) return
+    setShowRightPanel(true)
+    setRightPanelMode('request')
+  }, [latestRequest?.id])
+
   const stepSummaries = useMemo(
     () =>
       RESOURCE_STEPS.reduce<Partial<Record<ResourceKey, string>>>((acc, step) => {
@@ -367,17 +379,17 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setShowJsonPreview(!showJsonPreview)}
+              onClick={() => setShowRightPanel(!showRightPanel)}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              {showJsonPreview ? t('stepper.hideJson') : t('stepper.showJson')}
+              {showRightPanel ? t('stepper.hidePanel') : t('stepper.showPanel')}
             </button>
           </div>
         </div>
 
         {/* Content area */}
         <div className="flex-1 overflow-auto">
-          <div className={showJsonPreview ? 'grid grid-cols-2 gap-0 h-full' : 'h-full'}>
+          <div className={showRightPanel ? 'grid grid-cols-2 gap-0 h-full' : 'h-full'}>
             {/* Form */}
             <div className="flex flex-col h-full min-h-0">
               <ScrollArea className="flex-1 min-h-0">
@@ -405,13 +417,35 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
             </div>
 
             {/* JSON Preview panel */}
-            {showJsonPreview && (
+            {showRightPanel && (
               <div className="border-l overflow-auto p-4 bg-muted/35 transition-colors">
                 <div className="mb-3 space-y-2">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground font-mono break-keep">{t('stepper.jsonPanelTitle')}</p>
+                      <div className="inline-flex items-center rounded-lg border border-border/70 bg-background/90 p-1 shadow-sm">
+                        <Button
+                          type="button"
+                          variant={rightPanelMode === 'json' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-7 gap-1.5 px-3 text-[11px]"
+                          onClick={() => setRightPanelMode('json')}
+                        >
+                          <Layers3 className="h-3.5 w-3.5" />
+                          {t('stepper.panelModeJson')}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={rightPanelMode === 'request' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-7 gap-1.5 px-3 text-[11px]"
+                          onClick={() => setRightPanelMode('request')}
+                        >
+                          <SendHorizontal className="h-3.5 w-3.5" />
+                          {t('stepper.panelModeRequest')}
+                        </Button>
+                      </div>
                     </div>
+                    {rightPanelMode === 'json' && (
                     <div className="flex justify-end">
                       <div className="w-[18rem] max-w-full rounded-xl border border-border/80 bg-background/90 p-2 shadow-sm backdrop-blur-sm">
                         <div className="flex flex-col gap-2">
@@ -498,24 +532,31 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
                         </div>
                       </div>
                     </div>
+                    )}
                   </div>
                 </div>
-                {visibleJsonEntries.map(([key, resource]) =>
-                  resource ? (
-                    <div key={key} className="mb-3">
-                      <JsonViewer
-                        key={key === effectiveLatestResourceKey ? `${key}-${expandSeq}` : key}
-                        data={resource}
-                        title={key}
-                        defaultCollapsed={collapseAll || key !== effectiveLatestResourceKey}
-                        collapseSync={{ value: collapseAll, token: collapseSyncToken }}
-                        fontSize={jsonFontSize}
-                      />
-                    </div>
-                  ) : null
-                )}
-                {visibleJsonEntries.length === 0 && (
-                  <p className="text-muted-foreground text-xs">{t('stepper.jsonEmpty')}</p>
+                {rightPanelMode === 'json' ? (
+                  <>
+                    {visibleJsonEntries.map(([key, resource]) =>
+                      resource ? (
+                        <div key={key} className="mb-3">
+                          <JsonViewer
+                            key={key === effectiveLatestResourceKey ? `${key}-${expandSeq}` : key}
+                            data={resource}
+                            title={key}
+                            defaultCollapsed={collapseAll || key !== effectiveLatestResourceKey}
+                            collapseSync={{ value: collapseAll, token: collapseSyncToken }}
+                            fontSize={jsonFontSize}
+                          />
+                        </div>
+                      ) : null
+                    )}
+                    {visibleJsonEntries.length === 0 && (
+                      <p className="text-muted-foreground text-xs">{t('stepper.jsonEmpty')}</p>
+                    )}
+                  </>
+                ) : (
+                  <FhirRequestInspector request={latestRequest} history={requestHistory} />
                 )}
               </div>
             )}

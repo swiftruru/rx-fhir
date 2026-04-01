@@ -1,5 +1,6 @@
-import { app, shell, BrowserWindow, nativeImage, Menu, nativeTheme } from 'electron'
-import { join } from 'path'
+import { app, shell, BrowserWindow, nativeImage, Menu, nativeTheme, dialog, ipcMain } from 'electron'
+import { readFile, writeFile } from 'node:fs/promises'
+import { basename, join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
 // Must be set before app.ready so the macOS menu bar picks it up
@@ -147,7 +148,7 @@ function createWindow(): void {
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     icon,
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false
@@ -169,6 +170,63 @@ function createWindow(): void {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 }
+
+ipcMain.handle(
+  'bundle-json:save',
+  async (_event, payload: { content: string; defaultFileName?: string }) => {
+    const targetWindow = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    const { canceled, filePath } = await dialog.showSaveDialog(targetWindow, {
+      title: 'Export FHIR Bundle JSON',
+      defaultPath: payload.defaultFileName ?? 'rxfhir-bundle.json',
+      filters: [{ name: 'FHIR Bundle JSON', extensions: ['json'] }]
+    })
+
+    if (canceled || !filePath) {
+      return { canceled: true }
+    }
+
+    await writeFile(filePath, payload.content, 'utf8')
+
+    return {
+      canceled: false,
+      filePath,
+      fileName: basename(filePath)
+    }
+  }
+)
+
+ipcMain.handle('bundle-json:open', async () => {
+  const targetWindow = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+  const { canceled, filePaths } = await dialog.showOpenDialog(targetWindow, {
+    title: 'Import FHIR Bundle JSON',
+    properties: ['openFile'],
+    filters: [{ name: 'FHIR Bundle JSON', extensions: ['json'] }]
+  })
+
+  const filePath = filePaths[0]
+  if (canceled || !filePath) {
+    return { canceled: true }
+  }
+
+  const content = await readFile(filePath, 'utf8')
+
+  return {
+    canceled: false,
+    filePath,
+    fileName: basename(filePath),
+    content
+  }
+})
+
+ipcMain.handle('external-url:open', async (_event, url: string) => {
+  const parsed = new URL(url)
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error(`Unsupported URL protocol: ${parsed.protocol}`)
+  }
+
+  await shell.openExternal(parsed.toString())
+  return { opened: true }
+})
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.rxfhir.app')

@@ -62,5 +62,7 @@ export interface BundleSummary {
   organizationName?: string
   conditions?: string[]
   medications?: string[]
+  source?: 'server' | 'imported'
+  fileName?: string
   raw: fhir4.Bundle
 }

@@ -1,12 +1,15 @@
 import { useState } from 'react'
-import { X, Code2, Braces } from 'lucide-react'
+import { X, Code2, Braces, Download } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
 import { Separator } from '../../components/ui/separator'
 import { ScrollArea } from '../../components/ui/scroll-area'
+import { Alert, AlertDescription } from '../../components/ui/alert'
+import FhirErrorAlert from '../../components/FhirErrorAlert'
 import JsonViewer from '../../components/JsonViewer'
 import type { BundleSummary } from '../../types/fhir.d'
+import { exportBundleJson, getBundleFileErrorMessage } from '../../services/bundleFileService'
 
 interface Props {
   summary: BundleSummary
@@ -34,7 +37,11 @@ function Field({ label, value }: { label: string; value?: string }): React.JSX.E
 
 export default function PrescriptionDetail({ summary, onClose }: Props): React.JSX.Element {
   const { t } = useTranslation('consumer')
+  const { t: tc } = useTranslation('common')
   const [showJson, setShowJson] = useState(false)
+  const [fileMessage, setFileMessage] = useState<string>()
+  const [fileError, setFileError] = useState<string>()
+  const [exporting, setExporting] = useState(false)
   const bundle = summary.raw
 
   const entries = bundle.entry || []
@@ -54,6 +61,22 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
 
   const s = (section: string, key: string) => t(`detail.sections.${section}.${key}`)
 
+  async function handleExport(): Promise<void> {
+    setExporting(true)
+    setFileError(undefined)
+    setFileMessage(undefined)
+
+    try {
+      const result = await exportBundleJson(bundle)
+      if (result.canceled || !result.fileName) return
+      setFileMessage(t('detail.exportSuccess', { fileName: result.fileName }))
+    } catch (error) {
+      setFileError(getBundleFileErrorMessage(error, tc))
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <div className="flex flex-col h-full border-l">
       <div className="flex items-start justify-between gap-3 px-4 py-3 border-b bg-background shrink-0">
@@ -63,6 +86,16 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
             <code className="rounded-md bg-muted/40 px-2 py-1 text-[11px] text-muted-foreground font-mono">
               {summary.id}
             </code>
+            {summary.source === 'imported' && (
+              <Badge variant="secondary" className="text-[10px]">
+                {t('detail.importedBadge')}
+              </Badge>
+            )}
+            {summary.fileName && (
+              <span className="text-xs text-muted-foreground truncate max-w-[220px]" title={summary.fileName}>
+                {summary.fileName}
+              </span>
+            )}
             <div className="inline-flex items-center rounded-lg border bg-muted/40 p-1">
               <Button
                 type="button"
@@ -87,6 +120,17 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
                 {t('detail.toggleJson')}
               </Button>
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 px-3"
+              disabled={exporting}
+              onClick={() => void handleExport()}
+            >
+              <Download className="h-3.5 w-3.5" />
+              {t('detail.exportButton')}
+            </Button>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -95,6 +139,17 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
           </Button>
         </div>
       </div>
+
+      {(fileMessage || fileError) && (
+        <div className="border-b bg-background px-4 py-3 shrink-0 space-y-3">
+          {fileMessage && (
+            <Alert variant="success">
+              <AlertDescription>{fileMessage}</AlertDescription>
+            </Alert>
+          )}
+          <FhirErrorAlert error={fileError} />
+        </div>
+      )}
 
       {showJson ? (
         <div className="flex-1 min-h-0 p-4">

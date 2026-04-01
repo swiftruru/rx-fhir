@@ -12,6 +12,8 @@
     }
   },
   "search": {
+    "importButton": "Import Bundle JSON",
+    "importSuccess": "Imported local Bundle: {{fileName}}",
     "tabs": {
       "basic":   "Basic",
       "date":    "Date",
@@ -58,6 +60,12 @@
     "typeLabel":  "Source",
     "description": "Recently created prescriptions stay here so you can quickly reuse them in search.",
     "countLabel": "Submissions {{count}}",
+    "fillComplexHydratedOrganization": "This recent submission was missing cached organization details, so the app reloaded the Bundle and filled the organization code.",
+    "fillComplexHydratedAuthor": "This recent submission was missing cached physician details, so the app reloaded the Bundle and filled the physician name.",
+    "fillComplexFromBundleOrganization": "This recent submission is not a full prescription Bundle. The app used the latest prescription for the same patient to fill the organization code.",
+    "fillComplexFromBundleAuthor": "This recent submission is not a full prescription Bundle. The app used the latest prescription for the same patient to fill the physician name.",
+    "fillComplexOrganizationUnavailable": "This recent submission is not a full prescription Bundle, and no organization information is available yet, so only the patient identifier could be filled.",
+    "fillComplexAuthorUnavailable": "This recent submission is not a full prescription Bundle, and no physician information is available yet, so only the patient identifier could be filled.",
     "empty":      "No submissions yet",
     "clearAll":   "Clear All",
     "fillSearch":   "Fill Search",
@@ -129,12 +137,16 @@
     },
     "count":          "Found {{total}} result(s)",
     "showing":        "Showing {{count}}",
-    "unknownPatient": "Unknown Patient"
+    "unknownPatient": "Unknown Patient",
+    "importedBadge": "Local Import"
   },
   "detail": {
     "title": "Prescription Details",
     "toggleJson":       "JSON",
     "toggleStructured": "Structured",
+    "exportButton": "Export JSON",
+    "exportSuccess": "Bundle JSON exported: {{fileName}}",
+    "importedBadge": "Local Import",
     "sections": {
       "prescription": {
         "title":    "Prescription Info",

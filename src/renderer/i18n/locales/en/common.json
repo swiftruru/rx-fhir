@@ -9,7 +9,9 @@
     "next": "Skip / Next",
     "search": "Search",
     "close": "Close",
-    "fillMock": "Fill Mock"
+    "fillMock": "Fill Mock",
+    "import": "Import JSON",
+    "export": "Export JSON"
   },
   "server": {
     "checking": "Connecting…",
@@ -32,7 +34,22 @@
   },
   "fhir": {
     "resourceCreated": "{{resourceType}} created successfully! ID: {{id}}",
-    "resourceReused": "Reused existing {{resourceType}}. ID: {{id}}"
+    "resourceUpdated": "{{resourceType}} updated successfully! ID: {{id}}",
+    "resourceReused": "Reused existing {{resourceType}}. ID: {{id}}",
+    "feedbackReason": {
+      "label": "Explain this result",
+      "created": "This is shown in green because the app did not find a reusable existing {{resourceType}}, so it created a new resource with POST.",
+      "updated": "This is shown in green because this step already had an existing {{resourceType}} ID, so the app updated the same resource with PUT.",
+      "reused": "This is shown in blue because the app found a reusable existing {{resourceType}} and reused it to avoid creating a duplicate."
+    }
+  },
+  "bundleFile": {
+    "errors": {
+      "unavailable": "Local file import/export is not available in the current environment.",
+      "invalidJson": "Import failed: the selected file is not valid JSON.",
+      "invalidBundle": "Import failed: the selected file is not a FHIR Bundle JSON document.",
+      "invalidSummary": "Import failed: this Bundle does not contain enough data to build a usable summary."
+    }
   },
   "theme": {
     "light": "Light",

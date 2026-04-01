@@ -1,20 +1,20 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, Loader2, Wand2 } from 'lucide-react'
+import { Loader2, Wand2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
-import { Alert, AlertDescription } from '../../../components/ui/alert'
 import FormGuideCard from '../../../components/FormGuideCard'
+import CreatorFeedbackAlert from '../../../components/CreatorFeedbackAlert'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
+import { useCreatorMockFill } from '../../../hooks/useCreatorMockFill'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
-import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
+import { findOrCreateDetailed, putResource, resetLoggedRequests } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
-import { organizationMocks } from '../../../mocks/mockPools'
 
 type FormData = { name: string; identifier: string; type: 'hospital' | 'clinic' | 'pharmacy' }
 
@@ -48,18 +48,12 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [resultId, setResultId] = useState<string | undefined>(existingOrganizationId)
-  const [saveOutcome, setSaveOutcome] = useState<'created' | 'reused'>('created')
+  const [saveOutcome, setSaveOutcome] = useState<'created' | 'updated' | 'reused'>('created')
+  const [requestMethod, setRequestMethod] = useState<'GET' | 'POST' | 'PUT'>(persistedFeedback?.requestMethod ?? 'POST')
   const [errorMsg, setErrorMsg] = useState<string>()
   const feedback = status === 'success' && resultId
-    ? { id: resultId, outcome: saveOutcome }
+    ? { id: resultId, outcome: saveOutcome, requestMethod }
     : persistedFeedback
-
-  const mockIndexRef = useRef(0)
-  function fillMock(): void {
-    const data = organizationMocks[mockIndexRef.current % organizationMocks.length]
-    mockIndexRef.current += 1
-    Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
-  }
 
   const initialValues = useMemo<Partial<FormData>>(() => {
     const existingType = Object.entries(TYPE_MAP).find(([, value]) => (
@@ -79,10 +73,15 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
     defaultValues: initialValues
   })
 
+  const fillMock = useCreatorMockFill<FormData>('organization', (key, value) => {
+    setValue(key as keyof FormData, value as never)
+  })
+
   useCreatorDraftAutosave('organization', watch)
   const selectedType = watch('type')
 
   async function onSubmit(data: FormData): Promise<void> {
+    resetLoggedRequests()
     setStatus('loading')
     setErrorMsg(undefined)
     clearFeedback('organization')
@@ -111,12 +110,16 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
           return result.resource
         })()
       if (!created.id) throw new Error(tc('errors.unknown'))
-      setSaveOutcome(reused ? 'reused' : 'created')
+      const outcome = organizationId ? 'updated' : reused ? 'reused' : 'created'
+      const method = organizationId ? 'PUT' : reused ? 'GET' : 'POST'
+      setSaveOutcome(outcome)
+      setRequestMethod(method)
       setResultId(created.id)
       setStatus('success')
       setFeedback('organization', {
         id: created.id,
-        outcome: reused ? 'reused' : 'created'
+        outcome,
+        requestMethod: method
       })
       onSuccess(created)
     } catch (e) {
@@ -177,19 +180,7 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
       </div>
 
       {feedback && status !== 'loading' && (
-        <Alert variant={feedback.outcome === 'reused' ? 'info' : 'success'}>
-          <CheckCircle2 className="h-4 w-4" />
-          <AlertDescription>
-            {feedback.outcome === 'reused'
-              ? tc('fhir.resourceReused', { resourceType: 'Organization', id: feedback.id })
-              : (
-                  <>
-                    {f('success').replace('{{id}}', '')}
-                    <code className="font-mono text-xs">{feedback.id}</code>
-                  </>
-                )}
-          </AlertDescription>
-        </Alert>
+        <CreatorFeedbackAlert feedback={feedback} resourceType="Organization" />
       )}
       {status === 'error' && <FhirErrorAlert error={errorMsg} />}
 

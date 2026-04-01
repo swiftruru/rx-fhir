@@ -6,10 +6,12 @@ import { Button } from '../../components/ui/button'
 import { Alert, AlertDescription } from '../../components/ui/alert'
 import ResourceStepper from './ResourceStepper'
 import { useCreatorStore } from '../../store/creatorStore'
+import { useMockStore } from '../../store/mockStore'
 import type { ConsumerLaunchState } from '../consumer/searchState'
 
 export default function CreatorPage(): React.JSX.Element {
   const { bundleId, resources, reset, draftRestored, dismissDraftRestored, draftSavedAt, draftHydrated } = useCreatorStore()
+  const resetMockScenario = useMockStore((s) => s.reset)
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
   const navigate = useNavigate()
@@ -29,6 +31,7 @@ export default function CreatorPage(): React.JSX.Element {
 
   function handleConfirm(): void {
     reset()
+    resetMockScenario()
     setConfirming(false)
   }
 

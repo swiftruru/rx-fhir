@@ -1,5 +1,48 @@
 import type { BundleSummary } from '../types/fhir.d'
 
+export interface BundleHistoryMetadata {
+  patientName?: string
+  patientIdentifier?: string
+  organizationName?: string
+  organizationIdentifier?: string
+  practitionerName?: string
+  conditionDisplay?: string
+}
+
+function getBundleResource<T extends fhir4.Resource>(
+  bundle: fhir4.Bundle,
+  type: T['resourceType']
+): T | undefined {
+  return bundle.entry?.find((entry) => entry.resource?.resourceType === type)?.resource as T | undefined
+}
+
+function getDisplayName(name?: fhir4.HumanName): string | undefined {
+  if (!name) return undefined
+  if (name.text) return name.text
+
+  const joined = `${name.family ?? ''}${name.given?.join('') ?? ''}`.trim()
+  if (joined) return joined
+
+  const spaced = [name.family, ...(name.given ?? [])].filter(Boolean).join(' ').trim()
+  return spaced || undefined
+}
+
+export function extractBundleHistoryMetadata(bundle: fhir4.Bundle): BundleHistoryMetadata {
+  const patient = getBundleResource<fhir4.Patient>(bundle, 'Patient')
+  const organization = getBundleResource<fhir4.Organization>(bundle, 'Organization')
+  const practitioner = getBundleResource<fhir4.Practitioner>(bundle, 'Practitioner')
+  const condition = getBundleResource<fhir4.Condition>(bundle, 'Condition')
+
+  return {
+    patientName: getDisplayName(patient?.name?.[0]),
+    patientIdentifier: patient?.identifier?.[0]?.value,
+    organizationName: organization?.name,
+    organizationIdentifier: organization?.identifier?.[0]?.value,
+    practitionerName: getDisplayName(practitioner?.name?.[0]),
+    conditionDisplay: condition?.code?.coding?.[0]?.display || condition?.code?.text || condition?.code?.coding?.[0]?.code
+  }
+}
+
 export function extractBundleSummary(bundle: fhir4.Bundle): BundleSummary | null {
   if (!bundle.id || bundle.resourceType !== 'Bundle') return null
 
@@ -62,6 +105,7 @@ export function extractBundleSummary(bundle: fhir4.Bundle): BundleSummary | null
     organizationName,
     conditions,
     medications,
+    source: 'server',
     raw: bundle
   }
 }

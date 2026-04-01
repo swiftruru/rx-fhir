@@ -1,20 +1,21 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, Wand2 } from 'lucide-react'
+import { CheckCircle2, Wand2, Download, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/button'
 import { useHistoryStore } from '../../../store/historyStore'
 import { useAppStore } from '../../../store/appStore'
-import { compositionMocks } from '../../../mocks/mockPools'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
 import JsonViewer from '../../../components/JsonViewer'
+import { useCreatorMockFill } from '../../../hooks/useCreatorMockFill'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
-import { postResource } from '../../../services/fhirClient'
+import { exportBundleJson, getBundleFileErrorMessage } from '../../../services/bundleFileService'
+import { postResource, resetLoggedRequests } from '../../../services/fhirClient'
 import { buildComposition, assembleDocumentBundle } from '../../../services/bundleService'
 import { useCreatorStore } from '../../../store/creatorStore'
 import PrescriptionSummaryCard from '../components/PrescriptionSummaryCard'
@@ -59,14 +60,8 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
   const [compId, setCompId] = useState<string>()
   const [bundleResultId, setBundleResultId] = useState<string>()
   const [errorMsg, setErrorMsg] = useState<string>()
-
-  const mockIndexRef = useRef(0)
-  function fillMock(): void {
-    const data = compositionMocks[mockIndexRef.current % compositionMocks.length]
-    mockIndexRef.current += 1
-    setValue('title', data.title)
-    setValue('date', new Date().toISOString().slice(0, 16))
-  }
+  const [fileMessage, setFileMessage] = useState<string>()
+  const [exporting, setExporting] = useState(false)
 
   const initialValues = useMemo<FormData>(() => mergeDraftValues({
     title: resources.composition?.title ?? f('docTitle.placeholder'),
@@ -78,6 +73,10 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
     defaultValues: initialValues
   })
 
+  const fillMock = useCreatorMockFill<FormData>('composition', (key, value) => {
+    setValue(key as keyof FormData, value as never)
+  })
+
   useCreatorDraftAutosave('composition', watch)
   const formData = watch()
 
@@ -87,7 +86,27 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
     return assembleDocumentBundle(resources, comp)
   }
 
+  async function handleExportBundle(): Promise<void> {
+    const preview = getPreview()
+    if (!preview) return
+
+    setExporting(true)
+    setErrorMsg(undefined)
+    setFileMessage(undefined)
+
+    try {
+      const result = await exportBundleJson(preview)
+      if (result.canceled || !result.fileName) return
+      setFileMessage(t('forms.composition.export.success', { fileName: result.fileName }))
+    } catch (error) {
+      setErrorMsg(getBundleFileErrorMessage(error, tc))
+    } finally {
+      setExporting(false)
+    }
+  }
+
   async function onSubmit(data: FormData): Promise<void> {
+    resetLoggedRequests()
     setCompStatus('loading')
     setErrorMsg(undefined)
     try {
@@ -145,7 +164,18 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
 
   return (
     <form id="composition-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="flex justify-end">
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void handleExportBundle()}
+            disabled={!preview || exporting}
+            className="h-7 px-2 text-xs"
+          >
+            {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+            {f('export.button')}
+          </Button>
           <Button type="button" variant="ghost" size="sm" onClick={fillMock} className="h-7 px-2 text-xs text-muted-foreground">
             <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
           </Button>
@@ -192,6 +222,12 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
               <div>Composition ID: <code className="font-mono text-xs">{compId}</code></div>
               <div className="mt-1">Bundle ID: <code className="font-mono text-xs font-bold">{bundleResultId}</code></div>
             </AlertDescription>
+          </Alert>
+        )}
+
+        {fileMessage && (
+          <Alert variant="success">
+            <AlertDescription>{fileMessage}</AlertDescription>
           </Alert>
         )}
 

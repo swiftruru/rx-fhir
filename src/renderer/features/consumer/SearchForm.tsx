@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
-import { Search, Loader2, Wand2 } from 'lucide-react'
+import { Search, Loader2, Wand2, Upload } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
+import { Alert, AlertDescription } from '../../components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
 import FhirErrorAlert from '../../components/FhirErrorAlert'
+import ExternalUrlLink from '../../components/ExternalUrlLink'
+import { getBundleFileErrorMessage, importBundleJson } from '../../services/bundleFileService'
 import { searchBundles, buildSearchUrl, type QueryStep } from '../../services/fhirClient'
 import { extractSearchResults } from '../../services/searchService'
 import type { BundleSummary, SearchParams } from '../../types/fhir.d'
@@ -17,8 +20,11 @@ import { consumerBasicMocks, consumerDateMocks, consumerComplexMocks } from '../
 interface Props {
   activeTab: SearchTab
   onTabChange: (tab: SearchTab) => void
+  onComplexByChange?: (value: 'organization' | 'author') => void
   onResults: (results: BundleSummary[], total: number, execution: ConsumerSearchExecution) => void
+  onImportBundle: (summary: BundleSummary) => void
   prefill?: SearchPrefill | null
+  prefillNotice?: { message: string; variant?: 'info' | 'warning' } | null
   onPrefillConsumed?: () => void
   autoSearch?: SearchParams | null
   onAutoSearchConsumed?: () => void
@@ -27,8 +33,11 @@ interface Props {
 export default function SearchForm({
   activeTab,
   onTabChange,
+  onComplexByChange,
   onResults,
+  onImportBundle,
   prefill,
+  prefillNotice,
   onPrefillConsumed,
   autoSearch,
   onAutoSearchConsumed
@@ -36,9 +45,11 @@ export default function SearchForm({
   const { t } = useTranslation('consumer')
   const { t: tc } = useTranslation('common')
   const [loading, setLoading] = useState(false)
+  const [importing, setImporting] = useState(false)
   const [lastUrl, setLastUrl] = useState<string>()
   const [querySteps, setQuerySteps] = useState<QueryStep[]>([])
   const [error, setError] = useState<string>()
+  const [importMessage, setImportMessage] = useState<string>()
 
   const basicForm = useForm({ defaultValues: { searchBy: 'identifier', value: '' } })
   const dateForm = useForm({ defaultValues: { identifier: '', date: '' } })
@@ -88,9 +99,8 @@ export default function SearchForm({
       complexForm.setValue('authorName', prefill.authorName ?? '')
     }
 
-    onTabChange(prefill.tab)
     onPrefillConsumed?.()
-  }, [basicForm, complexForm, dateForm, onPrefillConsumed, onTabChange, prefill])
+  }, [basicForm, complexForm, dateForm, onPrefillConsumed, prefill])
 
   useEffect(() => {
     if (!autoSearch) {
@@ -113,6 +123,7 @@ export default function SearchForm({
   async function doSearch(params: SearchParams): Promise<void> {
     setLoading(true)
     setError(undefined)
+    setImportMessage(undefined)
     setQuerySteps([])
     const isClientFilteredComplex =
       params.mode === 'complex' &&
@@ -151,6 +162,26 @@ export default function SearchForm({
     }
   }
 
+  async function handleImportBundle(): Promise<void> {
+    setImporting(true)
+    setError(undefined)
+    setImportMessage(undefined)
+    setLastUrl(undefined)
+    setQuerySteps([])
+
+    try {
+      const imported = await importBundleJson()
+      if (!imported) return
+
+      onImportBundle(imported.summary)
+      setImportMessage(t('search.importSuccess', { fileName: imported.fileName }))
+    } catch (e) {
+      setError(getBundleFileErrorMessage(e, tc))
+    } finally {
+      setImporting(false)
+    }
+  }
+
   async function handleBasicSubmit(data: { searchBy: string; value: string }): Promise<void> {
     await doSearch({
       mode: 'basic',
@@ -180,14 +211,36 @@ export default function SearchForm({
 
   const searchByValue = basicForm.watch('searchBy')
   const complexBy = complexForm.watch('complexBy')
+  const isBusy = loading || importing
+
+  useEffect(() => {
+    onComplexByChange?.((complexBy as 'organization' | 'author') ?? 'organization')
+  }, [complexBy, onComplexByChange])
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button type="button" variant="ghost" size="sm" onClick={fillMock} className="h-7 px-2 text-xs text-muted-foreground">
+      <div className="flex items-center justify-between gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={handleImportBundle} disabled={isBusy} className="h-7 px-2 text-xs">
+          {importing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+          {t('search.importButton')}
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={fillMock} disabled={isBusy} className="h-7 px-2 text-xs text-muted-foreground">
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
         </Button>
       </div>
+
+      {importMessage && (
+        <Alert variant="success">
+          <AlertDescription>{importMessage}</AlertDescription>
+        </Alert>
+      )}
+
+      {prefillNotice && (
+        <Alert variant={prefillNotice.variant ?? 'warning'}>
+          <AlertDescription>{prefillNotice.message}</AlertDescription>
+        </Alert>
+      )}
+
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="w-full">
           <TabsTrigger value="basic" className="flex-1">{t('search.tabs.basic')}</TabsTrigger>
@@ -223,7 +276,7 @@ export default function SearchForm({
                 {...basicForm.register('value', { required: true })}
               />
             </div>
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button type="submit" disabled={isBusy} className="w-full">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               {tc('buttons.search')}
             </Button>
@@ -249,7 +302,7 @@ export default function SearchForm({
                 {...dateForm.register('date', { required: true })}
               />
             </div>
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button type="submit" disabled={isBusy} className="w-full">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               {t('search.date.submitButton')}
             </Button>
@@ -271,7 +324,10 @@ export default function SearchForm({
               <Label>{t('search.complex.extraLabel')}</Label>
               <Select
                 value={complexBy}
-                onValueChange={(v) => complexForm.setValue('complexBy', v)}
+                onValueChange={(v) => {
+                  complexForm.setValue('complexBy', v)
+                  onComplexByChange?.(v as 'organization' | 'author')
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -286,6 +342,7 @@ export default function SearchForm({
               <div className="space-y-2">
                 <Label htmlFor="org-id-search">{t('search.complex.orgCodeLabel')}</Label>
                 <Input
+                  key="complex-org-id"
                   id="org-id-search"
                   placeholder={t('search.complex.orgCodePlaceholder')}
                   {...complexForm.register('orgId')}
@@ -295,13 +352,14 @@ export default function SearchForm({
               <div className="space-y-2">
                 <Label htmlFor="author-name">{t('search.complex.authorNameLabel')}</Label>
                 <Input
+                  key="complex-author-name"
                   id="author-name"
                   placeholder={t('search.complex.authorNamePlaceholder')}
                   {...complexForm.register('authorName')}
                 />
               </div>
             )}
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button type="submit" disabled={isBusy} className="w-full">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               {complexBy === 'organization' ? t('search.complex.submitButtonOrg') : t('search.complex.submitButtonAuthor')}
             </Button>
@@ -312,7 +370,7 @@ export default function SearchForm({
       {lastUrl && (
         <div className="p-2 rounded bg-muted">
           <p className="text-[10px] text-muted-foreground mb-1">{t('search.queryUrlLabel')}</p>
-          <code className="text-xs break-all">{lastUrl}</code>
+          <ExternalUrlLink url={lastUrl} />
         </div>
       )}
 
@@ -322,7 +380,7 @@ export default function SearchForm({
           {querySteps.map((s) => (
             <div key={s.step} className="space-y-0.5">
               <p className="text-[10px] font-medium text-foreground">{s.label}</p>
-              <code className="text-[10px] break-all text-muted-foreground">{s.url}</code>
+              <ExternalUrlLink url={s.url} compact />
               {s.note && <p className="text-[10px] text-muted-foreground/70 italic">{s.note}</p>}
             </div>
           ))}

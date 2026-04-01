@@ -1,6 +1,11 @@
 import type { SearchParams } from '../types/fhir.d'
+import { useFhirInspectorStore } from '../store/fhirInspectorStore'
 
 const DEFAULT_SERVER_URL = 'https://hapi.fhir.org/baseR4'
+
+function trimTrailingSlash(url: string): string {
+  return url.replace(/\/+$/, '')
+}
 
 export function getFhirBaseUrl(): string {
   return localStorage.getItem('fhirServerUrl') || DEFAULT_SERVER_URL
@@ -10,9 +15,86 @@ export function setFhirBaseUrl(url: string): void {
   localStorage.setItem('fhirServerUrl', url)
 }
 
+export function resetLoggedRequests(): void {
+  useFhirInspectorStore.getState().clear()
+}
+
 const FHIR_HEADERS = {
   'Content-Type': 'application/fhir+json',
   Accept: 'application/fhir+json'
+}
+
+function headersToObject(headers?: HeadersInit): Record<string, string> {
+  if (!headers) return {}
+
+  if (headers instanceof Headers) {
+    return Object.fromEntries(headers.entries())
+  }
+
+  if (Array.isArray(headers)) {
+    return Object.fromEntries(headers)
+  }
+
+  return Object.fromEntries(
+    Object.entries(headers).map(([key, value]) => [key, String(value)])
+  )
+}
+
+function parseResponsePayload(text: string): unknown {
+  if (!text.trim()) return undefined
+
+  try {
+    return JSON.parse(text) as unknown
+  } catch {
+    return text
+  }
+}
+
+async function performLoggedRequest(
+  url: string,
+  init: {
+    method: 'GET' | 'POST' | 'PUT'
+    resourceType?: string
+    reasonCode?: 'check-existing' | 'create' | 'update' | 'search'
+    headers?: HeadersInit
+    body?: unknown
+  }
+): Promise<Response> {
+  const requestId = useFhirInspectorStore.getState().startRequest({
+    method: init.method,
+    url,
+    resourceType: init.resourceType,
+    reasonCode: init.reasonCode,
+    requestHeaders: headersToObject(init.headers),
+    requestBody: init.body
+  })
+
+  try {
+    const response = await fetch(url, {
+      method: init.method,
+      headers: init.headers,
+      body: typeof init.body === 'string' || init.body === undefined
+        ? init.body
+        : JSON.stringify(init.body)
+    })
+
+    const responseText = await response.clone().text()
+    useFhirInspectorStore.getState().finishRequest(requestId, {
+      ok: response.ok,
+      responseStatus: response.status,
+      responseStatusText: response.statusText,
+      responseHeaders: headersToObject(response.headers),
+      responseBody: parseResponsePayload(responseText)
+    })
+
+    return response
+  } catch (error) {
+    useFhirInspectorStore.getState().finishRequest(requestId, {
+      ok: false,
+      errorMessage: error instanceof Error ? error.message : String(error)
+    })
+    throw error
+  }
 }
 
 export async function postResource<T extends fhir4.Resource>(
@@ -20,16 +102,37 @@ export async function postResource<T extends fhir4.Resource>(
   body: Omit<T, 'id'>
 ): Promise<T> {
   const url = `${getFhirBaseUrl()}/${resourceType}`
-  const response = await fetch(url, {
+  const response = await performLoggedRequest(url, {
     method: 'POST',
+    resourceType,
+    reasonCode: 'create',
     headers: FHIR_HEADERS,
-    body: JSON.stringify(body)
+    body
   })
   if (!response.ok) {
     const errorText = await response.text()
     throw new Error(`POST ${resourceType} failed (${response.status}): ${errorText}`)
   }
   return response.json() as Promise<T>
+}
+
+export async function fetchBundleById(
+  bundleId: string,
+  serverUrl?: string
+): Promise<fhir4.Bundle> {
+  const baseUrl = trimTrailingSlash(serverUrl || getFhirBaseUrl())
+  const url = `${baseUrl}/Bundle/${bundleId}`
+  const response = await performLoggedRequest(url, {
+    method: 'GET',
+    resourceType: 'Bundle',
+    reasonCode: 'search',
+    headers: FHIR_HEADERS
+  })
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`GET Bundle/${bundleId} failed (${response.status}): ${errorText}`)
+  }
+  return response.json() as Promise<fhir4.Bundle>
 }
 
 /**
@@ -48,7 +151,12 @@ export async function findOrCreateDetailed<T extends fhir4.Resource>(
 ): Promise<FindOrCreateResult<T>> {
   const qs = new URLSearchParams(searchParams)
   const searchUrl = `${getFhirBaseUrl()}/${resourceType}?${qs}`
-  const searchRes = await fetch(searchUrl, { method: 'GET', headers: FHIR_HEADERS })
+  const searchRes = await performLoggedRequest(searchUrl, {
+    method: 'GET',
+    resourceType,
+    reasonCode: 'check-existing',
+    headers: FHIR_HEADERS
+  })
   if (searchRes.ok) {
     const bundle = await searchRes.json() as fhir4.Bundle
     if (bundle.entry && bundle.entry.length > 0) {
@@ -79,10 +187,12 @@ export async function putResource<T extends fhir4.Resource>(
   body: Omit<T, 'id'>
 ): Promise<T> {
   const url = `${getFhirBaseUrl()}/${resourceType}/${id}`
-  const response = await fetch(url, {
+  const response = await performLoggedRequest(url, {
     method: 'PUT',
+    resourceType,
+    reasonCode: 'update',
     headers: FHIR_HEADERS,
-    body: JSON.stringify({ ...body, id })
+    body: { ...body, id }
   })
   if (!response.ok) {
     const errorText = await response.text()
@@ -194,7 +304,12 @@ export async function searchBundles(
   if (params.mode === 'complex' && params.complexSearchBy === 'organization' && params.organizationId) {
     const orgUrl = `${getFhirBaseUrl()}/Organization?identifier=${encodeURIComponent(params.organizationId)}`
     onStep?.({ step: 1, label: '① 解析機構 ID', url: orgUrl })
-    const orgRes = await fetch(orgUrl, { method: 'GET', headers: FHIR_HEADERS })
+    const orgRes = await performLoggedRequest(orgUrl, {
+      method: 'GET',
+      resourceType: 'Organization',
+      reasonCode: 'search',
+      headers: FHIR_HEADERS
+    })
     if (!orgRes.ok) {
       const errorText = await orgRes.text()
       throw new Error(`Search failed (${orgRes.status}): ${errorText}`)
@@ -209,7 +324,12 @@ export async function searchBundles(
     if (params.identifier) qs.set('identifier', params.identifier)
     const searchUrl = buildBundleSearchUrl(qs)
     onStep?.({ step: 2, label: '② 查詢 Bundle', url: searchUrl, note: `(custodian chain 不支援，改用 identifier 撈回後過濾)` })
-    const response = await fetch(searchUrl, { method: 'GET', headers: FHIR_HEADERS })
+    const response = await performLoggedRequest(searchUrl, {
+      method: 'GET',
+      resourceType: 'Bundle',
+      reasonCode: 'search',
+      headers: FHIR_HEADERS
+    })
     if (!response.ok) {
       const errorText = await response.text()
       throw new Error(`Search failed (${response.status}): ${errorText}`)
@@ -235,7 +355,12 @@ export async function searchBundles(
     if (params.identifier) qs.set('identifier', params.identifier)
     const searchUrl = buildBundleSearchUrl(qs)
     onStep?.({ step: 1, label: '① 查詢 Bundle', url: searchUrl, note: `(author chain 不支援，改用 identifier 撈回後過濾)` })
-    const response = await fetch(searchUrl, { method: 'GET', headers: FHIR_HEADERS })
+    const response = await performLoggedRequest(searchUrl, {
+      method: 'GET',
+      resourceType: 'Bundle',
+      reasonCode: 'search',
+      headers: FHIR_HEADERS
+    })
     if (!response.ok) {
       const errorText = await response.text()
       throw new Error(`Search failed (${response.status}): ${errorText}`)
@@ -255,8 +380,10 @@ export async function searchBundles(
   }
 
   const searchUrl = buildSearchUrl(params)
-  const response = await fetch(searchUrl, {
+  const response = await performLoggedRequest(searchUrl, {
     method: 'GET',
+    resourceType: 'Bundle',
+    reasonCode: 'search',
     headers: FHIR_HEADERS
   })
   if (!response.ok) {

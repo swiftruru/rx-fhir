@@ -2,21 +2,22 @@ import { useState, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, Loader2, Wand2 } from 'lucide-react'
+import { Loader2, Wand2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
-import { Alert, AlertDescription } from '../../../components/ui/alert'
 import FormGuideCard from '../../../components/FormGuideCard'
+import CreatorFeedbackAlert from '../../../components/CreatorFeedbackAlert'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
-import { findOrCreateDetailed, putResource } from '../../../services/fhirClient'
+import { getPrimaryDemoScenarioId, getScenarioMock } from '../../../mocks/selectors'
+import { findOrCreateDetailed, putResource, resetLoggedRequests } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
 import { useHistoryStore } from '../../../store/historyStore'
 import { useAppStore } from '../../../store/appStore'
-import { patientMocks } from '../../../mocks/mockPools'
+import { useMockStore } from '../../../store/mockStore'
 
 type FormData = {
   familyName: string
@@ -41,6 +42,8 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
   const { t: tc } = useTranslation('common')
   const addRecord = useHistoryStore((s) => s.addRecord)
   const serverUrl = useAppStore((s) => s.serverUrl)
+  const activateScenario = useMockStore((s) => s.activateScenario)
+  const getRandomCreatorMock = useMockStore((s) => s.getRandomCreatorMock)
   const f = (k: string) => t(`forms.patient.${k}`)
 
   const schema = useMemo(() => z.object({
@@ -53,18 +56,12 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [resultId, setResultId] = useState<string | undefined>(existingPatientId)
-  const [saveOutcome, setSaveOutcome] = useState<'created' | 'reused'>('created')
+  const [saveOutcome, setSaveOutcome] = useState<'created' | 'updated' | 'reused'>('created')
+  const [requestMethod, setRequestMethod] = useState<'GET' | 'POST' | 'PUT'>(persistedFeedback?.requestMethod ?? 'POST')
   const [errorMsg, setErrorMsg] = useState<string>()
   const feedback = status === 'success' && resultId
-    ? { id: resultId, outcome: saveOutcome }
+    ? { id: resultId, outcome: saveOutcome, requestMethod }
     : persistedFeedback
-
-  const mockIndexRef = useRef(0)
-  function fillMock(): void {
-    const data = patientMocks[mockIndexRef.current % patientMocks.length]
-    mockIndexRef.current += 1
-    Object.entries(data).forEach(([k, v]) => setValue(k as keyof FormData, v as never))
-  }
 
   const initialValues = useMemo<Partial<FormData>>(() => mergeDraftValues({
     familyName: existingPatient?.name?.[0]?.family ?? '',
@@ -79,10 +76,34 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
     defaultValues: initialValues
   })
 
+  const firstMockRef = useRef(true)
+  function applyMock(data?: Partial<FormData>): void {
+    if (!data) return
+    Object.entries(data).forEach(([key, value]) => {
+      setValue(key as keyof FormData, value as never)
+    })
+  }
+
+  function fillMock(): void {
+    const primaryScenarioId = getPrimaryDemoScenarioId()
+
+    if (firstMockRef.current) {
+      firstMockRef.current = false
+      if (primaryScenarioId) {
+        activateScenario(primaryScenarioId, 'patient')
+        applyMock(getScenarioMock(primaryScenarioId, 'patient'))
+        return
+      }
+    }
+
+    applyMock(getRandomCreatorMock('patient'))
+  }
+
   useCreatorDraftAutosave('patient', watch)
   const selectedGender = watch('gender')
 
   async function onSubmit(data: FormData): Promise<void> {
+    resetLoggedRequests()
     setStatus('loading')
     setErrorMsg(undefined)
     clearFeedback('patient')
@@ -114,12 +135,16 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
             return result.resource
           })()
       if (!created.id) throw new Error(tc('errors.unknown'))
-      setSaveOutcome(reused ? 'reused' : 'created')
+      const outcome = patientId ? 'updated' : reused ? 'reused' : 'created'
+      const method = patientId ? 'PUT' : reused ? 'GET' : 'POST'
+      setSaveOutcome(outcome)
+      setRequestMethod(method)
       setResultId(created.id)
       setStatus('success')
       setFeedback('patient', {
         id: created.id,
-        outcome: reused ? 'reused' : 'created'
+        outcome,
+        requestMethod: method
       })
       onSuccess(created)
       addRecord({
@@ -205,19 +230,7 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
       </div>
 
       {feedback && status !== 'loading' && (
-        <Alert variant={feedback.outcome === 'reused' ? 'info' : 'success'}>
-          <CheckCircle2 className="h-4 w-4" />
-          <AlertDescription>
-            {feedback.outcome === 'reused'
-              ? tc('fhir.resourceReused', { resourceType: 'Patient', id: feedback.id })
-              : (
-                  <>
-                    {f('success').replace('{{id}}', '')}
-                    <code className="font-mono text-xs">{feedback.id}</code>
-                  </>
-                )}
-          </AlertDescription>
-        </Alert>
+        <CreatorFeedbackAlert feedback={feedback} resourceType="Patient" />
       )}
       {status === 'error' && <FhirErrorAlert error={errorMsg} />}
 

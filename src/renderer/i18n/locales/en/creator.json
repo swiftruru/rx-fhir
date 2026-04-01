@@ -21,9 +21,11 @@
     "progress": "Progress",
     "progressCount": "{{completed}} / {{total}} completed",
     "stepBadge": "Step {{current}} / {{total}}",
-    "showJson": "Show JSON Preview",
-    "hideJson": "Hide JSON",
+    "showPanel": "Show Right Panel",
+    "hidePanel": "Hide Right Panel",
     "jsonPanelTitle": "Resources JSON",
+    "panelModeJson": "Resources JSON",
+    "panelModeRequest": "FHIR Request",
     "jsonShowingAll": "Showing all {{count}} resource(s)",
     "jsonShowingLast": "Showing only the latest updated resource: {{resource}}",
     "jsonStatusAll": "All {{count}}",
@@ -42,6 +44,45 @@
       "lg": "L"
     },
     "jsonEmpty": "No resources created yet",
+    "requestEmptyTitle": "No FHIR request yet",
+    "requestEmptyDescription": "After a GET, POST, or PUT request is sent, the latest request and response will appear here.",
+    "requestStatusPending": "Pending",
+    "requestStatusSuccess": "Success",
+    "requestStatusError": "Failed",
+    "requestReasonLabel": "Why this request?",
+    "requestReason": {
+      "checkExisting": "This GET request checks whether the FHIR Server already has a resource with the same identifier or code, so the app can avoid creating duplicates.",
+      "create": "This uses POST because there is no existing ID yet and no reusable resource was found, so a new resource must be created.",
+      "update": "This uses PUT because the current step already has an existing resource ID, so the app updates the same resource.",
+      "search": "This uses GET because the app is retrieving data from the FHIR Server as part of a search flow."
+    },
+    "requestFlow": {
+      "title": "Request Flow",
+      "fallbackResource": "FHIR resource",
+      "stepCheckExisting": "Step {{index}}: Check existing {{resourceType}}",
+      "stepCreate": "Step {{index}}: Create {{resourceType}}",
+      "stepUpdate": "Step {{index}}: Update {{resourceType}}",
+      "stepSearch": "Step {{index}}: Search {{resourceType}}",
+      "stepRequest": "Step {{index}}: {{resourceType}} request",
+      "singleCheckExisting": "Check existing {{resourceType}}",
+      "singleCreate": "Create {{resourceType}}",
+      "singleUpdate": "Update {{resourceType}}",
+      "singleSearch": "Search {{resourceType}}",
+      "singleRequest": "{{resourceType}} request",
+      "noteCheckExistingFound": "The GET check found {{count}} existing {{resourceType}} resource(s), so the app reused one directly and did not send POST.",
+      "noteCheckExistingMissing": "The GET check did not find any reusable {{resourceType}}, so the next step uses POST to create a new one.",
+      "noteCheckExistingUnknown": "This step checks whether a reusable {{resourceType}} already exists.",
+      "noteCreate": "Because no reusable resource was found in the previous step, this step uses POST to create a new {{resourceType}}.",
+      "noteCreateFailed": "This step tried to create a new {{resourceType}} with POST, but the FHIR Server did not accept it.",
+      "noteUpdate": "Because the current step already has an existing {{resourceType}} ID, this step uses PUT to update that same resource.",
+      "noteUpdateFailed": "This step tried to update the existing {{resourceType}} with PUT, but the FHIR Server did not accept it.",
+      "noteSearch": "This is a search flow, so it uses GET to fetch matching data."
+    },
+    "requestHeadersTitle": "Request Headers",
+    "requestBodyTitle": "Request Body",
+    "responseHeadersTitle": "Response Headers",
+    "responseBodyTitle": "Response Body",
+    "requestNoContent": "No content in this section",
     "unknownStep": "Unknown step"
   },
   "steps": {
@@ -309,6 +350,10 @@
     "composition": {
       "docTitle":     { "label": "Document Title", "placeholder": "Electronic Prescription", "required": "Document title is required" },
       "date":         { "label": "Prescription Date", "required": "Prescription date is required" },
+      "export": {
+        "button": "Export Bundle JSON",
+        "success": "Bundle JSON exported: {{fileName}}"
+      },
       "summary": {
         "title": "Prescription Summary Review",
         "description": "Review the core prescription details before submitting. No need to inspect raw JSON first.",

@@ -20,6 +20,7 @@ export interface SubmissionRecord {
 interface HistoryState {
   records: SubmissionRecord[]
   addRecord: (record: SubmissionRecord) => void
+  updateRecord: (id: string, patch: Partial<SubmissionRecord>) => void
   removeRecord: (id: string) => void
   clearHistory: () => void
 }
@@ -31,6 +32,12 @@ export const useHistoryStore = create<HistoryState>()(
       addRecord: (record) =>
         set((state) => ({
           records: [record, ...state.records].slice(0, 30)
+        })),
+      updateRecord: (id, patch) =>
+        set((state) => ({
+          records: state.records.map((record) => (
+            record.id === id ? { ...record, ...patch } : record
+          ))
         })),
       removeRecord: (id) =>
         set((state) => ({

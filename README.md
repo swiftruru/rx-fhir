@@ -79,7 +79,9 @@ Current Creator capabilities:
 
 - Stepper-based workflow with per-step progress, sidebar completion summaries, and current-step header summaries
 - Form validation via `react-hook-form` + `zod`
-- Mock data fill for quick demos
+- Scenario-based Mock Data System for demos and testing, with coherent multi-resource mock packs instead of isolated per-form samples
+- Shared `Fill Mock` flow across Creator steps, so patient, institution, physician, encounter, diagnosis, medication, and composition stay internally consistent within the same scenario
+- The Patient step now starts from a designated primary demo patient on first fill, then rotates through additional scenarios on later fills
 - Revisiting completed steps restores current resource values back into the form
 - Unfinished Creator drafts are auto-saved locally and restored on next launch
 - Re-submitting completed steps updates existing FHIR resources instead of duplicating them
@@ -92,8 +94,10 @@ Current Creator capabilities:
 - Live JSON preview of created resources
 - JSON preview now follows the active light / dark theme instead of staying fixed in a dark-only style
 - JSON preview now includes a compact toolbar with font-size switching, collapse, and all/latest-resource toggles for demos
+- The right-side panel can switch between resource JSON and a Postman-style FHIR request inspector showing request flow, method, URL, headers, body, and response details
 - Final submission now includes a structured prescription summary review card before bundle assembly
 - Composition-first, then document bundle submission
+- The final Creator step can export the assembled FHIR Bundle as local JSON
 - After a successful bundle submission, Creator can jump directly into Consumer, auto-run the query, and focus the newly created bundle
 - Recent submission history stored locally for later query prefill
 
@@ -105,16 +109,19 @@ Search and inspect FHIR Bundles on the configured server:
 - **Date search**: patient identifier + bundle date
 - **Complex search**: patient identifier + author or organization
 - The left panel now focuses on search input only, so the query form remains visible even on narrower windows
-- The middle panel now includes `Results` and `Shortcuts` tabs, so recent submissions and saved searches stay available after a query has already been run
+- The middle panel now includes `Results` and `Query Helpers` tabs, so recent submissions and saved searches stay available after a query has already been run
+- Consumer can import local FHIR Bundle JSON files for offline or ad hoc inspection without querying the server
 - Recent-record magnifier prefills the active search tab instead of forcing a return to basic search
-- Complex search prefills patient identifier and available author / organization context from local submission history
+- Complex search prefills patient identifier and available author / organization context from local submission history, and can backfill missing context by re-reading a stored bundle when needed
 - Search conditions are now stored locally as recent searches, and any search can be pinned into favorites for quick reruns
+- Recent submissions now focus on completed bundle submissions instead of mixing in partial resource history
 - Recent submissions and saved searches are shown as separate helper sections with clearer visual hierarchy
-- Query URL display and multi-step trace for compatibility workarounds
+- Query URL display and multi-step trace for compatibility workarounds, with clickable links that open in the system browser
 - Result list with patient, organization, diagnosis, and medication summary
 - Empty-result states now explain likely causes and suggest next actions based on the actual search mode
 - Prescription detail view now uses a fixed-width detail pane with a clearer `Structured / JSON` toggle in the header
 - Structured detail view and raw JSON viewer
+- Bundle detail JSON can also be exported from Consumer
 - Supports Creator-to-Consumer handoff with automatic query prefill, auto-search, and newly created bundle focus
 
 ### Settings and App Shell
@@ -141,6 +148,18 @@ The current search implementation is optimized for public HAPI FHIR server compa
 | Complex | identifier + organization | resolve organization first, then fetch bundles by identifier, then filter `Composition.custodian` on the client |
 
 Note: this is not a strict 1:1 copy of the original assignment query examples. The implementation intentionally uses HAPI-compatible parameters and client-side workarounds for organization and author filtering to improve operability on public demo servers.
+
+---
+
+## Mock Data System
+
+The current repository now uses a typed, scenario-driven mock data design instead of a single flat demo pool.
+
+- Mock data is organized into coherent scenario packs that span the full Creator flow, from `Organization` through `Composition`
+- The first `Patient` mock fill uses a designated primary demo patient, while later fills can rotate through additional scenarios
+- Scenario packs cover common outpatient, chronic disease, acute visit, emergency, pediatric, search-demo, and optional-field situations
+- Consumer basic/date/complex query examples are derived from the same scenario source, reducing drift between Creator demos and Consumer search helpers
+- Validation helpers are included to keep scenario IDs unique and ensure each full scenario remains structurally complete
 
 ---
 
@@ -234,7 +253,7 @@ src/
     │   └── settings/
     ├── i18n/           # zh-TW / en locales
     ├── lib/
-    ├── mocks/          # Quick-fill demo data
+    ├── mocks/          # Typed scenario-based mock data + query examples
     ├── services/       # FHIR client + bundle/search logic
     ├── store/          # Zustand stores
     ├── styles/
@@ -248,6 +267,7 @@ src/
 Current repository quality signals:
 
 - TypeScript typecheck is available and passes
+- Production build is available and passes locally
 - No automated test suite is currently included
 
 ---

@@ -9,7 +9,9 @@
     "next": "跳過 / 下一步",
     "search": "查詢",
     "close": "關閉",
-    "fillMock": "填入範例"
+    "fillMock": "填入範例",
+    "import": "匯入 JSON",
+    "export": "匯出 JSON"
   },
   "server": {
     "checking": "連線中…",
@@ -32,7 +34,22 @@
   },
   "fhir": {
     "resourceCreated": "{{resourceType}} 已成功建立！ID: {{id}}",
-    "resourceReused": "已重用既有 {{resourceType}}！ID: {{id}}"
+    "resourceUpdated": "{{resourceType}} 已成功更新！ID: {{id}}",
+    "resourceReused": "已重用既有 {{resourceType}}！ID: {{id}}",
+    "feedbackReason": {
+      "label": "查看原因說明",
+      "created": "這次顯示綠色，是因為系統沒有找到可直接重用的既有 {{resourceType}}，因此用 POST 新建了一筆資源。",
+      "updated": "這次顯示綠色，是因為目前步驟已經有既有 {{resourceType}} ID，所以系統用 PUT 更新同一筆資源。",
+      "reused": "這次顯示藍色，是因為系統先檢查到已有可重用的 {{resourceType}}，因此直接沿用，避免重複建立。"
+    }
+  },
+  "bundleFile": {
+    "errors": {
+      "unavailable": "目前環境不支援本機檔案匯入或匯出。",
+      "invalidJson": "匯入失敗：選取的檔案不是有效的 JSON。",
+      "invalidBundle": "匯入失敗：選取的檔案不是 FHIR Bundle JSON。",
+      "invalidSummary": "匯入失敗：這份 Bundle 缺少可供顯示的摘要資訊。"
+    }
   },
   "theme": {
     "light": "亮色",

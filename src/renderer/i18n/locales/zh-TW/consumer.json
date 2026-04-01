@@ -12,6 +12,8 @@
     }
   },
   "search": {
+    "importButton": "匯入 Bundle JSON",
+    "importSuccess": "已匯入本機 Bundle：{{fileName}}",
     "tabs": {
       "basic":   "基本查詢",
       "date":    "日期查詢",
@@ -58,6 +60,12 @@
     "typeLabel":  "資料來源",
     "description": "這裡保留最近建立成功的處方，可快速帶入查詢條件。",
     "countLabel": "提交 {{count}}",
+    "fillComplexHydratedOrganization": "這筆近期提交缺少已快取的機構資訊，系統已從 Bundle 重新讀取並帶入機構代碼。",
+    "fillComplexHydratedAuthor": "這筆近期提交缺少已快取的醫師資訊，系統已從 Bundle 重新讀取並帶入醫師姓名。",
+    "fillComplexFromBundleOrganization": "這筆近期提交不是完整處方 Bundle，系統已改用同病人的最近處方帶入機構代碼。",
+    "fillComplexFromBundleAuthor": "這筆近期提交不是完整處方 Bundle，系統已改用同病人的最近處方帶入醫師姓名。",
+    "fillComplexOrganizationUnavailable": "這筆近期提交不是完整處方 Bundle，且目前找不到可帶入的機構資訊，因此暫時只能先填入病人識別碼。",
+    "fillComplexAuthorUnavailable": "這筆近期提交不是完整處方 Bundle，且目前找不到可帶入的醫師資訊，因此暫時只能先填入病人識別碼。",
     "empty":      "尚無提交紀錄",
     "clearAll":   "清除全部",
     "fillSearch":    "填入搜尋",
@@ -129,12 +137,16 @@
     },
     "count":        "共找到 {{total}} 筆",
     "showing":      "顯示 {{count}} 筆",
-    "unknownPatient": "未知病人"
+    "unknownPatient": "未知病人",
+    "importedBadge": "本機匯入"
   },
   "detail": {
     "title": "處方箋詳情",
     "toggleJson":       "JSON",
     "toggleStructured": "結構化",
+    "exportButton": "匯出 JSON",
+    "exportSuccess": "Bundle JSON 已匯出：{{fileName}}",
+    "importedBadge": "本機匯入",
     "sections": {
       "prescription": {
         "title":        "處方箋資訊",

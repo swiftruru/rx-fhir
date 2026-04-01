@@ -217,6 +217,11 @@ export default function ResultList({ results, total, searchExecution, selected, 
                       <span className="font-semibold text-sm truncate">
                         {summary.patientName || t('results.unknownPatient')}
                       </span>
+                      {summary.source === 'imported' && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          {t('results.importedBadge')}
+                        </Badge>
+                      )}
                       {summary.patientIdentifier && (
                         <Badge variant="outline" className="text-[10px] font-mono shrink-0">
                           {summary.patientIdentifier}
@@ -225,6 +230,11 @@ export default function ResultList({ results, total, searchExecution, selected, 
                     </div>
 
                     <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                      {summary.fileName && (
+                        <span className="truncate max-w-[180px]" title={summary.fileName}>
+                          {summary.fileName}
+                        </span>
+                      )}
                       {summary.date && (
                         <span className="flex items-center gap-1">
                           <CalendarDays className="h-3 w-3" />

@@ -21,9 +21,11 @@
     "progress": "進度",
     "progressCount": "{{completed}} / {{total}} 完成",
     "stepBadge": "步驟 {{current}} / {{total}}",
-    "showJson": "顯示 JSON 預覽",
-    "hideJson": "隱藏 JSON",
+    "showPanel": "顯示右側面板",
+    "hidePanel": "隱藏右側面板",
     "jsonPanelTitle": "已建立資源 JSON",
+    "panelModeJson": "資源 JSON",
+    "panelModeRequest": "FHIR 請求",
     "jsonShowingAll": "目前顯示全部 {{count}} 筆資源",
     "jsonShowingLast": "目前只顯示最新更新的資源：{{resource}}",
     "jsonStatusAll": "全部 {{count}} 筆",
@@ -42,6 +44,45 @@
       "lg": "大"
     },
     "jsonEmpty": "尚未建立任何 Resource",
+    "requestEmptyTitle": "尚無 FHIR 請求",
+    "requestEmptyDescription": "當你送出 GET、POST 或 PUT 後，這裡會顯示本次請求與回應內容。",
+    "requestStatusPending": "請求中",
+    "requestStatusSuccess": "成功",
+    "requestStatusError": "失敗",
+    "requestReasonLabel": "為什麼是這種請求？",
+    "requestReason": {
+      "checkExisting": "這次先用 GET 檢查 FHIR Server 是否已有相同識別碼或代碼的資源，避免重複建立。",
+      "create": "因為目前沒有既有 ID，也沒有找到可重用資源，所以用 POST 新建資源。",
+      "update": "因為目前步驟已經有既有資源 ID，所以用 PUT 更新同一筆資源。",
+      "search": "這次是查詢流程，所以用 GET 從 FHIR Server 取得符合條件的資料。"
+    },
+    "requestFlow": {
+      "title": "本次請求流程",
+      "fallbackResource": "FHIR 資源",
+      "stepCheckExisting": "步驟 {{index}}：檢查既有 {{resourceType}}",
+      "stepCreate": "步驟 {{index}}：建立 {{resourceType}}",
+      "stepUpdate": "步驟 {{index}}：更新 {{resourceType}}",
+      "stepSearch": "步驟 {{index}}：查詢 {{resourceType}}",
+      "stepRequest": "步驟 {{index}}：{{resourceType}} 請求",
+      "singleCheckExisting": "檢查既有 {{resourceType}}",
+      "singleCreate": "建立 {{resourceType}}",
+      "singleUpdate": "更新 {{resourceType}}",
+      "singleSearch": "查詢 {{resourceType}}",
+      "singleRequest": "{{resourceType}} 請求",
+      "noteCheckExistingFound": "GET 查詢已找到 {{count}} 筆既有 {{resourceType}}，因此直接重用，沒有再 POST 建立。",
+      "noteCheckExistingMissing": "GET 查詢沒有找到可重用的 {{resourceType}}，因此下一步改用 POST 建立新資源。",
+      "noteCheckExistingUnknown": "這一步是在檢查是否已有可重用的 {{resourceType}}。",
+      "noteCreate": "因為前一步沒有找到可重用資源，所以這一步使用 POST 建立新的 {{resourceType}}。",
+      "noteCreateFailed": "這一步原本要用 POST 建立新的 {{resourceType}}，但 FHIR Server 沒有成功接受。",
+      "noteUpdate": "因為目前步驟已經有既有 {{resourceType}} ID，所以直接用 PUT 更新同一筆資源。",
+      "noteUpdateFailed": "這一步原本要用 PUT 更新既有 {{resourceType}}，但 FHIR Server 沒有成功接受。",
+      "noteSearch": "這次是查詢流程，因此使用 GET 取得符合條件的資料。"
+    },
+    "requestHeadersTitle": "Request Headers",
+    "requestBodyTitle": "Request Body",
+    "responseHeadersTitle": "Response Headers",
+    "responseBodyTitle": "Response Body",
+    "requestNoContent": "此區段沒有內容",
     "unknownStep": "未知步驟"
   },
   "steps": {
@@ -309,6 +350,10 @@
     "composition": {
       "docTitle":     { "label": "文件標題",  "placeholder": "電子處方箋", "required": "請輸入文件標題" },
       "date":         { "label": "處方日期",  "required": "請輸入處方日期" },
+      "export": {
+        "button": "匯出 Bundle JSON",
+        "success": "Bundle JSON 已匯出：{{fileName}}"
+      },
       "summary": {
         "title": "處方摘要確認",
         "description": "送出前請先確認核心處方資訊，不必閱讀 JSON 也能快速檢查。",

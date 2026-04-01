@@ -5,11 +5,14 @@ import type { ResourceKey } from '../types/fhir.d'
 import { RESOURCE_STEPS } from '../types/fhir.d'
 
 type CreatorDraftValues = Partial<Record<ResourceKey, Record<string, unknown>>>
-export type CreatorSaveOutcome = 'created' | 'reused'
+export type CreatorSaveOutcome = 'created' | 'updated' | 'reused'
+
+export type CreatorRequestMethod = 'GET' | 'POST' | 'PUT'
 
 export interface CreatorResourceFeedback {
   id: string
   outcome: CreatorSaveOutcome
+  requestMethod?: CreatorRequestMethod
 }
 
 type CreatorResourceFeedbacks = Partial<Record<ResourceKey, CreatorResourceFeedback>>

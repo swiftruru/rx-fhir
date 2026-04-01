@@ -14,6 +14,7 @@ import { useCreatorMockFill } from '../../../hooks/useCreatorMockFill'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
 import { findOrCreateDetailed, putResource, resetLoggedRequests } from '../../../services/fhirClient'
 import { useCreatorStore } from '../../../store/creatorStore'
+import { useAppStore } from '../../../store/appStore'
 
 type FormData = {
   familyName: string
@@ -35,6 +36,7 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
   const draftValues = useCreatorStore((s) => s.drafts.practitioner as Partial<FormData> | undefined)
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
+  const locale = useAppStore((s) => s.locale)
   const f = (k: string) => t(`forms.practitioner.${k}`)
 
   const schema = useMemo(() => z.object({
@@ -77,6 +79,9 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
     setErrorMsg(undefined)
     clearFeedback('practitioner')
     try {
+      const displayName = locale === 'en'
+        ? `${data.familyName} ${data.givenName}`.trim()
+        : `${data.familyName}${data.givenName}`.trim()
       const resource: Omit<fhir4.Practitioner, 'id'> = {
         resourceType: 'Practitioner',
         active: true,
@@ -86,7 +91,7 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
         }],
         name: [{
           use: 'official',
-          text: `${data.familyName}${data.givenName}`,
+          text: displayName,
           family: data.familyName,
           given: [data.givenName]
         }],

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { Search, Loader2, Wand2, Upload } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -13,9 +13,10 @@ import ExternalUrlLink from '../../components/ExternalUrlLink'
 import { getBundleFileErrorMessage, importBundleJson } from '../../services/bundleFileService'
 import { searchBundles, buildSearchUrl, type QueryStep } from '../../services/fhirClient'
 import { extractSearchResults } from '../../services/searchService'
+import { useAppStore } from '../../store/appStore'
 import type { BundleSummary, SearchParams } from '../../types/fhir.d'
 import type { ConsumerSearchExecution, SearchPrefill, SearchTab } from './searchState'
-import { consumerBasicMocks, consumerDateMocks, consumerComplexMocks } from '../../mocks/mockPools'
+import { getConsumerBasicMocks, getConsumerDateMocks, getConsumerComplexMocks } from '../../mocks/mockPools'
 
 interface Props {
   activeTab: SearchTab
@@ -44,6 +45,7 @@ export default function SearchForm({
 }: Props): React.JSX.Element {
   const { t } = useTranslation('consumer')
   const { t: tc } = useTranslation('common')
+  const locale = useAppStore((s) => s.locale)
   const [loading, setLoading] = useState(false)
   const [importing, setImporting] = useState(false)
   const [lastUrl, setLastUrl] = useState<string>()
@@ -59,19 +61,31 @@ export default function SearchForm({
   const dateMockRef    = useRef(0)
   const complexMockRef = useRef(0)
   const consumedAutoSearchKeyRef = useRef<string>()
+  const consumerBasicMocks = useMemo(() => getConsumerBasicMocks(locale), [locale])
+  const consumerDateMocks = useMemo(() => getConsumerDateMocks(locale), [locale])
+  const consumerComplexMocks = useMemo(() => getConsumerComplexMocks(locale), [locale])
+
+  useEffect(() => {
+    basicMockRef.current = 0
+    dateMockRef.current = 0
+    complexMockRef.current = 0
+  }, [locale])
 
   function fillMock(): void {
     if (activeTab === 'basic') {
+      if (consumerBasicMocks.length === 0) return
       const d = consumerBasicMocks[basicMockRef.current % consumerBasicMocks.length]
       basicMockRef.current += 1
       basicForm.setValue('searchBy', d.searchBy)
       basicForm.setValue('value', d.value)
     } else if (activeTab === 'date') {
+      if (consumerDateMocks.length === 0) return
       const d = consumerDateMocks[dateMockRef.current % consumerDateMocks.length]
       dateMockRef.current += 1
       dateForm.setValue('identifier', d.identifier)
       dateForm.setValue('date', d.date)
     } else {
+      if (consumerComplexMocks.length === 0) return
       const d = consumerComplexMocks[complexMockRef.current % consumerComplexMocks.length]
       complexMockRef.current += 1
       complexForm.setValue('identifier', d.identifier)

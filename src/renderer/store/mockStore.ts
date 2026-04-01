@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { ResourceKey } from '../types/fhir.d'
 import { getNextScenarioMock, getScenarioIds } from '../mocks/selectors'
-import type { MockFillMode, MockScenarioCategory } from '../mocks/types'
+import type { MockFillMode, MockLocale, MockScenarioCategory } from '../mocks/types'
 
 interface MockState {
   activeScenarioId?: string
@@ -12,8 +12,8 @@ interface MockState {
   setCategory: (category: MockScenarioCategory | 'all') => void
   setFillMode: (mode: MockFillMode) => void
   activateScenario: (scenarioId: string, resourceKey?: ResourceKey) => void
-  getRandomCreatorMock: <K extends ResourceKey>(key: K) => ReturnType<typeof getNextScenarioMock<K>>
-  getNextCreatorMock: <K extends ResourceKey>(key: K) => ReturnType<typeof getNextScenarioMock<K>>
+  getRandomCreatorMock: <K extends ResourceKey>(key: K, locale?: MockLocale) => ReturnType<typeof getNextScenarioMock<K>>
+  getNextCreatorMock: <K extends ResourceKey>(key: K, locale?: MockLocale) => ReturnType<typeof getNextScenarioMock<K>>
   reset: () => void
 }
 
@@ -52,7 +52,7 @@ export const useMockStore = create<MockState>((set, get) => ({
       lastFilledResourceKey: resourceKey
     }),
 
-  getRandomCreatorMock: (key) => {
+  getRandomCreatorMock: (key, locale) => {
     const { category } = get()
     const nextScenarioId = getRandomScenarioId(category)
     if (!nextScenarioId) return undefined
@@ -62,10 +62,10 @@ export const useMockStore = create<MockState>((set, get) => ({
       lastFilledResourceKey: key
     })
 
-    return getNextScenarioMock(key, nextScenarioId)
+    return getNextScenarioMock(key, nextScenarioId, locale)
   },
 
-  getNextCreatorMock: (key) => {
+  getNextCreatorMock: (key, locale) => {
     const { activeScenarioId, category, fillMode, lastFilledResourceKey, scenarioIndex } = get()
     const scenarioIds = getScenarioIds(category)
 
@@ -91,7 +91,7 @@ export const useMockStore = create<MockState>((set, get) => ({
       lastFilledResourceKey: key
     })
 
-    return getNextScenarioMock(key, nextScenarioId)
+    return getNextScenarioMock(key, nextScenarioId, locale)
   },
 
   reset: () =>

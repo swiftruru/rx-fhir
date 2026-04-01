@@ -1,26 +1,40 @@
 import type { ResourceKey } from '../types/fhir.d'
-import { mockResourcePresets } from './resourcePresets'
-import { mockScenarioPacks } from './scenarioPacks'
+import { mockResourcePresetSources } from './resourcePresets'
+import { mockScenarioPackSources } from './scenarioPacks'
 import type {
   CompositionMockInput,
+  CompositionMockSource,
   ConditionMockInput,
+  ConditionMockSource,
   CoverageMockInput,
   EncounterMockInput,
   ExtensionMockInput,
+  ExtensionMockSource,
+  LocalizedString,
+  LocalizedText,
   MedicationMockInput,
+  MedicationMockSource,
   MedicationRequestMockInput,
+  MedicationRequestMockSource,
+  MockLocale,
   MockResourceData,
   MockResourcePresetMap,
+  MockResourcePresetSourceMap,
   MockScenarioCategory,
   MockScenarioPack,
+  MockScenarioPackSource,
   ObservationMockInput,
+  ObservationMockSource,
   OrganizationMockInput,
+  OrganizationMockSource,
   PatientMockInput,
-  PractitionerMockInput
+  PatientMockSource,
+  PractitionerMockInput,
+  PractitionerMockSource
 } from './types'
 import { validateMockScenarioPacks } from './validate'
 
-validateMockScenarioPacks(mockScenarioPacks)
+validateMockScenarioPacks(mockScenarioPackSources)
 
 function uniqueBy<T>(items: T[], getKey: (item: T) => string): T[] {
   const seen = new Set<string>()
@@ -30,6 +44,121 @@ function uniqueBy<T>(items: T[], getKey: (item: T) => string): T[] {
     seen.add(key)
     return true
   })
+}
+
+function normalizeLocale(locale?: string): MockLocale {
+  return locale === 'en' ? 'en' : 'zh-TW'
+}
+
+function resolveLocalizedString(value: LocalizedString, locale?: string): string {
+  const normalized = normalizeLocale(locale)
+  return value[normalized]
+}
+
+function resolveLocalizedResource<TBase extends object, TText extends object>(
+  source: TBase & { text: LocalizedText<TText> },
+  locale?: string
+): TBase & TText {
+  const normalized = normalizeLocale(locale)
+  const { text, ...base } = source
+  return {
+    ...(base as TBase),
+    ...text[normalized]
+  }
+}
+
+function resolvePatient(source: PatientMockSource, locale?: string): PatientMockInput {
+  return resolveLocalizedResource(source, locale)
+}
+
+function resolveOrganization(source: OrganizationMockSource, locale?: string): OrganizationMockInput {
+  return resolveLocalizedResource(source, locale)
+}
+
+function resolvePractitioner(source: PractitionerMockSource, locale?: string): PractitionerMockInput {
+  return resolveLocalizedResource(source, locale)
+}
+
+function resolveCondition(source: ConditionMockSource, locale?: string): ConditionMockInput {
+  return resolveLocalizedResource(source, locale)
+}
+
+function resolveObservation(source: ObservationMockSource, locale?: string): ObservationMockInput {
+  return resolveLocalizedResource(source, locale)
+}
+
+function resolveMedication(source: MedicationMockSource, locale?: string): MedicationMockInput {
+  return resolveLocalizedResource(source, locale)
+}
+
+function resolveMedicationRequest(source: MedicationRequestMockSource, locale?: string): MedicationRequestMockInput {
+  return resolveLocalizedResource(source, locale)
+}
+
+function resolveComposition(source: CompositionMockSource, locale?: string): CompositionMockInput {
+  return resolveLocalizedResource(source, locale)
+}
+
+function resolveExtension(source: ExtensionMockSource, locale?: string): ExtensionMockInput {
+  return resolveLocalizedResource(source, locale)
+}
+
+function resolveScenarioPack(source: MockScenarioPackSource, locale?: string): MockScenarioPack {
+  return {
+    id: source.id,
+    category: source.category,
+    label: resolveLocalizedString(source.label, locale),
+    description: resolveLocalizedString(source.description, locale),
+    tags: source.tags,
+    isPrimaryDemo: source.isPrimaryDemo,
+    creator: {
+      organization: resolveOrganization(source.creator.organization, locale),
+      patient: resolvePatient(source.creator.patient, locale),
+      practitioner: resolvePractitioner(source.creator.practitioner, locale),
+      encounter: source.creator.encounter,
+      condition: resolveCondition(source.creator.condition, locale),
+      observation: resolveObservation(source.creator.observation, locale),
+      coverage: source.creator.coverage,
+      medication: resolveMedication(source.creator.medication, locale),
+      medicationRequest: resolveMedicationRequest(source.creator.medicationRequest, locale),
+      composition: resolveComposition(source.creator.composition, locale),
+      extension: resolveExtension(source.creator.extension, locale)
+    }
+  }
+}
+
+function resolveResourcePreset<K extends keyof MockResourcePresetSourceMap>(
+  key: K,
+  locale?: string
+): MockResourcePresetMap[K] {
+  const presets = mockResourcePresetSources[key]
+
+  switch (key) {
+    case 'patient':
+      return presets.map((preset) => resolvePatient(preset, locale)) as MockResourcePresetMap[K]
+    case 'organization':
+      return presets.map((preset) => resolveOrganization(preset, locale)) as MockResourcePresetMap[K]
+    case 'practitioner':
+      return presets.map((preset) => resolvePractitioner(preset, locale)) as MockResourcePresetMap[K]
+    case 'encounter':
+      return [...presets] as MockResourcePresetMap[K]
+    case 'condition':
+      return presets.map((preset) => resolveCondition(preset, locale)) as MockResourcePresetMap[K]
+    case 'observation':
+      return presets.map((preset) => resolveObservation(preset, locale)) as MockResourcePresetMap[K]
+    case 'coverage':
+      return [...presets] as MockResourcePresetMap[K]
+    case 'medication':
+      return presets.map((preset) => resolveMedication(preset, locale)) as MockResourcePresetMap[K]
+    case 'medicationRequest':
+      return presets.map((preset) => resolveMedicationRequest(preset, locale)) as MockResourcePresetMap[K]
+    case 'composition':
+      return presets.map((preset) => resolveComposition(preset, locale)) as MockResourcePresetMap[K]
+    case 'extension':
+      return presets.map((preset) => resolveExtension(preset, locale)) as MockResourcePresetMap[K]
+    default:
+      return [] as unknown as MockResourcePresetMap[K]
+  }
 }
 
 function getResourceIdentity(key: ResourceKey, item: MockResourceData<ResourceKey>): string {
@@ -61,52 +190,68 @@ function getResourceIdentity(key: ResourceKey, item: MockResourceData<ResourceKe
   }
 }
 
-export function getScenarioById(id?: string): MockScenarioPack | undefined {
+export function getScenarioSourceById(id?: string): MockScenarioPackSource | undefined {
   if (!id) return undefined
-  return mockScenarioPacks.find((scenario) => scenario.id === id)
+  return mockScenarioPackSources.find((scenario) => scenario.id === id)
 }
 
-export function getPrimaryDemoScenario(): MockScenarioPack | undefined {
-  return mockScenarioPacks.find((scenario) => scenario.isPrimaryDemo)
+export function getScenarioById(id?: string, locale?: string): MockScenarioPack | undefined {
+  const source = getScenarioSourceById(id)
+  return source ? resolveScenarioPack(source, locale) : undefined
 }
 
 export function getPrimaryDemoScenarioId(): string | undefined {
-  return getPrimaryDemoScenario()?.id
+  return mockScenarioPackSources.find((scenario) => scenario.isPrimaryDemo)?.id
 }
 
 export function getScenarioIds(category?: MockScenarioCategory | 'all'): string[] {
-  return mockScenarioPacks
+  return mockScenarioPackSources
     .filter((scenario) => !category || category === 'all' || scenario.category === category)
     .map((scenario) => scenario.id)
 }
 
-export function getScenarioMock<K extends ResourceKey>(scenarioId: string, key: K): MockResourceData<K> | undefined {
-  const scenario = getScenarioById(scenarioId)
+export function getResolvedScenarioPacks(locale?: string): MockScenarioPack[] {
+  return mockScenarioPackSources.map((scenario) => resolveScenarioPack(scenario, locale))
+}
+
+export function getScenarioMock<K extends ResourceKey>(
+  scenarioId: string,
+  key: K,
+  locale?: string
+): MockResourceData<K> | undefined {
+  const scenario = getScenarioById(scenarioId, locale)
   return scenario?.creator[key]
 }
 
-export function getScenarioMocksForResource<K extends ResourceKey>(key: K): MockResourceData<K>[] {
+export function getScenarioMocksForResource<K extends ResourceKey>(
+  key: K,
+  locale?: string
+): MockResourceData<K>[] {
   return uniqueBy(
-    mockScenarioPacks.map((scenario) => scenario.creator[key]),
+    getResolvedScenarioPacks(locale).map((scenario) => scenario.creator[key]),
     (item) => getResourceIdentity(key, item as MockResourceData<ResourceKey>)
   )
 }
 
-export function getResourcePresets<K extends keyof MockResourcePresetMap>(key: K): MockResourcePresetMap[K] {
-  return mockResourcePresets[key]
+export function getResourcePresets<K extends keyof MockResourcePresetMap>(
+  key: K,
+  locale?: string
+): MockResourcePresetMap[K] {
+  return resolveResourcePreset(key, locale)
 }
 
-export function getResourcePool<K extends ResourceKey>(key: K): MockResourceData<K>[] {
+export function getResourcePool<K extends ResourceKey>(key: K, locale?: string): MockResourceData<K>[] {
   return [
-    ...getScenarioMocksForResource(key),
-    ...(getResourcePresets(key) as MockResourceData<K>[])
+    ...getScenarioMocksForResource(key, locale),
+    ...(getResourcePresets(key, locale) as MockResourceData<K>[])
   ]
 }
 
 export function getNextScenarioMock<K extends ResourceKey>(
   key: K,
-  scenarioId?: string
+  scenarioId?: string,
+  locale?: string
 ): MockResourceData<K> | undefined {
-  if (!scenarioId) return getScenarioMocksForResource(key)[0]
-  return getScenarioMock(scenarioId, key)
+  if (!scenarioId) return getScenarioMocksForResource(key, locale)[0]
+  return getScenarioMock(scenarioId, key, locale)
 }

@@ -42,6 +42,7 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
   const { t: tc } = useTranslation('common')
   const addRecord = useHistoryStore((s) => s.addRecord)
   const serverUrl = useAppStore((s) => s.serverUrl)
+  const locale = useAppStore((s) => s.locale)
   const activateScenario = useMockStore((s) => s.activateScenario)
   const getRandomCreatorMock = useMockStore((s) => s.getRandomCreatorMock)
   const f = (k: string) => t(`forms.patient.${k}`)
@@ -91,12 +92,12 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
       firstMockRef.current = false
       if (primaryScenarioId) {
         activateScenario(primaryScenarioId, 'patient')
-        applyMock(getScenarioMock(primaryScenarioId, 'patient'))
+        applyMock(getScenarioMock(primaryScenarioId, 'patient', locale))
         return
       }
     }
 
-    applyMock(getRandomCreatorMock('patient'))
+    applyMock(getRandomCreatorMock('patient', locale))
   }
 
   useCreatorDraftAutosave('patient', watch)
@@ -108,6 +109,9 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
     setErrorMsg(undefined)
     clearFeedback('patient')
     try {
+      const displayName = locale === 'en'
+        ? `${data.familyName} ${data.givenName}`.trim()
+        : `${data.familyName}${data.givenName}`.trim()
       const resource: Omit<fhir4.Patient, 'id'> = {
         resourceType: 'Patient',
         identifier: [{
@@ -116,7 +120,7 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
           value: data.studentId,
           type: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0203', code: 'SB', display: 'Student Number' }] }
         }],
-        name: [{ use: 'official', text: `${data.familyName}${data.givenName}`, family: data.familyName, given: [data.givenName] }],
+        name: [{ use: 'official', text: displayName, family: data.familyName, given: [data.givenName] }],
         gender: data.gender,
         birthDate: data.birthDate,
         meta: { profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Patient-EP'] }
@@ -152,7 +156,7 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
         type: 'resource',
         resourceType: 'Patient',
         resourceId: created.id,
-        patientName: `${data.familyName}${data.givenName}`,
+        patientName: displayName,
         patientIdentifier: data.studentId,
         submittedAt: new Date().toISOString(),
         serverUrl,

@@ -1,5 +1,9 @@
 import type { ResourceKey } from '../types/fhir.d'
-import type { MockScenarioPack } from './types'
+import type {
+  LocalizedString,
+  MockScenarioPackSource,
+  MockScenarioCreatorResourceSources
+} from './types'
 
 const REQUIRED_RESOURCE_KEYS: ResourceKey[] = [
   'organization',
@@ -15,7 +19,19 @@ const REQUIRED_RESOURCE_KEYS: ResourceKey[] = [
   'composition'
 ]
 
-export function validateMockScenarioPacks(scenarios: MockScenarioPack[]): void {
+function hasLocalizedStringContent(value: LocalizedString): boolean {
+  return Boolean(value['zh-TW']) && Boolean(value.en)
+}
+
+function hasLocalizedResourceText(
+  resources: MockScenarioCreatorResourceSources,
+  key: 'organization' | 'patient' | 'practitioner' | 'condition' | 'observation' | 'medication' | 'medicationRequest' | 'composition' | 'extension'
+): boolean {
+  const resource = resources[key]
+  return 'text' in resource && Boolean(resource.text['zh-TW']) && Boolean(resource.text.en)
+}
+
+export function validateMockScenarioPacks(scenarios: MockScenarioPackSource[]): void {
   const ids = new Set<string>()
 
   for (const scenario of scenarios) {
@@ -23,6 +39,14 @@ export function validateMockScenarioPacks(scenarios: MockScenarioPack[]): void {
       throw new Error(`Duplicate mock scenario id: ${scenario.id}`)
     }
     ids.add(scenario.id)
+
+    if (!hasLocalizedStringContent(scenario.label)) {
+      throw new Error(`Scenario ${scenario.id} is missing localized label content`)
+    }
+
+    if (!hasLocalizedStringContent(scenario.description)) {
+      throw new Error(`Scenario ${scenario.id} is missing localized description content`)
+    }
 
     for (const key of REQUIRED_RESOURCE_KEYS) {
       if (!scenario.creator[key]) {
@@ -44,6 +68,22 @@ export function validateMockScenarioPacks(scenarios: MockScenarioPack[]): void {
 
     if (!scenario.creator.composition.date) {
       throw new Error(`Scenario ${scenario.id} is missing composition date`)
+    }
+
+    for (const key of [
+      'organization',
+      'patient',
+      'practitioner',
+      'condition',
+      'observation',
+      'medication',
+      'medicationRequest',
+      'composition',
+      'extension'
+    ] as const) {
+      if (!hasLocalizedResourceText(scenario.creator, key)) {
+        throw new Error(`Scenario ${scenario.id} is missing localized text for resource: ${key}`)
+      }
     }
   }
 }

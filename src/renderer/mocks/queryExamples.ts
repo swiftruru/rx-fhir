@@ -2,9 +2,11 @@ import type {
   ConsumerBasicMockInput,
   ConsumerComplexMockInput,
   ConsumerDateMockInput,
+  MockLocale,
   MockScenarioPack
 } from './types'
-import { getScenarioEncounterDate, mockScenarioPacks } from './scenarioPacks'
+import { getScenarioEncounterDate } from './scenarioPacks'
+import { getResolvedScenarioPacks } from './selectors'
 
 function uniqueBy<T>(items: T[], getKey: (item: T) => string): T[] {
   const seen = new Set<string>()
@@ -16,41 +18,49 @@ function uniqueBy<T>(items: T[], getKey: (item: T) => string): T[] {
   })
 }
 
-function practitionerFullName(scenario: MockScenarioPack): string {
+function practitionerFullName(scenario: MockScenarioPack, locale: MockLocale): string {
   const { familyName, givenName } = scenario.creator.practitioner
-  return `${familyName}${givenName}`
+  return locale === 'en' ? `${familyName} ${givenName}` : `${familyName}${givenName}`
 }
 
-export const consumerBasicMocks: ConsumerBasicMockInput[] = uniqueBy(
-  mockScenarioPacks.map((scenario) => ({
-    searchBy: 'identifier' as const,
-    value: scenario.creator.patient.studentId
-  })),
-  (item) => `${item.searchBy}:${item.value}`
-)
+export function getConsumerBasicMocks(locale: MockLocale): ConsumerBasicMockInput[] {
+  const scenarios = getResolvedScenarioPacks(locale)
 
-export const consumerDateMocks: ConsumerDateMockInput[] = uniqueBy(
-  mockScenarioPacks.map((scenario) => ({
-    identifier: scenario.creator.patient.studentId,
-    date: getScenarioEncounterDate(scenario)
-  })),
-  (item) => `${item.identifier}:${item.date}`
-)
+  return uniqueBy(
+    scenarios.map((scenario) => ({
+      searchBy: 'identifier' as const,
+      value: scenario.creator.patient.studentId
+    })),
+    (item) => `${item.searchBy}:${item.value}`
+  )
+}
 
-export const consumerComplexMocks: ConsumerComplexMockInput[] = uniqueBy(
-  mockScenarioPacks.flatMap((scenario) => ([
-    {
+export function getConsumerDateMocks(locale: MockLocale): ConsumerDateMockInput[] {
+  return uniqueBy(
+    getResolvedScenarioPacks(locale).map((scenario) => ({
       identifier: scenario.creator.patient.studentId,
-      complexBy: 'organization' as const,
-      orgId: scenario.creator.organization.identifier,
-      authorName: ''
-    },
-    {
-      identifier: scenario.creator.patient.studentId,
-      complexBy: 'author' as const,
-      orgId: '',
-      authorName: practitionerFullName(scenario)
-    }
-  ])),
-  (item) => `${item.identifier}:${item.complexBy}:${item.orgId}:${item.authorName}`
-)
+      date: getScenarioEncounterDate(scenario)
+    })),
+    (item) => `${item.identifier}:${item.date}`
+  )
+}
+
+export function getConsumerComplexMocks(locale: MockLocale): ConsumerComplexMockInput[] {
+  return uniqueBy(
+    getResolvedScenarioPacks(locale).flatMap((scenario) => ([
+      {
+        identifier: scenario.creator.patient.studentId,
+        complexBy: 'organization' as const,
+        orgId: scenario.creator.organization.identifier,
+        authorName: ''
+      },
+      {
+        identifier: scenario.creator.patient.studentId,
+        complexBy: 'author' as const,
+        orgId: '',
+        authorName: practitionerFullName(scenario, locale)
+      }
+    ])),
+    (item) => `${item.identifier}:${item.complexBy}:${item.orgId}:${item.authorName}`
+  )
+}

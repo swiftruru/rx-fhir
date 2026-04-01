@@ -125,6 +125,36 @@ export default function FhirRequestInspector({ request, history }: Props): React
   const { t } = useTranslation('creator')
   const emptyLabel = t('stepper.requestNoContent')
   const flowEntries = history?.length ? [...history].reverse() : request ? [request] : []
+  const sectionLabelClass = 'text-[10px] font-medium tracking-wide text-muted-foreground/70'
+  const requestGuideItems = [
+    {
+      method: 'GET',
+      title: t('stepper.requestGuideGetTitle'),
+      description: t('stepper.requestGuideGetDescription'),
+      badgeClass:
+        'border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-sky-300',
+      cardClass:
+        'border-sky-200/80 bg-sky-50/70 dark:border-sky-500/20 dark:bg-sky-500/5'
+    },
+    {
+      method: 'POST',
+      title: t('stepper.requestGuidePostTitle'),
+      description: t('stepper.requestGuidePostDescription'),
+      badgeClass:
+        'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-300',
+      cardClass:
+        'border-emerald-200/80 bg-emerald-50/70 dark:border-emerald-500/20 dark:bg-emerald-500/5'
+    },
+    {
+      method: 'PUT',
+      title: t('stepper.requestGuidePutTitle'),
+      description: t('stepper.requestGuidePutDescription'),
+      badgeClass:
+        'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300',
+      cardClass:
+        'border-amber-200/80 bg-amber-50/70 dark:border-amber-500/20 dark:bg-amber-500/5'
+    }
+  ] as const
 
   if (!request) {
     return (
@@ -132,6 +162,27 @@ export default function FhirRequestInspector({ request, history }: Props): React
         <SendHorizontal className="mx-auto h-8 w-8 opacity-25" />
         <p className="mt-3 text-sm font-medium">{t('stepper.requestEmptyTitle')}</p>
         <p className="mt-1 text-xs">{t('stepper.requestEmptyDescription')}</p>
+
+        <div className="mt-4 rounded-xl border border-border/70 bg-background/90 p-2.5 text-left shadow-sm">
+          <p className={sectionLabelClass}>{t('stepper.requestGuideTitle')}</p>
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            {requestGuideItems.map((item) => (
+              <div
+                key={item.method}
+                className={`inline-flex max-w-full items-center gap-2 rounded-full border px-3 py-1.5 shadow-sm ${item.cardClass}`}
+              >
+                <Badge variant="outline" className={`font-mono text-[10px] ${item.badgeClass}`}>
+                  {item.method}
+                </Badge>
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] leading-snug">
+                  <span className="font-medium text-foreground">{item.title}</span>
+                  <span className="text-muted-foreground/50">|</span>
+                  <span className="text-muted-foreground">{item.description}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
@@ -156,12 +207,17 @@ export default function FhirRequestInspector({ request, history }: Props): React
     <div className="space-y-3">
       {flowEntries.length > 0 && (
         <div className="rounded-xl border border-border/70 bg-background/90 p-4 shadow-sm">
-          <p className="text-[11px] font-medium text-muted-foreground">{t('stepper.requestFlow.title')}</p>
-          <div className="mt-3 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <p className={sectionLabelClass}>{t('stepper.requestFlow.title')}</p>
+            <Badge variant="outline" className="text-[10px]">
+              {flowEntries.length}
+            </Badge>
+          </div>
+          <div className="mt-3 space-y-3 border-t border-border/60 pt-3">
             {flowEntries.map((entry, index) => {
               const note = getFlowNote(entry, flowEntries[index + 1], t)
               return (
-                <div key={entry.id} className="space-y-1.5">
+                <div key={entry.id} className="space-y-1.5 rounded-lg bg-muted/10 px-2.5 py-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="outline" className="font-mono text-[10px]">
                       {entry.method}
@@ -185,6 +241,14 @@ export default function FhirRequestInspector({ request, history }: Props): React
       )}
 
       <div className="rounded-xl border border-border/70 bg-background/90 p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-2">
+          <p className={sectionLabelClass}>{t('stepper.requestLatestTitle')}</p>
+          {request.resourceType && (
+            <Badge variant="outline" className="text-[10px]">
+              {request.resourceType}
+            </Badge>
+          )}
+        </div>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2">

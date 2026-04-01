@@ -24,6 +24,11 @@
   <img src="https://img.shields.io/badge/i18n-zh--TW%20%7C%20en-8b5cf6?style=flat-square" alt="i18n" />
 </p>
 
+<p align="center">
+  <strong>Download the latest app builds:</strong><br />
+  <a href="https://github.com/swiftruru/rx-fhir/releases">https://github.com/swiftruru/rx-fhir/releases</a>
+</p>
+
 ---
 
 A cross-platform desktop application built with Electron + React for creating and querying FHIR R4 electronic prescriptions, based on the Taiwan Ministry of Health and Welfare EMR-IG 2.5 context.
@@ -82,6 +87,7 @@ Current Creator capabilities:
 - Scenario-based Mock Data System for demos and testing, with coherent multi-resource mock packs instead of isolated per-form samples
 - Shared `Fill Mock` flow across Creator steps, so patient, institution, physician, encounter, diagnosis, medication, and composition stay internally consistent within the same scenario
 - The Patient step now starts from a designated primary demo patient on first fill, then rotates through additional scenarios on later fills
+- Mock filling is now locale-aware, so `zh-TW` fills Chinese demo content and `en` fills the corresponding English version of the same scenario
 - Revisiting completed steps restores current resource values back into the form
 - Unfinished Creator drafts are auto-saved locally and restored on next launch
 - Re-submitting completed steps updates existing FHIR resources instead of duplicating them
@@ -95,6 +101,7 @@ Current Creator capabilities:
 - JSON preview now follows the active light / dark theme instead of staying fixed in a dark-only style
 - JSON preview now includes a compact toolbar with font-size switching, collapse, and all/latest-resource toggles for demos
 - The right-side panel can switch between resource JSON and a Postman-style FHIR request inspector showing request flow, method, URL, headers, body, and response details
+- The FHIR request inspector now includes clickable URLs, request-flow notes, method explanations, and a compact `GET / POST / PUT` quick guide in the empty state
 - Final submission now includes a structured prescription summary review card before bundle assembly
 - Composition-first, then document bundle submission
 - The final Creator step can export the assembled FHIR Bundle as local JSON
@@ -157,6 +164,7 @@ The current repository now uses a typed, scenario-driven mock data design instea
 
 - Mock data is organized into coherent scenario packs that span the full Creator flow, from `Organization` through `Composition`
 - The first `Patient` mock fill uses a designated primary demo patient, while later fills can rotate through additional scenarios
+- Mock data is now locale-aware: the same scenario can resolve to `zh-TW` or `en` text content without changing identifiers, codes, dates, or other shared fields
 - Scenario packs cover common outpatient, chronic disease, acute visit, emergency, pediatric, search-demo, and optional-field situations
 - Consumer basic/date/complex query examples are derived from the same scenario source, reducing drift between Creator demos and Consumer search helpers
 - Validation helpers are included to keep scenario IDs unique and ensure each full scenario remains structurally complete
@@ -213,6 +221,10 @@ The current UI also includes an extra `Extension` step implemented with a `Basic
 npm install
 npm run dev
 ```
+
+### Download Builds
+
+- GitHub Releases: <https://github.com/swiftruru/rx-fhir/releases>
 
 ### Type Check
 

@@ -40,7 +40,7 @@
       "label": "Explain this result",
       "created": "This is shown in green because the app did not find a reusable existing {{resourceType}}, so it created a new resource with POST.",
       "updated": "This is shown in green because this step already had an existing {{resourceType}} ID, so the app updated the same resource with PUT.",
-      "reused": "This is shown in blue because the app found a reusable existing {{resourceType}} and reused it to avoid creating a duplicate."
+      "reused": "This is shown in blue because the app found a reusable existing {{resourceType}} and reused it to avoid creating a duplicate. Reuse does not automatically rewrite the existing server-side text to match the current locale; submit again to update that existing resource with PUT if needed."
     }
   },
   "bundleFile": {

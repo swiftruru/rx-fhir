@@ -11,6 +11,7 @@ files:
 
 mac:
   category: public.app-category.healthcare-fitness
+  artifactName: ${productName}-macOS-${version}.${ext}
   icon: build/icon.png
   target:
     - dmg
@@ -23,6 +24,7 @@ win:
     - portable
 
 linux:
+  artifactName: ${productName}-Linux-${version}.${ext}
   category: Utility
   maintainer: Yu-Ru Pan <ruru@swift.moe>
   icon: build/icon.png
@@ -31,10 +33,10 @@ linux:
     - deb
 
 nsis:
-  artifactName: ${productName}-Setup-${version}.${ext}
+  artifactName: ${productName}-Windows-Setup-${version}.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 
 portable:
-  artifactName: ${productName}-Portable-${version}.${ext}
+  artifactName: ${productName}-Windows-Portable-${version}.${ext}

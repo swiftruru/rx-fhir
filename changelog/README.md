@@ -18,10 +18,13 @@ This project keeps one Markdown changelog file per release in this folder.
 4. Commit the changes.
 5. Create and push the matching Git tag, for example `v1.2.0`.
 6. GitHub Actions will build:
-   - macOS app artifacts
-   - Windows installer
-   - Windows portable executable
-7. The GitHub Release body will use only that version's changelog file.
+   - `RxFHIR-macOS-<version>.dmg`
+   - `RxFHIR-macOS-<version>.zip`
+   - `RxFHIR-Windows-Setup-<version>.exe`
+   - `RxFHIR-Windows-Portable-<version>.exe`
+   - `RxFHIR-Linux-<version>.AppImage`
+   - `RxFHIR-Linux-<version>.deb`
+7. The GitHub Release body will prepend a platform download guide, then use only that version's changelog file.
 
 ## Template
 

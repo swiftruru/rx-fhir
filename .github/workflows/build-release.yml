@@ -157,7 +157,19 @@ jobs:
             exit 1
           fi
 
-          git show "${GITHUB_SHA}:${CHANGELOG_FILE}" > "$RELEASE_NOTES_FILE"
+          cat > "$RELEASE_NOTES_FILE" <<'EOF'
+          ## Download Guide
+
+          - Windows: Download `RxFHIR-Windows-Setup-...exe` or `RxFHIR-Windows-Portable-...exe`
+          - macOS: Download `RxFHIR-macOS-...dmg`
+          - Linux: Download `RxFHIR-Linux-...AppImage` or `RxFHIR-Linux-...deb`
+          - Do not download `Source code (zip)` or `Source code (tar.gz)` if you want the runnable desktop app
+
+          ---
+
+          EOF
+
+          git show "${GITHUB_SHA}:${CHANGELOG_FILE}" >> "$RELEASE_NOTES_FILE"
 
           echo "TAG_NAME=${TAG_NAME}" >> "$GITHUB_ENV"
           echo "CHANGELOG_FILE=${CHANGELOG_FILE}" >> "$GITHUB_ENV"

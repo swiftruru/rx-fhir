@@ -3,7 +3,7 @@
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.9-d4779a?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.10-d4779a?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/github/license/swiftruru/rx-fhir?style=flat-square&color=d4779a" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-8e8e93?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
@@ -255,6 +255,10 @@ npm run dev
 ### Download Builds
 
 - GitHub Releases: <https://github.com/swiftruru/rx-fhir/releases>
+- Windows: `RxFHIR-Windows-Setup-...exe` or `RxFHIR-Windows-Portable-...exe`
+- macOS: `RxFHIR-macOS-...dmg`
+- Linux: `RxFHIR-Linux-...AppImage` or `RxFHIR-Linux-...deb`
+- Avoid `Source code (zip)` and `Source code (tar.gz)` if you want the runnable desktop app
 
 ### Type Check
 
@@ -270,10 +274,13 @@ npm run build:win
 npm run build:linux
 ```
 
-`npm run build:win` now produces both:
+Artifact naming now follows explicit platform labels:
 
-- Windows installer (`Setup`)
-- Windows portable executable (`Portable`)
+- Windows installer: `RxFHIR-Windows-Setup-<version>.exe`
+- Windows portable executable: `RxFHIR-Windows-Portable-<version>.exe`
+- macOS disk image: `RxFHIR-macOS-<version>.dmg`
+- Linux AppImage: `RxFHIR-Linux-<version>.AppImage`
+- Linux deb package: `RxFHIR-Linux-<version>.deb`
 
 ---
 
@@ -322,12 +329,13 @@ This repository now follows a version-scoped release process:
 2. Write only the changes introduced in that version.
 3. Commit the changelog file before pushing the matching Git tag, for example `v1.2.0`.
 4. GitHub Actions will automatically build:
-   - macOS app artifacts
-   - Windows installer
-   - Windows portable executable
-   - Linux AppImage
-   - Linux deb package
-5. GitHub Release notes will use only that version's changelog file from the tagged commit, so release descriptions stay focused and do not accumulate old history.
+   - `RxFHIR-macOS-<version>.dmg`
+   - `RxFHIR-macOS-<version>.zip`
+   - `RxFHIR-Windows-Setup-<version>.exe`
+   - `RxFHIR-Windows-Portable-<version>.exe`
+   - `RxFHIR-Linux-<version>.AppImage`
+   - `RxFHIR-Linux-<version>.deb`
+5. GitHub Release notes will prepend a platform download guide, then include only that version's changelog file from the tagged commit.
 
 ---
 

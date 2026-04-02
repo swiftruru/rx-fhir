@@ -20,6 +20,10 @@ interface FormData {
   serverUrl: string
 }
 
+function normalizeUrl(url: string): string {
+  return url.trim().replace(/\/+$/, '')
+}
+
 export default function SettingsPage(): React.JSX.Element {
   const { serverUrl, setServerUrl, serverStatus, serverName, serverVersion, setServerStatus } =
     useAppStore()
@@ -36,16 +40,28 @@ export default function SettingsPage(): React.JSX.Element {
   const currentUrl = watch('serverUrl')
 
   async function handleTest(): Promise<void> {
+    const shouldSyncGlobalStatus = normalizeUrl(currentUrl) === normalizeUrl(serverUrl)
     setTestStatus('testing')
+    if (shouldSyncGlobalStatus) {
+      setServerStatus('checking')
+    }
     const result = await checkServerHealth(currentUrl)
     setTestResult({ name: result.name, version: result.version })
     setTestStatus(result.online ? 'ok' : 'fail')
+    if (shouldSyncGlobalStatus) {
+      setServerStatus(result.online ? 'online' : 'offline', result.name, result.version)
+    }
   }
 
   function handleSave(data: FormData): void {
+    const sameUrl = normalizeUrl(data.serverUrl) === normalizeUrl(serverUrl)
     setServerUrl(data.serverUrl)
     setSaved(true)
-    setServerStatus('unknown')
+    if (sameUrl && testStatus !== 'idle' && testStatus !== 'testing') {
+      setServerStatus(testStatus === 'ok' ? 'online' : 'offline', testResult.name, testResult.version)
+    } else {
+      setServerStatus('unknown')
+    }
     setTimeout(() => setSaved(false), 3000)
   }
 

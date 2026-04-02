@@ -20,6 +20,7 @@ import type {
   MockResourceData,
   MockResourcePresetMap,
   MockResourcePresetSourceMap,
+  MockPrescriptionTemplate,
   MockScenarioCategory,
   MockScenarioPack,
   MockScenarioPackSource,
@@ -35,6 +36,13 @@ import type {
 import { validateMockScenarioPacks } from './validate'
 
 validateMockScenarioPacks(mockScenarioPackSources)
+
+const PRESCRIPTION_TEMPLATE_CATEGORIES: Array<Extract<MockScenarioCategory, 'foundation' | 'acute' | 'chronic' | 'pediatric'>> = [
+  'foundation',
+  'acute',
+  'chronic',
+  'pediatric'
+]
 
 function uniqueBy<T>(items: T[], getKey: (item: T) => string): T[] {
   const seen = new Set<string>()
@@ -212,6 +220,33 @@ export function getScenarioIds(category?: MockScenarioCategory | 'all'): string[
 
 export function getResolvedScenarioPacks(locale?: string): MockScenarioPack[] {
   return mockScenarioPackSources.map((scenario) => resolveScenarioPack(scenario, locale))
+}
+
+export function getPrescriptionTemplateScenarios(locale?: string): MockPrescriptionTemplate[] {
+  const categoryOrder = new Map(PRESCRIPTION_TEMPLATE_CATEGORIES.map((category, index) => [category, index]))
+
+  return getResolvedScenarioPacks(locale)
+    .filter((scenario): scenario is MockScenarioPack & { category: MockPrescriptionTemplate['category'] } =>
+      PRESCRIPTION_TEMPLATE_CATEGORIES.includes(
+        scenario.category as MockPrescriptionTemplate['category']
+      )
+    )
+    .sort((a, b) => {
+      if (a.isPrimaryDemo && !b.isPrimaryDemo) return -1
+      if (!a.isPrimaryDemo && b.isPrimaryDemo) return 1
+      const categoryDelta = (categoryOrder.get(a.category) ?? 99) - (categoryOrder.get(b.category) ?? 99)
+      if (categoryDelta !== 0) return categoryDelta
+      return a.label.localeCompare(b.label)
+    })
+    .map((scenario) => ({
+      id: scenario.id,
+      category: scenario.category,
+      label: scenario.label,
+      description: scenario.description,
+      tags: scenario.tags,
+      isPrimaryDemo: scenario.isPrimaryDemo,
+      scenario
+    }))
 }
 
 export function getScenarioMock<K extends ResourceKey>(

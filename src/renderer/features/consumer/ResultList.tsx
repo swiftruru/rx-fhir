@@ -16,12 +16,25 @@ interface Props {
 
 function parseFilterCounts(querySteps: ConsumerSearchExecution['querySteps']): { fetched: number; matched: number } | null {
   for (const step of querySteps) {
+    if (typeof step.fetchedCount === 'number' && typeof step.matchedCount === 'number') {
+      return {
+        fetched: step.fetchedCount,
+        matched: step.matchedCount
+      }
+    }
     if (!step.note) continue
     const match = step.note.match(/取得\s+(\d+)\s+筆\s+→\s+符合\s+(\d+)\s+筆/)
     if (match) {
       return {
         fetched: Number(match[1]),
         matched: Number(match[2])
+      }
+    }
+    const englishMatch = step.note.match(/Fetched\s+(\d+)\s+candidate.*matched\s+(\d+)/i)
+    if (englishMatch) {
+      return {
+        fetched: Number(englishMatch[1]),
+        matched: Number(englishMatch[2])
       }
     }
   }

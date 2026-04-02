@@ -62,6 +62,15 @@
     },
     "queryUrlLabel": "Query URL",
     "queryStepsLabel": "Query Steps",
+    "queryStepTexts": {
+      "resolveOrganizationId": "Resolve Organization ID",
+      "searchBundle": "Search Bundle",
+      "clientFilter": "Client-side Filter",
+      "custodianFallback": "(custodian chain is unsupported, so the app falls back to identifier search and filters afterward)",
+      "authorFallback": "(author chain is unsupported, so the app falls back to identifier search and filters afterward)",
+      "filteredCounts": "Fetched {{fetched}} candidate bundle(s) -> matched {{matched}}",
+      "organizationNotFound": "No organization matched the organization code."
+    },
     "error": "Search failed"
   },
   "recent": {

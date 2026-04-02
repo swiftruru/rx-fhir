@@ -94,6 +94,7 @@ Current Creator capabilities:
 - Shared `Fill Mock` flow across Creator steps, so patient, institution, physician, encounter, diagnosis, medication, and composition stay internally consistent within the same scenario
 - The Patient step now starts from a designated primary demo patient on first fill, then rotates through additional scenarios on later fills
 - Mock filling is now locale-aware, so `zh-TW` fills Chinese demo content and `en` fills the corresponding English version of the same scenario
+- Prescription Templates can preload common outpatient scenarios into all Creator draft steps from a compact toolbar action without taking over the workspace
 - Revisiting completed steps restores current resource values back into the form
 - Unfinished Creator drafts are auto-saved locally and restored on next launch
 - Re-submitting completed steps updates existing FHIR resources instead of duplicating them
@@ -103,6 +104,7 @@ Current Creator capabilities:
 - Step success / reuse alerts now remain visible when you leave a completed step and come back later
 - Human-friendly FHIR `OperationOutcome` messages are shown first, with expandable raw error details for troubleshooting
 - Most Creator forms now include consistent inline guide cards with examples and field-level hints for identifiers, encounter timing, ICD-10, LOINC, insurance, medication coding, medication route, and supplemental extensions
+- Keyboard accessibility is improved with stepper shortcuts (`Alt + ↑ / ↓`, `Alt + Home / End`) and clearer focus-visible states for keyboard navigation
 - Live Demo mode provides a guided, step-by-step teaching flow with manual-first pacing, optional autoplay, and human-like typed mock input
 - Feature Showcase mode provides a spotlight-style product tour with target highlighting, background dimming, and feature-by-feature coaching text
 - Live JSON preview of created resources
@@ -154,6 +156,7 @@ Search and inspect FHIR Bundles on the configured server:
 - Recent submissions now focus on completed bundle submissions instead of mixing in partial resource history
 - Recent submissions and saved searches are shown as separate helper sections with clearer visual hierarchy
 - Query URL display and multi-step trace for compatibility workarounds, with clickable links that open in the system browser
+- Query-step labels and workaround notes now follow the current UI language instead of staying fixed in Chinese after a locale switch
 - Result list with patient, organization, diagnosis, and medication summary
 - Empty-result states now explain likely causes and suggest next actions based on the actual search mode
 - Prescription detail view now uses a fixed-width detail pane with a clearer `Structured / JSON` toggle in the header
@@ -165,6 +168,7 @@ Search and inspect FHIR Bundles on the configured server:
 
 - FHIR Server URL configuration with preset servers
 - Live server health check via `/metadata`
+- Testing the currently active server now immediately syncs the global connection status shown in Settings and the status bar
 - Light / Dark / System theme toggle
 - `zh-TW` / `en` language toggle
 - Embedded `Noto Sans TC` UI font for more consistent offline typography, especially on Windows
@@ -196,6 +200,7 @@ The current repository now uses a typed, scenario-driven mock data design instea
 - The first `Patient` mock fill uses a designated primary demo patient, while later fills can rotate through additional scenarios
 - Mock data is now locale-aware: the same scenario can resolve to `zh-TW` or `en` text content without changing identifiers, codes, dates, or other shared fields
 - Scenario packs cover common outpatient, chronic disease, acute visit, emergency, pediatric, search-demo, and optional-field situations
+- Prescription Templates are generated from the same scenario source, so common outpatient presets reuse the exact same typed data structure as Creator `Fill Mock`
 - Consumer basic/date/complex query examples are derived from the same scenario source, reducing drift between Creator demos and Consumer search helpers
 - Validation helpers are included to keep scenario IDs unique and ensure each full scenario remains structurally complete
 

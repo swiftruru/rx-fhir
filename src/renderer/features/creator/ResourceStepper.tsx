@@ -30,6 +30,16 @@ interface ResourceStepperProps {
   onBundleSuccess: (bundleId: string) => void
 }
 
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+
+  return Boolean(
+    target.closest(
+      'input, textarea, select, [contenteditable="true"], [role="textbox"]'
+    )
+  )
+}
+
 function compactText(value?: string): string | undefined {
   const normalized = value?.replace(/\s+/g, ' ').trim()
   return normalized || undefined
@@ -186,6 +196,8 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
   const [showOnlyLastResource, setShowOnlyLastResource] = useState(false)
   const [collapseSyncToken, setCollapseSyncToken] = useState(0)
   const [collapseAll, setCollapseAll] = useState(false)
+  const stepButtonRefs = useRef<Array<HTMLButtonElement | null>>([])
+  const shouldFocusCurrentStepRef = useRef(false)
   const showcaseBackupRef = useRef<{ showRightPanel: boolean; rightPanelMode: 'json' | 'request' }>()
   const showcaseActive = showcaseStatus === 'running' || showcaseStatus === 'paused'
 
@@ -231,6 +243,50 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
       setRightPanelMode(creatorUi.rightPanelMode)
     }
   }, [showcaseActive, showcaseUi.creator])
+
+  useEffect(() => {
+    function handleStepperKeyboardNavigation(event: KeyboardEvent): void {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey) return
+      if (isEditableTarget(event.target)) return
+
+      const target = event.target instanceof HTMLElement ? event.target : null
+      const inStepper = Boolean(target?.closest('[data-stepper-nav="true"]'))
+
+      let nextStepIndex: number | null = null
+
+      if ((event.altKey || inStepper) && event.key === 'ArrowUp') {
+        nextStepIndex = Math.max(0, currentStep - 1)
+      } else if ((event.altKey || inStepper) && event.key === 'ArrowDown') {
+        nextStepIndex = Math.min(RESOURCE_STEPS.length - 1, currentStep + 1)
+      } else if ((event.altKey || inStepper) && event.key === 'Home' && !event.shiftKey) {
+        nextStepIndex = 0
+      } else if ((event.altKey || inStepper) && event.key === 'End' && !event.shiftKey) {
+        nextStepIndex = RESOURCE_STEPS.length - 1
+      }
+
+      if (nextStepIndex === null || nextStepIndex === currentStep) return
+
+      event.preventDefault()
+      shouldFocusCurrentStepRef.current = true
+      setStep(nextStepIndex)
+    }
+
+    window.addEventListener('keydown', handleStepperKeyboardNavigation)
+    return () => window.removeEventListener('keydown', handleStepperKeyboardNavigation)
+  }, [currentStep, setStep])
+
+  useEffect(() => {
+    if (!shouldFocusCurrentStepRef.current) return
+
+    const frame = window.requestAnimationFrame(() => {
+      const currentButton = stepButtonRefs.current[currentStep]
+      currentButton?.focus()
+      currentButton?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+      shouldFocusCurrentStepRef.current = false
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [currentStep])
 
   const stepSummaries = useMemo(
     () =>
@@ -328,28 +384,42 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
   return (
     <div className="flex h-full gap-0">
       {/* Left: Step indicator */}
-      <FeatureShowcaseTarget id="creator.stepper" className="w-48 border-r bg-muted/30 flex flex-col">
-        <div className="h-full">
+      <FeatureShowcaseTarget id="creator.stepper" className="w-48 border-r bg-muted/30 flex flex-col min-h-0">
+        <div className="flex h-full min-h-0 flex-col">
           <div className="px-3 py-3 border-b">
             <div className="text-xs text-muted-foreground">{t('stepper.progress')}</div>
             <div className="text-sm font-semibold">{t('stepper.progressCount', { completed: completedCount, total: RESOURCE_STEPS.length })}</div>
+            <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground/80">
+              {t('stepper.shortcuts')}
+            </p>
           </div>
-          <ScrollArea className="flex-1">
-            <nav className="p-2 space-y-1">
+          <ScrollArea className="min-h-0 flex-1">
+            <nav className="p-2 space-y-1" data-stepper-nav="true" aria-label={t('stepper.progress')}>
               {RESOURCE_STEPS.map((step, index) => {
                 const complete = isStepComplete(index)
                 const active = index === currentStep
                 return (
                   <button
                     key={step.key}
+                    ref={(element) => {
+                      stepButtonRefs.current[index] = element
+                    }}
                     onClick={() => setStep(index)}
-                    className={`w-full text-left flex items-start gap-2 px-2 py-2 rounded-md text-xs transition-colors ${
+                    aria-current={active ? 'step' : undefined}
+                    aria-label={t('stepper.stepButtonAriaLabel', {
+                      step: index + 1,
+                      total: RESOURCE_STEPS.length,
+                      label: t(`steps.${step.key}.label`)
+                    })}
+                    className={cn(
+                      'w-full rounded-md px-2 py-2 text-left text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                      'flex items-start gap-2',
                       active
-                        ? 'bg-primary text-primary-foreground'
+                        ? 'bg-primary text-primary-foreground focus-visible:ring-primary'
                         : complete
-                        ? 'text-emerald-800 hover:bg-emerald-50'
+                        ? 'text-emerald-800 hover:bg-emerald-50 focus-visible:ring-emerald-600'
                         : 'text-muted-foreground hover:bg-accent'
-                    }`}
+                    )}
                   >
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${
                       complete ? 'bg-emerald-600 text-white' : active ? 'bg-white/20 text-inherit' : 'bg-muted text-muted-foreground'
@@ -415,7 +485,7 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
             <button
               type="button"
               onClick={() => setShowRightPanel(!showRightPanel)}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               {showRightPanel ? t('stepper.hidePanel') : t('stepper.showPanel')}
             </button>

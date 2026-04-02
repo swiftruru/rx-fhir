@@ -17,6 +17,29 @@
     "resetConfirmOk": "確定清除",
     "resetConfirmCancel": "取消"
   },
+  "templates": {
+    "title": "範本處方",
+    "description": "一鍵套用常見門診情境，將整包 Creator 草稿帶入各步驟表單。",
+    "hint": "適合上課示範、快速建置與常見門診流程展示。套用後會從第一步開始，後續各步驟都會保留對應欄位值。",
+    "trigger": "範本處方",
+    "filterLabel": "情境分類",
+    "badge": "{{count}} 組範本",
+    "apply": "套用範本",
+    "closePanel": "關閉範本視窗",
+    "primary": "預設示範",
+    "empty": "目前沒有符合此分類的範本。",
+    "confirmTitle": "套用範本會覆蓋目前草稿",
+    "confirmDescription": "目前 Creator 已有未提交內容，是否改用「{{template}}」範本處方？",
+    "confirmApply": "仍要套用",
+    "confirmCancel": "取消",
+    "categories": {
+      "all": "全部",
+      "foundation": "基礎門診",
+      "acute": "急性門診",
+      "chronic": "慢性病",
+      "pediatric": "兒科"
+    }
+  },
   "liveDemo": {
     "panelTitle": "Live Demo 教學模式",
     "startButton": "開始 Live Demo",
@@ -61,7 +84,9 @@
   "stepper": {
     "progress": "進度",
     "progressCount": "{{completed}} / {{total}} 完成",
+    "shortcuts": "快捷鍵：Alt + ↑ / ↓ 切換步驟，Alt + Home / End 跳到首尾。",
     "stepBadge": "步驟 {{current}} / {{total}}",
+    "stepButtonAriaLabel": "步驟 {{step}} / {{total}}：{{label}}",
     "showPanel": "顯示右側面板",
     "hidePanel": "隱藏右側面板",
     "jsonPanelTitle": "已建立資源 JSON",

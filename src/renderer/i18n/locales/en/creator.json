@@ -17,6 +17,29 @@
     "resetConfirmOk": "Clear All",
     "resetConfirmCancel": "Cancel"
   },
+  "templates": {
+    "title": "Prescription Templates",
+    "description": "Apply a complete outpatient scenario in one click and prefill the Creator workflow.",
+    "hint": "Useful for classroom demos, rapid setup, and showcasing common outpatient scenarios. Applying a template starts from Step 1 and keeps matching values ready across the remaining forms.",
+    "trigger": "Templates",
+    "filterLabel": "Scenario category",
+    "badge": "{{count}} templates",
+    "apply": "Apply Template",
+    "closePanel": "Close template window",
+    "primary": "Primary Demo",
+    "empty": "No templates match this category yet.",
+    "confirmTitle": "Applying a template will replace the current draft",
+    "confirmDescription": "Creator already has unsaved work. Switch to the \"{{template}}\" prescription template instead?",
+    "confirmApply": "Apply Anyway",
+    "confirmCancel": "Cancel",
+    "categories": {
+      "all": "All",
+      "foundation": "Foundation",
+      "acute": "Acute",
+      "chronic": "Chronic",
+      "pediatric": "Pediatric"
+    }
+  },
   "liveDemo": {
     "panelTitle": "Live Demo Coach",
     "startButton": "Start Live Demo",
@@ -61,7 +84,9 @@
   "stepper": {
     "progress": "Progress",
     "progressCount": "{{completed}} / {{total}} completed",
+    "shortcuts": "Shortcuts: Alt + ↑ / ↓ to switch steps, Alt + Home / End to jump to the first or last step.",
     "stepBadge": "Step {{current}} / {{total}}",
+    "stepButtonAriaLabel": "Step {{step}} / {{total}}: {{label}}",
     "showPanel": "Show Right Panel",
     "hidePanel": "Hide Right Panel",
     "jsonPanelTitle": "Resources JSON",

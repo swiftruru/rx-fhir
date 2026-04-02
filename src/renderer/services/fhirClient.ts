@@ -1,5 +1,6 @@
 import type { SearchParams } from '../types/fhir.d'
 import { useFhirInspectorStore } from '../store/fhirInspectorStore'
+import i18n from '../i18n'
 
 const DEFAULT_SERVER_URL = 'https://hapi.fhir.org/baseR4'
 
@@ -307,8 +308,21 @@ export async function putResource<T extends fhir4.Resource>(
 export interface QueryStep {
   step: number
   label: string
+  labelKey?: string
   url: string
   note?: string
+  noteKey?: string
+  noteOptions?: Record<string, unknown>
+  fetchedCount?: number
+  matchedCount?: number
+}
+
+function tConsumer(key: string, options?: Record<string, unknown>): string {
+  return i18n.t(key, { ns: 'consumer', ...options })
+}
+
+function formatQueryStepLabel(step: number, key: string): string {
+  return `${step}. ${tConsumer(key)}`
 }
 
 function buildBundleSearchUrl(params: URLSearchParams): string {
@@ -406,7 +420,12 @@ export async function searchBundles(
   // Complex org search: resolve Organization ID first, then query Bundle
   if (params.mode === 'complex' && params.complexSearchBy === 'organization' && params.organizationId) {
     const orgUrl = `${getFhirBaseUrl()}/Organization?identifier=${encodeURIComponent(params.organizationId)}`
-    onStep?.({ step: 1, label: '① 解析機構 ID', url: orgUrl })
+    onStep?.({
+      step: 1,
+      label: formatQueryStepLabel(1, 'search.queryStepTexts.resolveOrganizationId'),
+      labelKey: 'search.queryStepTexts.resolveOrganizationId',
+      url: orgUrl
+    })
     const orgRes = await performLoggedRequest(orgUrl, {
       method: 'GET',
       resourceType: 'Organization',
@@ -419,14 +438,21 @@ export async function searchBundles(
     }
     const orgBundle = await orgRes.json() as fhir4.Bundle
     const orgId = orgBundle.entry?.[0]?.resource?.id
-    if (!orgId) throw new Error('找不到符合機構代碼的機構')
+    if (!orgId) throw new Error(tConsumer('search.queryStepTexts.organizationNotFound'))
 
     // HAPI public server does not support composition.custodian chain;
     // fetch by identifier only, then filter client-side by custodian reference
     const qs = new URLSearchParams()
     if (params.identifier) qs.set('identifier', params.identifier)
     const searchUrl = buildBundleSearchUrl(qs)
-    onStep?.({ step: 2, label: '② 查詢 Bundle', url: searchUrl, note: `(custodian chain 不支援，改用 identifier 撈回後過濾)` })
+    onStep?.({
+      step: 2,
+      label: formatQueryStepLabel(2, 'search.queryStepTexts.searchBundle'),
+      labelKey: 'search.queryStepTexts.searchBundle',
+      url: searchUrl,
+      note: tConsumer('search.queryStepTexts.custodianFallback'),
+      noteKey: 'search.queryStepTexts.custodianFallback'
+    })
     const response = await performLoggedRequest(searchUrl, {
       method: 'GET',
       resourceType: 'Bundle',
@@ -446,9 +472,20 @@ export async function searchBundles(
     })
     onStep?.({
       step: 3,
-      label: '③ Client 端過濾',
+      label: formatQueryStepLabel(3, 'search.queryStepTexts.clientFilter'),
+      labelKey: 'search.queryStepTexts.clientFilter',
       url: `Composition.custodian.reference = "${orgRef}"`,
-      note: `取得 ${allBundles.entry?.length ?? 0} 筆 → 符合 ${filtered.length} 筆`
+      note: tConsumer('search.queryStepTexts.filteredCounts', {
+        fetched: allBundles.entry?.length ?? 0,
+        matched: filtered.length
+      }),
+      noteKey: 'search.queryStepTexts.filteredCounts',
+      noteOptions: {
+        fetched: allBundles.entry?.length ?? 0,
+        matched: filtered.length
+      },
+      fetchedCount: allBundles.entry?.length ?? 0,
+      matchedCount: filtered.length
     })
     return { ...allBundles, entry: filtered, total: filtered.length }
   }
@@ -457,7 +494,14 @@ export async function searchBundles(
     const qs = new URLSearchParams()
     if (params.identifier) qs.set('identifier', params.identifier)
     const searchUrl = buildBundleSearchUrl(qs)
-    onStep?.({ step: 1, label: '① 查詢 Bundle', url: searchUrl, note: `(author chain 不支援，改用 identifier 撈回後過濾)` })
+    onStep?.({
+      step: 1,
+      label: formatQueryStepLabel(1, 'search.queryStepTexts.searchBundle'),
+      labelKey: 'search.queryStepTexts.searchBundle',
+      url: searchUrl,
+      note: tConsumer('search.queryStepTexts.authorFallback'),
+      noteKey: 'search.queryStepTexts.authorFallback'
+    })
     const response = await performLoggedRequest(searchUrl, {
       method: 'GET',
       resourceType: 'Bundle',
@@ -475,9 +519,20 @@ export async function searchBundles(
     })
     onStep?.({
       step: 2,
-      label: '② Client 端過濾',
+      label: formatQueryStepLabel(2, 'search.queryStepTexts.clientFilter'),
+      labelKey: 'search.queryStepTexts.clientFilter',
       url: `Practitioner.name ~= "${params.authorName}"`,
-      note: `取得 ${allBundles.entry?.length ?? 0} 筆 → 符合 ${filtered.length} 筆`
+      note: tConsumer('search.queryStepTexts.filteredCounts', {
+        fetched: allBundles.entry?.length ?? 0,
+        matched: filtered.length
+      }),
+      noteKey: 'search.queryStepTexts.filteredCounts',
+      noteOptions: {
+        fetched: allBundles.entry?.length ?? 0,
+        matched: filtered.length
+      },
+      fetchedCount: allBundles.entry?.length ?? 0,
+      matchedCount: filtered.length
     })
     return { ...allBundles, entry: filtered, total: filtered.length }
   }

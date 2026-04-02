@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/button'
 import { Alert, AlertDescription } from '../../components/ui/alert'
 import ResourceStepper from './ResourceStepper'
+import PrescriptionTemplatePanel from './components/PrescriptionTemplatePanel'
 import { useCreatorStore } from '../../store/creatorStore'
 import { useMockStore } from '../../store/mockStore'
 import { LIVE_DEMO_STEPS } from '../../demo/liveDemoScript'
@@ -106,6 +107,7 @@ export default function CreatorPage(): React.JSX.Element {
               <GraduationCap className="h-4 w-4" />
               {liveDemoActive ? t('liveDemo.runningButton') : t('liveDemo.startButton')}
             </Button>
+            <PrescriptionTemplatePanel disabled={liveDemoActive || featureShowcaseActive} />
             <Button variant="outline" size="sm" onClick={handleResetClick} disabled={liveDemoActive || featureShowcaseActive}>
               <RotateCcw className="h-4 w-4" />
               {tc('buttons.reset')}
@@ -173,7 +175,6 @@ export default function CreatorPage(): React.JSX.Element {
           </Alert>
         </div>
       )}
-
       {/* Stepper */}
       <div className="flex-1 overflow-hidden">
         <ResourceStepper onBundleSuccess={(id) => console.log('Bundle created:', id)} />

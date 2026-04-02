@@ -291,6 +291,16 @@ export interface MockScenarioPack {
   creator: MockScenarioCreatorResources
 }
 
+export interface MockPrescriptionTemplate {
+  id: string
+  category: Extract<MockScenarioCategory, 'foundation' | 'acute' | 'chronic' | 'pediatric'>
+  label: string
+  description: string
+  tags: string[]
+  isPrimaryDemo?: boolean
+  scenario: MockScenarioPack
+}
+
 export interface MockResourcePresetSourceMap {
   patient: PatientMockSource[]
   organization: OrganizationMockSource[]

@@ -69,6 +69,15 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   const consumerBasicMocks = useMemo(() => getConsumerBasicMocks(locale), [locale])
   const consumerDateMocks = useMemo(() => getConsumerDateMocks(locale), [locale])
   const consumerComplexMocks = useMemo(() => getConsumerComplexMocks(locale), [locale])
+  const localizedQuerySteps = useMemo(
+    () =>
+      querySteps.map((step) => ({
+        ...step,
+        displayLabel: step.labelKey ? `${step.step}. ${t(step.labelKey)}` : step.label,
+        displayNote: step.noteKey ? t(step.noteKey, step.noteOptions) : step.note
+      })),
+    [querySteps, t]
+  )
 
   useEffect(() => {
     basicMockRef.current = 0
@@ -388,14 +397,14 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
         </div>
       )}
 
-      {querySteps.length > 0 && (
+      {localizedQuerySteps.length > 0 && (
         <div className="p-2 rounded bg-muted space-y-2">
           <p className="text-[10px] text-muted-foreground">{t('search.queryStepsLabel')}</p>
-          {querySteps.map((s) => (
+          {localizedQuerySteps.map((s) => (
             <div key={s.step} className="space-y-0.5">
-              <p className="text-[10px] font-medium text-foreground">{s.label}</p>
+              <p className="text-[10px] font-medium text-foreground">{s.displayLabel}</p>
               <ExternalUrlLink url={s.url} compact />
-              {s.note && <p className="text-[10px] text-muted-foreground/70 italic">{s.note}</p>}
+              {s.displayNote && <p className="text-[10px] text-muted-foreground/70 italic">{s.displayNote}</p>}
             </div>
           ))}
         </div>

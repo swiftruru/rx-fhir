@@ -62,6 +62,15 @@
     },
     "queryUrlLabel": "查詢 URL",
     "queryStepsLabel": "查詢步驟",
+    "queryStepTexts": {
+      "resolveOrganizationId": "解析機構 ID",
+      "searchBundle": "查詢 Bundle",
+      "clientFilter": "Client 端過濾",
+      "custodianFallback": "(custodian chain 不支援，改用 identifier 撈回後過濾)",
+      "authorFallback": "(author chain 不支援，改用 identifier 撈回後過濾)",
+      "filteredCounts": "取得 {{fetched}} 筆 → 符合 {{matched}} 筆",
+      "organizationNotFound": "找不到符合機構代碼的機構"
+    },
     "error": "查詢失敗"
   },
   "recent": {

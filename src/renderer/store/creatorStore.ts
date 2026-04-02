@@ -4,7 +4,7 @@ import type { CreatedResources } from '../types/fhir.d'
 import type { ResourceKey } from '../types/fhir.d'
 import { RESOURCE_STEPS } from '../types/fhir.d'
 
-type CreatorDraftValues = Partial<Record<ResourceKey, Record<string, unknown>>>
+export type CreatorDraftValues = Partial<Record<ResourceKey, Record<string, unknown>>>
 export type CreatorSaveOutcome = 'created' | 'updated' | 'reused'
 
 export type CreatorRequestMethod = 'GET' | 'POST' | 'PUT'
@@ -64,6 +64,7 @@ interface CreatorState {
   clearFeedback: (key: ResourceKey) => void
   setDraft: (key: ResourceKey, values?: Record<string, unknown>) => void
   clearDraft: (key: ResourceKey) => void
+  applyTemplateDrafts: (drafts: CreatorDraftValues) => void
   dismissDraftRestored: () => void
   setBundleId: (id: string) => void
   setBundleError: (error: string | undefined) => void
@@ -145,6 +146,21 @@ export const useCreatorStore = create<CreatorState>()(
             draftSavedAt: hasPersistableWork(state.resources, drafts) ? new Date().toISOString() : undefined
           }
         }),
+
+      applyTemplateDrafts: (drafts) =>
+        set((state) => ({
+          currentStep: 0,
+          resources: {},
+          drafts,
+          feedbacks: {},
+          lastUpdatedResourceKey: undefined,
+          draftSavedAt: hasPersistableWork({}, drafts) ? new Date().toISOString() : undefined,
+          draftRestored: false,
+          draftRevision: state.draftRevision + 1,
+          bundleId: undefined,
+          bundleError: undefined,
+          submittingBundle: false
+        })),
 
       dismissDraftRestored: () => set({ draftRestored: false }),
 

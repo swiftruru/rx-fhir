@@ -12,19 +12,24 @@ This project keeps one Markdown changelog file per release in this folder.
 
 ## Release Workflow
 
-1. Update `package.json` version if needed.
-2. Create a new changelog file, for example `changelog/v1.2.0.md`.
-3. Write only the new or changed items for that version.
-4. Commit the changes.
-5. Create and push the matching Git tag, for example `v1.2.0`.
-6. GitHub Actions will build:
+1. Merge the release-ready changes onto `main`.
+2. Run `npm run release -- patch` or `npm run release -- 1.2.0`.
+3. The script will update the package version, refresh the README badge, validate `npm run typecheck`, commit the release metadata, create the matching tag, and push the branch plus tag.
+4. If `changelog/vX.Y.Z.md` does not exist yet, the script will scaffold it and open `$EDITOR`.
+5. GitHub Actions will build:
    - `RxFHIR-macOS-<version>.dmg`
    - `RxFHIR-macOS-<version>.zip`
    - `RxFHIR-Windows-Setup-<version>.exe`
    - `RxFHIR-Windows-Portable-<version>.exe`
    - `RxFHIR-Linux-<version>.AppImage`
    - `RxFHIR-Linux-<version>.deb`
-7. The GitHub Release body will prepend a platform download guide, then use only that version's changelog file.
+6. The GitHub Release body will prepend a platform download guide, then use only that version's changelog file.
+
+If you want to provide notes from another file directly, run:
+
+```bash
+npm run release -- patch --notes-file ./path/to/notes.md
+```
 
 ## Template
 

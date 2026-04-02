@@ -4,7 +4,8 @@ import { spawnSync } from 'node:child_process'
 
 const DEFAULT_ATTEMPTS = 3
 const DEFAULT_DELAY_MS = 15_000
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+const npmCommand = 'npm'
+const useShell = process.platform === 'win32'
 
 function parsePositiveInt(value, fallback) {
   const parsed = Number.parseInt(value ?? '', 10)
@@ -58,8 +59,17 @@ for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
 
   const result = spawnSync(npmCommand, ['ci'], {
     stdio: 'inherit',
-    env: npmEnv
+    env: npmEnv,
+    shell: useShell
   })
+
+  if (result.error) {
+    console.error(`[ci] npm ci failed to start: ${result.error.message}`)
+  }
+
+  if (result.signal) {
+    console.error(`[ci] npm ci terminated by signal ${result.signal}`)
+  }
 
   if (result.status === 0) {
     process.exit(0)

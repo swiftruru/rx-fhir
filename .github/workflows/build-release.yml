@@ -16,6 +16,8 @@ concurrency:
 env:
   NODE_VERSION: '20'
   CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+  NPM_CI_MAX_ATTEMPTS: '3'
+  NPM_CI_RETRY_DELAY_MS: '15000'
 
 jobs:
   build-macos:
@@ -33,7 +35,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: node scripts/npm-ci-with-retry.js
 
       - name: Typecheck
         run: npm run typecheck
@@ -68,7 +70,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: node scripts/npm-ci-with-retry.js
 
       - name: Typecheck
         run: npm run typecheck
@@ -103,7 +105,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: node scripts/npm-ci-with-retry.js
 
       - name: Install Linux packaging dependencies
         run: |

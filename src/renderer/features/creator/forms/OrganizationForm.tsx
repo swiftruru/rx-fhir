@@ -9,8 +9,10 @@ import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import FormGuideCard from '../../../components/FormGuideCard'
+import FormErrorSummary from '../../../components/FormErrorSummary'
 import CreatorFeedbackAlert from '../../../components/CreatorFeedbackAlert'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
+import { buildFormErrorSummaryItems } from '../../../lib/formErrorSummary'
 import { useCreatorMockFill, useLiveDemoTypedMockFill } from '../../../hooks/useCreatorMockFill'
 import { useLiveDemoFormController } from '../../../hooks/useLiveDemoFormController'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
@@ -73,6 +75,14 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
     resolver: zodResolver(schema),
     defaultValues: initialValues
   })
+  const errorSummaryItems = useMemo(
+    () => buildFormErrorSummaryItems<FormData>(errors, [
+      { name: 'name', fieldId: 'org-name', label: f('name.label') },
+      { name: 'identifier', fieldId: 'org-id', label: f('identifier.label') },
+      { name: 'type', fieldId: 'org-type', label: f('type.label') }
+    ]),
+    [errors, t]
+  )
 
   const fillMock = useCreatorMockFill<FormData>('organization', (key, value) => {
     setValue(key as keyof FormData, value as never)
@@ -135,7 +145,7 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
   useLiveDemoFormController('organization', fillMock, handleSubmit, onSubmit, fillDemo)
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex justify-end">
         <Button type="button" variant="ghost" size="sm" onClick={fillMock} className="h-7 px-2 text-xs text-muted-foreground">
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
@@ -155,6 +165,12 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
         </ul>
       </FormGuideCard>
 
+      <FormErrorSummary
+        title={t('forms.shared.errorSummaryTitle', { count: errorSummaryItems.length })}
+        description={t('forms.shared.errorSummaryDescription')}
+        items={errorSummaryItems}
+      />
+
       <div className="space-y-2">
         <Label htmlFor="org-name">{f('name.label')} *</Label>
         <Input id="org-name" placeholder={f('name.placeholder')} {...register('name')} />
@@ -172,7 +188,7 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
       <div className="space-y-2">
         <Label>{f('type.label')} *</Label>
         <Select value={selectedType} onValueChange={(v) => setValue('type', v as FormData['type'])}>
-          <SelectTrigger>
+          <SelectTrigger id="org-type">
             <SelectValue placeholder={f('type.placeholder')} />
           </SelectTrigger>
           <SelectContent>

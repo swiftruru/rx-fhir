@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useFeatureShowcaseStore } from '../store/featureShowcaseStore'
 import type { FeatureShowcaseTargetId } from '../showcase/types'
 import { cn } from '../lib/utils'
@@ -15,6 +16,7 @@ export default function FeatureShowcaseTarget({
   children
 }: FeatureShowcaseTargetProps): React.JSX.Element {
   const ref = useRef<HTMLDivElement | null>(null)
+  const reducedMotion = useReducedMotion()
   const status = useFeatureShowcaseStore((state) => state.status)
   const currentTargetId = useFeatureShowcaseStore((state) => state.currentTargetId)
   const registerTarget = useFeatureShowcaseStore((state) => state.registerTarget)
@@ -75,8 +77,13 @@ export default function FeatureShowcaseTarget({
       ref={ref}
       data-feature-showcase-target={id}
       className={cn(
-        'transition-[transform,filter,box-shadow,border-radius] duration-500 ease-out will-change-transform',
-        isActiveTarget && 'relative z-[45] -translate-y-0.5 rounded-[1.15rem] brightness-[1.03] saturate-[1.03] shadow-[0_18px_42px_rgba(15,23,42,0.16)]',
+        reducedMotion
+          ? 'transition-[box-shadow,filter,border-radius] duration-200 ease-out will-change-auto'
+          : 'transition-[transform,filter,box-shadow,border-radius] duration-500 ease-out will-change-transform',
+        isActiveTarget &&
+          (reducedMotion
+            ? 'relative z-[45] rounded-[1.15rem] brightness-[1.03] saturate-[1.03] shadow-[0_12px_32px_rgba(15,23,42,0.14)]'
+            : 'relative z-[45] -translate-y-0.5 rounded-[1.15rem] brightness-[1.03] saturate-[1.03] shadow-[0_18px_42px_rgba(15,23,42,0.16)]'),
         className
       )}
     >

@@ -294,6 +294,7 @@ if (args.dryRun) {
   console.log(`[release] Branch: ${currentBranch}`)
   console.log(`[release] Changelog source: ${notesSource}`)
   if (!args.skipChecks) {
+    console.log('[release] Would run npm run a11y:check')
     console.log('[release] Would run npm run typecheck')
   }
   console.log(`[release] Would run npm version ${targetVersion} --no-git-tag-version`)
@@ -316,6 +317,7 @@ if (notesContent !== null) {
 validateChangelog(changelogPath)
 
 if (!args.skipChecks) {
+  run(npmCommand, ['run', 'a11y:check'])
   run(npmCommand, ['run', 'typecheck'])
 }
 

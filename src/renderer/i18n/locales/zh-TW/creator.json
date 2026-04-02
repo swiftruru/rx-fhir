@@ -53,6 +53,7 @@
     "errorTitle": "Live Demo 中斷",
     "errorBadge": "示範失敗",
     "errorFallback": "Live Demo 執行失敗。",
+    "reducedMotionHint": "你目前啟用了減少動態效果，系統會縮短自動播放停留時間，並改用較靜態的畫面切換。",
     "controls": {
       "pause": "暫停",
       "resume": "繼續",
@@ -87,6 +88,8 @@
     "shortcuts": "快捷鍵：Alt + ↑ / ↓ 切換步驟，Alt + Home / End 跳到首尾。",
     "stepBadge": "步驟 {{current}} / {{total}}",
     "stepButtonAriaLabel": "步驟 {{step}} / {{total}}：{{label}}",
+    "currentStepAnnouncement": "目前為第 {{current}} / {{total}} 步：{{label}}。",
+    "currentStepAnnouncementWithSummary": "目前為第 {{current}} / {{total}} 步：{{label}}。目前內容：{{summary}}。",
     "showPanel": "顯示右側面板",
     "hidePanel": "隱藏右側面板",
     "jsonPanelTitle": "已建立資源 JSON",
@@ -175,7 +178,9 @@
   "forms": {
     "shared": {
       "requiredMark": "*",
-      "optional": "（選填）"
+      "optional": "（選填）",
+      "errorSummaryTitle": "請先修正以下 {{count}} 個欄位問題",
+      "errorSummaryDescription": "按一下可直接跳到對應欄位。"
     },
     "organization": {
       "introTitle": "機構資料說明",

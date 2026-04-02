@@ -64,8 +64,27 @@
     "resetAll": "Reset all to defaults",
     "empty": "No customizable shortcuts available.",
     "customized": "Customized",
-    "default": "Default",
+    "default": "Using default",
+    "defaultBinding": "Default: {{binding}}",
+    "platforms": {
+      "mac": "macOS",
+      "other": "Windows / Linux"
+    },
+    "summary": {
+      "categoryShortcuts": "Shortcuts in category",
+      "categoryCustomized": "{{count}} customized in this category",
+      "customized": "Total customized",
+      "defaultCount": "{{count}} still using defaults",
+      "platform": "Display platform"
+    },
     "recordingHint": "Press the new key combination now. Press Esc to cancel.",
+    "editingAction": "Editing: {{action}}",
+    "editingCurrent": "Current binding: {{binding}}",
+    "updated": "Updated {{action}} to {{binding}}.",
+    "restored": "Restored {{action}} to its default binding: {{binding}}.",
+    "alreadyDefault": "{{action}} is already using its default binding: {{binding}}.",
+    "resetAllDone": "All customized shortcuts were restored to their default bindings.",
+    "resetAllAlreadyDefault": "All shortcuts are already using their default bindings.",
     "notCustomizable": "This shortcut cannot be customized.",
     "conflicts": {
       "invalid": "Use a valid shortcut with at least one modifier key.",

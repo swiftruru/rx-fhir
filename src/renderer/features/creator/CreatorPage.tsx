@@ -94,7 +94,9 @@ export default function CreatorPage(): React.JSX.Element {
       {/* Page header */}
       <div className="flex items-center justify-between px-6 py-4 border-b bg-background shrink-0">
         <div>
-          <h1 className="text-xl font-bold">{t('page.title')}</h1>
+          <h1 data-page-heading="true" tabIndex={-1} className="text-xl font-bold outline-none">
+            {t('page.title')}
+          </h1>
           <p className="text-sm text-muted-foreground mt-0.5">{t('page.description')}</p>
           <p className="text-xs text-muted-foreground/80 mt-1">{t('page.draftHint')}</p>
         </div>

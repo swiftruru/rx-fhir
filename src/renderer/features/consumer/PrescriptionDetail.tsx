@@ -10,6 +10,7 @@ import FhirErrorAlert from '../../components/FhirErrorAlert'
 import JsonViewer from '../../components/JsonViewer'
 import type { BundleSummary } from '../../types/fhir.d'
 import { exportBundleJson, getBundleFileErrorMessage } from '../../services/bundleFileService'
+import { useAccessibilityStore } from '../../store/accessibilityStore'
 import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
 import { useShortcutActionStore } from '../../store/shortcutActionStore'
 
@@ -40,6 +41,7 @@ function Field({ label, value }: { label: string; value?: string }): React.JSX.E
 export default function PrescriptionDetail({ summary, onClose }: Props): React.JSX.Element {
   const { t } = useTranslation('consumer')
   const { t: tc } = useTranslation('common')
+  const announcePolite = useAccessibilityStore((state) => state.announcePolite)
   const showcaseStatus = useFeatureShowcaseStore((state) => state.status)
   const showcaseUi = useFeatureShowcaseStore((state) => state.ui)
   const setConsumerActions = useShortcutActionStore((state) => state.setConsumerActions)
@@ -49,6 +51,7 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
   const [fileError, setFileError] = useState<string>()
   const [exporting, setExporting] = useState(false)
   const showcaseBackupRef = useRef<boolean>()
+  const headingRef = useRef<HTMLHeadingElement>(null)
   const showcaseActive = showcaseStatus === 'running' || showcaseStatus === 'paused'
   const bundle = summary.raw
 
@@ -99,6 +102,14 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
     }
   }, [clearConsumerActions, setConsumerActions])
 
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      headingRef.current?.focus()
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [summary.id])
+
   async function handleExport(): Promise<void> {
     setExporting(true)
     setFileError(undefined)
@@ -107,7 +118,9 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
     try {
       const result = await exportBundleJson(bundle)
       if (result.canceled || !result.fileName) return
-      setFileMessage(t('detail.exportSuccess', { fileName: result.fileName }))
+      const message = t('detail.exportSuccess', { fileName: result.fileName })
+      setFileMessage(message)
+      announcePolite(t('detail.exportSuccessAnnouncement', { fileName: result.fileName }))
     } catch (error) {
       setFileError(getBundleFileErrorMessage(error, tc))
     } finally {
@@ -116,10 +129,17 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
   }
 
   return (
-    <div className="flex flex-col h-full border-l">
+    <section aria-labelledby="prescription-detail-heading" className="flex flex-col h-full border-l">
       <div className="flex items-start justify-between gap-3 px-4 py-3 border-b bg-background shrink-0">
         <div className="min-w-0 flex-1 space-y-2">
-          <h2 className="text-sm font-semibold">{t('detail.title')}</h2>
+          <h2
+            id="prescription-detail-heading"
+            ref={headingRef}
+            tabIndex={-1}
+            className="text-sm font-semibold outline-none"
+          >
+            {t('detail.title')}
+          </h2>
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <code className="rounded-md bg-muted/40 px-2 py-1 text-[11px] text-muted-foreground font-mono">
               {summary.id}
@@ -134,7 +154,7 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
                 {summary.fileName}
               </span>
             )}
-            <div className="inline-flex items-center rounded-lg border bg-muted/40 p-1">
+            <div role="group" aria-label={t('detail.viewModeLabel')} className="inline-flex items-center rounded-lg border bg-muted/40 p-1">
               <Button
                 type="button"
                 variant={!showJson ? 'secondary' : 'ghost'}
@@ -172,7 +192,13 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t('detail.closeButton')}
+            className="h-8 w-8"
+            onClick={onClose}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -181,7 +207,7 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
       {(fileMessage || fileError) && (
         <div className="border-b bg-background px-4 py-3 shrink-0 space-y-3">
           {fileMessage && (
-            <Alert variant="success">
+            <Alert variant="success" role="status" aria-live="polite">
               <AlertDescription>{fileMessage}</AlertDescription>
             </Alert>
           )}
@@ -193,7 +219,7 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
         <div className="flex-1 min-h-0 p-4">
           <JsonViewer
             data={bundle}
-            title="Raw FHIR JSON"
+            title={t('detail.rawJsonTitle')}
             defaultCollapsed={false}
             fillHeight
             className="h-full"
@@ -325,6 +351,6 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
           </div>
         </ScrollArea>
       )}
-    </div>
+    </section>
   )
 }

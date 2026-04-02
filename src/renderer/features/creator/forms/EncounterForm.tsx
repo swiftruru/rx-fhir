@@ -9,8 +9,10 @@ import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import FormGuideCard from '../../../components/FormGuideCard'
+import FormErrorSummary from '../../../components/FormErrorSummary'
 import CreatorFeedbackAlert from '../../../components/CreatorFeedbackAlert'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
+import { buildFormErrorSummaryItems } from '../../../lib/formErrorSummary'
 import { useCreatorMockFill, useLiveDemoTypedMockFill } from '../../../hooks/useCreatorMockFill'
 import { useLiveDemoFormController } from '../../../hooks/useLiveDemoFormController'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
@@ -80,6 +82,13 @@ export default function EncounterForm({ onSuccess }: Props): React.JSX.Element {
     resolver: zodResolver(schema),
     defaultValues: initialValues
   })
+  const errorSummaryItems = useMemo(
+    () => buildFormErrorSummaryItems<FormData>(errors, [
+      { name: 'class', fieldId: 'encounter-type', label: f('type.label') },
+      { name: 'periodStart', fieldId: 'period-start', label: f('startDate.label') }
+    ]),
+    [errors, t]
+  )
 
   const fillMock = useCreatorMockFill<FormData>('encounter', (key, value) => {
     setValue(key as keyof FormData, value as never)
@@ -176,7 +185,7 @@ export default function EncounterForm({ onSuccess }: Props): React.JSX.Element {
   useLiveDemoFormController('encounter', fillMock, handleSubmit, onSubmit, fillDemo)
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex justify-end">
         <Button type="button" variant="ghost" size="sm" onClick={fillMock} className="h-7 px-2 text-xs text-muted-foreground">
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
@@ -196,10 +205,16 @@ export default function EncounterForm({ onSuccess }: Props): React.JSX.Element {
         </ul>
       </FormGuideCard>
 
+      <FormErrorSummary
+        title={t('forms.shared.errorSummaryTitle', { count: errorSummaryItems.length })}
+        description={t('forms.shared.errorSummaryDescription')}
+        items={errorSummaryItems}
+      />
+
       <div className="space-y-2">
         <Label>{f('type.label')} *</Label>
         <Select value={selectedClass} onValueChange={(v) => setValue('class', v as FormData['class'])}>
-          <SelectTrigger>
+          <SelectTrigger id="encounter-type">
             <SelectValue placeholder={f('type.placeholder')} />
           </SelectTrigger>
           <SelectContent>

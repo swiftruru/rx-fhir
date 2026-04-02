@@ -23,6 +23,7 @@
   "search": {
     "importButton": "匯入 Bundle JSON",
     "importSuccess": "已匯入本機 Bundle：{{fileName}}",
+    "tabListLabel": "查詢模式",
     "tabs": {
       "basic":   "基本查詢",
       "date":    "日期查詢",
@@ -70,6 +71,17 @@
       "authorFallback": "(author chain 不支援，改用 identifier 撈回後過濾)",
       "filteredCounts": "取得 {{fetched}} 筆 → 符合 {{matched}} 筆",
       "organizationNotFound": "找不到符合機構代碼的機構"
+    },
+    "errors": {
+      "basicValueRequiredIdentifier": "請輸入病人識別碼。",
+      "basicValueRequiredName": "請輸入病人姓名。",
+      "dateIdentifierRequired": "請輸入病人識別碼。",
+      "dateRequired": "請選擇處方日期。",
+      "complexIdentifierRequired": "請輸入病人識別碼。"
+    },
+    "status": {
+      "searching": "正在查詢處方資料。",
+      "importing": "正在匯入本機 Bundle。"
     },
     "error": "查詢失敗"
   },
@@ -153,17 +165,31 @@
       "checkAuthor": "確認醫師姓名是否與處方中的姓名一致，必要時先用基本查詢打開詳情核對。",
       "broadenSearch": "可先移除附加條件做基本查詢，再逐步縮小查詢範圍。"
     },
+    "keyboardHint": "可使用上下方向鍵瀏覽結果，按 Enter 開啟詳情。",
+    "listLabel": "查詢結果列表",
+    "announcements": {
+      "searchCompleted": "查詢完成，目前有 {{count}} 筆結果。",
+      "searchCompletedFiltered": "查詢完成，目前顯示 {{count}} 筆結果，總共找到 {{total}} 筆。",
+      "noResults": "查詢完成，但沒有找到符合的結果。",
+      "searchFailed": "查詢失敗，未能載入結果。",
+      "bundleImported": "已匯入 {{patient}} 的 Bundle。"
+    },
     "count":        "共找到 {{total}} 筆",
     "showing":      "顯示 {{count}} 筆",
+    "selectedBadge": "已選取",
     "unknownPatient": "未知病人",
     "importedBadge": "本機匯入"
   },
   "detail": {
     "title": "處方箋詳情",
+    "closeButton": "關閉處方箋詳情",
+    "viewModeLabel": "詳情檢視模式",
     "toggleJson":       "JSON",
     "toggleStructured": "結構化",
+    "rawJsonTitle": "原始 FHIR JSON",
     "exportButton": "匯出 JSON",
     "exportSuccess": "Bundle JSON 已匯出：{{fileName}}",
+    "exportSuccessAnnouncement": "Bundle JSON 已匯出為 {{fileName}}。",
     "importedBadge": "本機匯入",
     "sections": {
       "prescription": {

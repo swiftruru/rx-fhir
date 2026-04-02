@@ -53,6 +53,7 @@
     "errorTitle": "Live Demo Interrupted",
     "errorBadge": "Failed",
     "errorFallback": "The Live Demo could not finish.",
+    "reducedMotionHint": "Reduced motion is enabled, so auto playback uses shorter pauses and avoids heavier animated transitions.",
     "controls": {
       "pause": "Pause",
       "resume": "Resume",
@@ -87,6 +88,8 @@
     "shortcuts": "Shortcuts: Alt + ↑ / ↓ to switch steps, Alt + Home / End to jump to the first or last step.",
     "stepBadge": "Step {{current}} / {{total}}",
     "stepButtonAriaLabel": "Step {{step}} / {{total}}: {{label}}",
+    "currentStepAnnouncement": "Now on step {{current}} of {{total}}: {{label}}.",
+    "currentStepAnnouncementWithSummary": "Now on step {{current}} of {{total}}: {{label}}. Current content: {{summary}}.",
     "showPanel": "Show Right Panel",
     "hidePanel": "Hide Right Panel",
     "jsonPanelTitle": "Resources JSON",
@@ -175,7 +178,9 @@
   "forms": {
     "shared": {
       "requiredMark": "*",
-      "optional": " (optional)"
+      "optional": " (optional)",
+      "errorSummaryTitle": "Fix the following {{count}} field issue(s) first",
+      "errorSummaryDescription": "Select an item to jump to the related field."
     },
     "organization": {
       "introTitle": "Organization Guidance",

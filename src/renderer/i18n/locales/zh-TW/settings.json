@@ -1,32 +1,141 @@
 {
   "page": {
     "title": "Settings — 系統設定",
-    "description": "設定 FHIR Server 連線位址"
+    "description": "設定 FHIR Server、動態效果偏好與常用操作"
   },
   "tabs": {
     "server": "Server",
+    "accessibility": "Accessibility",
     "shortcuts": "快速鍵"
   },
   "server": {
     "title":       "FHIR Server URL",
     "description": "設定目標 HAPI FHIR Server 的基礎 URL（baseR4）",
     "urlLabel":    "Server URL",
+    "urlHint": "請輸入 FHIR Server 的 base URL，例如 https://hapi.fhir.org/baseR4。",
+    "urlRequired": "請輸入 FHIR Server URL。",
     "presetsLabel": "快速選擇預設伺服器",
     "testSuccess":  "連線成功！",
     "testFail":     "連線失敗，請確認 URL 是否正確，或網路是否暢通。",
-    "saved":        "設定已儲存。"
+    "saved":        "設定已儲存。",
+    "testingAnnouncement": "正在測試 FHIR Server 連線。",
+    "testSuccessAnnouncement": "FHIR Server 連線成功。",
+    "testFailAnnouncement": "FHIR Server 連線失敗。",
+    "savedAnnouncement": "FHIR Server 設定已儲存。"
   },
   "status": {
     "title":      "目前連線狀態",
     "serverInfo": "Server",
     "fhirVersion": "FHIR"
   },
+  "accessibility": {
+    "title": "Accessibility",
+    "description": "調整動態效果、字級縮放，以及與系統高對比偏好的協作方式。",
+    "motionTitle": "動態效果",
+    "motionDescription": "控制 Live Demo、Feature Showcase 與介面轉場的動態強度。預設可跟隨系統，也可在 App 內手動覆寫。",
+    "groupLabel": "動態效果偏好",
+    "savedAnnouncement": "動態效果偏好已更新為「{{mode}}」。",
+    "effectiveTitle": "目前生效",
+    "effectiveFull": "目前保留完整動態效果。",
+    "effectiveReduced": "目前採用減少動態效果。",
+    "effectiveSystemFull": "目前跟隨系統，且系統沒有啟用減少動態效果。",
+    "effectiveSystemReduced": "目前跟隨系統，且系統已啟用減少動態效果。",
+    "behaviorHint": "啟用減少動態效果時，系統會降低 spotlight 位移與大幅縮放，並縮短自動播放停留時間；Live Demo 的逐字填入節奏仍會保留，但會改成較柔和的速度。",
+    "options": {
+      "system": {
+        "label": "跟隨系統",
+        "description": "依 macOS 或 Windows 的「減少動態效果」偏好自動調整。"
+      },
+      "full": {
+        "label": "保留完整動態",
+        "description": "維持目前的逐字填入、spotlight 與介面轉場節奏。"
+      },
+      "reduced": {
+        "label": "減少動態效果",
+        "description": "降低較強的位移與縮放，但保留必要的節奏感與臨場感。"
+      }
+    },
+    "textScale": {
+      "title": "字級縮放",
+      "description": "調整整個 App 的文字大小，包含標題、表單、結果列表與多數間距。",
+      "groupLabel": "字級縮放",
+      "savedAnnouncement": "字級縮放已更新為 {{scale}}。",
+      "effectiveTitle": "目前套用",
+      "effectiveDescription": "目前使用 {{scale}} 字級，會一併放大大多數文字與基於 `rem` 的介面間距。",
+      "behaviorHint": "這個設定會同步影響 Creator、Consumer、Settings 與 About。大部分版面會跟著放大，盡量避免需要水平捲動。",
+      "options": {
+        "scale100": {
+          "label": "100%",
+          "description": "標準大小，適合一般閱讀距離。"
+        },
+        "scale112": {
+          "label": "112%",
+          "description": "稍微放大，適合想減少閱讀吃力感時使用。"
+        },
+        "scale125": {
+          "label": "125%",
+          "description": "明顯放大，適合長時間表單輸入與結果閱讀。"
+        },
+        "scale137": {
+          "label": "137%",
+          "description": "最大字級，優先提升可讀性與辨識性。"
+        }
+      }
+    },
+    "zoom": {
+      "title": "介面縮放",
+      "description": "調整整個應用程式的縮放比例，包含卡片、按鈕、面板與大多數互動元件。",
+      "groupLabel": "介面縮放",
+      "savedAnnouncement": "介面縮放已更新為 {{scale}}。",
+      "effectiveTitle": "目前套用",
+      "effectiveDescription": "目前使用 {{scale}} 介面縮放，會連同控制項與版面一起放大。",
+      "behaviorHint": "這個設定使用 Electron 的視窗縮放。若你喜歡目前排版，只想讓文字更大，可以只調整上方的字級縮放。",
+      "options": {
+        "zoom100": {
+          "label": "100%",
+          "description": "標準介面尺寸，維持目前的版面密度。"
+        },
+        "zoom110": {
+          "label": "110%",
+          "description": "稍微放大控制項與間距，兼顧可讀性與視覺平衡。"
+        },
+        "zoom125": {
+          "label": "125%",
+          "description": "明顯放大整體介面，優先提升操作命中率與辨識度。"
+        }
+      }
+    },
+    "focus": {
+      "title": "焦點樣式",
+      "description": "調整鍵盤操作時的焦點可視化強度，方便更快看出目前停在哪個元件。",
+      "groupLabel": "焦點樣式",
+      "savedAnnouncement": "焦點樣式已更新為 {{mode}}。",
+      "effectiveTitle": "目前套用",
+      "effectiveDescription": "目前使用「{{mode}}」焦點樣式。",
+      "behaviorHint": "強化模式會在現有設計上增加更明顯的外框與暈光，只在鍵盤焦點出現時生效，不會改變一般滑鼠瀏覽時的整體視覺。",
+      "options": {
+        "standard": {
+          "label": "標準",
+          "description": "維持目前的焦點 ring 強度，保留原本的視覺節奏。"
+        },
+        "enhanced": {
+          "label": "強化",
+          "description": "為鍵盤焦點加入更粗的外框與更明顯的辨識效果。"
+        }
+      }
+    },
+    "contrast": {
+      "title": "高對比支援",
+      "description": "當作業系統啟用較高對比或 forced colors 時，RxFHIR 會自動提高 focus 與邊界辨識度。",
+      "hint": "這部分不另外提供 App 內開關，會跟隨系統高對比偏好，讓整個桌面環境保持一致。"
+    }
+  },
   "about": {
     "title":       "關於 RxFHIR",
     "tagline":     "℞ + FHIR = RxFHIR",
     "description": "基於 TW Core 電子處方箋 Profile 的桌面應用程式",
     "spec":        "依據衛福部 EMR-IG 電子處方箋 2.5 規範實作",
-    "version":     "Version 1.0.11 · Electron + React + FHIR R4",
+    "version":     "Version 1.0.14 · Electron + React + FHIR R4",
     "advisorsNote": "以下依英文姓名字母排序，排名不分先後。",
     "fields": {
       "author":      "作者",

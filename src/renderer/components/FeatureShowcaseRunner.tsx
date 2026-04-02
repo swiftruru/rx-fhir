@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useAppStore } from '../store/appStore'
 import { useCreatorStore } from '../store/creatorStore'
 import { useFeatureShowcaseStore } from '../store/featureShowcaseStore'
@@ -38,8 +39,17 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
 }
 
+function getAutoplayDelay(ms: number, reducedMotion: boolean): number {
+  if (!reducedMotion) {
+    return Math.round(ms * AUTOPLAY_DURATION_MULTIPLIER)
+  }
+
+  return Math.min(1400, Math.max(420, Math.round(ms * 0.62)))
+}
+
 export default function FeatureShowcaseRunner(): null {
   const navigate = useNavigate()
+  const reducedMotion = useReducedMotion()
   const locale = useAppStore((state) => state.locale)
   const serverUrl = useAppStore((state) => state.serverUrl)
   const runId = useFeatureShowcaseStore((state) => state.runId)
@@ -158,7 +168,7 @@ export default function FeatureShowcaseRunner(): null {
     let cancelled = false
 
     void (async () => {
-      await sleep(Math.round(step.durationMs * AUTOPLAY_DURATION_MULTIPLIER))
+      await sleep(getAutoplayDelay(step.durationMs, reducedMotion))
       if (cancelled) return
       if (currentStepIndex >= FEATURE_SHOWCASE_STEPS.length - 1) {
         useFeatureShowcaseStore.getState().complete()
@@ -170,7 +180,7 @@ export default function FeatureShowcaseRunner(): null {
     return () => {
       cancelled = true
     }
-  }, [autoplay, currentStepIndex, status])
+  }, [autoplay, currentStepIndex, reducedMotion, status])
 
   return null
 }

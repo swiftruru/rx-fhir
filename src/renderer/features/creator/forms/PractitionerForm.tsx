@@ -8,8 +8,10 @@ import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import FormGuideCard from '../../../components/FormGuideCard'
+import FormErrorSummary from '../../../components/FormErrorSummary'
 import CreatorFeedbackAlert from '../../../components/CreatorFeedbackAlert'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
+import { buildFormErrorSummaryItems } from '../../../lib/formErrorSummary'
 import { useCreatorMockFill, useLiveDemoTypedMockFill } from '../../../hooks/useCreatorMockFill'
 import { useLiveDemoFormController } from '../../../hooks/useLiveDemoFormController'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
@@ -67,6 +69,15 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
     resolver: zodResolver(schema),
     defaultValues: initialValues
   })
+  const errorSummaryItems = useMemo(
+    () => buildFormErrorSummaryItems<FormData>(errors, [
+      { name: 'familyName', fieldId: 'prac-family', label: f('familyName.label') },
+      { name: 'givenName', fieldId: 'prac-given', label: f('givenName.label') },
+      { name: 'licenseNumber', fieldId: 'license', label: f('licenseNumber.label') },
+      { name: 'qualification', fieldId: 'qualification', label: f('qualification.label') }
+    ]),
+    [errors, t]
+  )
 
   const fillMock = useCreatorMockFill<FormData>('practitioner', (key, value) => {
     setValue(key as keyof FormData, value as never)
@@ -152,7 +163,7 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
   useLiveDemoFormController('practitioner', fillMock, handleSubmit, onSubmit, fillDemo)
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex justify-end">
         <Button type="button" variant="ghost" size="sm" onClick={fillMock} className="h-7 px-2 text-xs text-muted-foreground">
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
@@ -171,6 +182,12 @@ export default function PractitionerForm({ onSuccess }: Props): React.JSX.Elemen
           ))}
         </ul>
       </FormGuideCard>
+
+      <FormErrorSummary
+        title={t('forms.shared.errorSummaryTitle', { count: errorSummaryItems.length })}
+        description={t('forms.shared.errorSummaryDescription')}
+        items={errorSummaryItems}
+      />
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">

@@ -10,8 +10,10 @@ import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
 import FormGuideCard from '../../../components/FormGuideCard'
+import FormErrorSummary from '../../../components/FormErrorSummary'
 import CreatorFeedbackAlert from '../../../components/CreatorFeedbackAlert'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
+import { buildFormErrorSummaryItems } from '../../../lib/formErrorSummary'
 import { useCreatorMockFill, useLiveDemoTypedMockFill } from '../../../hooks/useCreatorMockFill'
 import { useLiveDemoFormController } from '../../../hooks/useLiveDemoFormController'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
@@ -81,6 +83,17 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
     resolver: zodResolver(schema),
     defaultValues: initialValues
   })
+  const errorSummaryItems = useMemo(
+    () => buildFormErrorSummaryItems<FormData>(errors, [
+      { name: 'doseValue', fieldId: 'dose-val', label: f('doseValue.label') },
+      { name: 'doseUnit', fieldId: 'dose-unit', label: f('doseUnit.label') },
+      { name: 'frequency', fieldId: 'medreq-frequency', label: f('frequency.label') },
+      { name: 'route', fieldId: 'medreq-route', label: f('route.label') },
+      { name: 'durationDays', fieldId: 'duration', label: f('durationDays.label') },
+      { name: 'note', fieldId: 'note', label: f('note.label') }
+    ]),
+    [errors, t]
+  )
 
   const fillMock = useCreatorMockFill<FormData>('medicationRequest', (key, value) => {
     setValue(key as keyof FormData, value as never)
@@ -219,7 +232,7 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
   useLiveDemoFormController('medicationRequest', fillMock, handleSubmit, onSubmit, fillDemo)
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex justify-end">
         <Button type="button" variant="ghost" size="sm" onClick={fillMock} className="h-7 px-2 text-xs text-muted-foreground">
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
@@ -237,6 +250,12 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
       )}
 
       <FormGuideCard title={f('introTitle')} description={f('introHint')} />
+
+      <FormErrorSummary
+        title={t('forms.shared.errorSummaryTitle', { count: errorSummaryItems.length })}
+        description={t('forms.shared.errorSummaryDescription')}
+        items={errorSummaryItems}
+      />
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
@@ -256,7 +275,7 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
       <div className="space-y-2">
         <Label>{f('frequency.label')} *</Label>
         <Select value={selectedFreq} onValueChange={(v) => setValue('frequency', v)}>
-          <SelectTrigger>
+          <SelectTrigger id="medreq-frequency">
             <SelectValue placeholder={f('frequency.placeholder')} />
           </SelectTrigger>
           <SelectContent>
@@ -272,7 +291,7 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
       <div className="space-y-2">
         <Label>{f('route.label')} *</Label>
         <Select value={selectedRoute} onValueChange={(v) => setValue('route', v)}>
-          <SelectTrigger>
+          <SelectTrigger id="medreq-route">
             <SelectValue placeholder={f('route.placeholder')} />
           </SelectTrigger>
           <SelectContent>

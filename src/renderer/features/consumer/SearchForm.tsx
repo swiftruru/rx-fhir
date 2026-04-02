@@ -14,6 +14,7 @@ import { getBundleFileErrorMessage, importBundleJson } from '../../services/bund
 import { searchBundles, buildSearchUrl, type QueryStep } from '../../services/fhirClient'
 import { extractSearchResults } from '../../services/searchService'
 import { useAppStore } from '../../store/appStore'
+import { useAccessibilityStore } from '../../store/accessibilityStore'
 import type { BundleSummary, SearchParams } from '../../types/fhir.d'
 import type { ConsumerSearchExecution, SearchPrefill, SearchTab } from './searchState'
 import { getConsumerBasicMocks, getConsumerDateMocks, getConsumerComplexMocks } from '../../mocks/mockPools'
@@ -38,6 +39,28 @@ export interface SearchFormHandle {
   focusPrimaryInput: () => void
 }
 
+interface BasicSearchFormValues {
+  searchBy: 'identifier' | 'name'
+  value: string
+}
+
+interface DateSearchFormValues {
+  identifier: string
+  date: string
+}
+
+interface ComplexSearchFormValues {
+  identifier: string
+  complexBy: 'organization' | 'author'
+  orgId: string
+  authorName: string
+}
+
+function joinDescribedBy(...ids: Array<string | false | undefined>): string | undefined {
+  const resolved = ids.filter((id): id is string => Boolean(id))
+  return resolved.length > 0 ? resolved.join(' ') : undefined
+}
+
 const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   activeTab,
   onTabChange,
@@ -53,6 +76,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   const { t } = useTranslation('consumer')
   const { t: tc } = useTranslation('common')
   const locale = useAppStore((s) => s.locale)
+  const announcePolite = useAccessibilityStore((state) => state.announcePolite)
   const [loading, setLoading] = useState(false)
   const [importing, setImporting] = useState(false)
   const [lastUrl, setLastUrl] = useState<string>()
@@ -60,9 +84,11 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   const [error, setError] = useState<string>()
   const [importMessage, setImportMessage] = useState<string>()
 
-  const basicForm = useForm({ defaultValues: { searchBy: 'identifier', value: '' } })
-  const dateForm = useForm({ defaultValues: { identifier: '', date: '' } })
-  const complexForm = useForm({ defaultValues: { identifier: '', complexBy: 'organization', orgId: '', authorName: '' } })
+  const basicForm = useForm<BasicSearchFormValues>({ defaultValues: { searchBy: 'identifier', value: '' } })
+  const dateForm = useForm<DateSearchFormValues>({ defaultValues: { identifier: '', date: '' } })
+  const complexForm = useForm<ComplexSearchFormValues>({
+    defaultValues: { identifier: '', complexBy: 'organization', orgId: '', authorName: '' }
+  })
 
   const basicMockRef   = useRef(0)
   const dateMockRef    = useRef(0)
@@ -179,6 +205,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   }
 
   async function doSearch(params: SearchParams): Promise<void> {
+    announcePolite(t('search.status.searching'))
     setLoading(true)
     setError(undefined)
     setImportMessage(undefined)
@@ -221,6 +248,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   }
 
   async function handleImportBundle(): Promise<void> {
+    announcePolite(t('search.status.importing'))
     setImporting(true)
     setError(undefined)
     setImportMessage(undefined)
@@ -232,7 +260,9 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
       if (!imported) return
 
       onImportBundle(imported.summary)
-      setImportMessage(t('search.importSuccess', { fileName: imported.fileName }))
+      const message = t('search.importSuccess', { fileName: imported.fileName })
+      setImportMessage(message)
+      announcePolite(message)
     } catch (e) {
       setError(getBundleFileErrorMessage(e, tc))
     } finally {
@@ -240,7 +270,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
     }
   }
 
-  async function handleBasicSubmit(data: { searchBy: string; value: string }): Promise<void> {
+  async function handleBasicSubmit(data: BasicSearchFormValues): Promise<void> {
     await doSearch({
       mode: 'basic',
       identifier: data.searchBy === 'identifier' ? data.value : undefined,
@@ -248,20 +278,15 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
     })
   }
 
-  async function handleDateSubmit(data: { identifier: string; date: string }): Promise<void> {
+  async function handleDateSubmit(data: DateSearchFormValues): Promise<void> {
     await doSearch({ mode: 'date', identifier: data.identifier, date: data.date })
   }
 
-  async function handleComplexSubmit(data: {
-    identifier: string
-    complexBy: string
-    orgId: string
-    authorName: string
-  }): Promise<void> {
+  async function handleComplexSubmit(data: ComplexSearchFormValues): Promise<void> {
     await doSearch({
       mode: 'complex',
       identifier: data.identifier,
-      complexSearchBy: data.complexBy as 'organization' | 'author',
+      complexSearchBy: data.complexBy,
       organizationId: data.orgId,
       authorName: data.authorName
     })
@@ -270,9 +295,13 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   const searchByValue = basicForm.watch('searchBy')
   const complexBy = complexForm.watch('complexBy')
   const isBusy = loading || importing
+  const basicValueError = basicForm.formState.errors.value?.message
+  const dateIdentifierError = dateForm.formState.errors.identifier?.message
+  const dateValueError = dateForm.formState.errors.date?.message
+  const complexIdentifierError = complexForm.formState.errors.identifier?.message
 
   useEffect(() => {
-    onComplexByChange?.((complexBy as 'organization' | 'author') ?? 'organization')
+    onComplexByChange?.(complexBy ?? 'organization')
   }, [complexBy, onComplexByChange])
 
   useImperativeHandle(ref, () => ({
@@ -283,7 +312,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   }), [activeTab, basicForm, complexForm, consumerBasicMocks, consumerComplexMocks, consumerDateMocks, dateForm, importing, loading])
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" aria-busy={isBusy}>
       {importMessage && (
         <Alert variant="success">
           <AlertDescription>{importMessage}</AlertDescription>
@@ -297,7 +326,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
       )}
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="w-full">
+        <TabsList aria-label={t('search.tabListLabel')} className="w-full">
           <TabsTrigger value="basic" className="flex-1">{t('search.tabs.basic')}</TabsTrigger>
           <TabsTrigger value="date" className="flex-1">{t('search.tabs.date')}</TabsTrigger>
           <TabsTrigger value="complex" className="flex-1">{t('search.tabs.complex')}</TabsTrigger>
@@ -305,14 +334,14 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
 
         {/* Tab 1: Basic search */}
         <TabsContent value="basic">
-          <form onSubmit={basicForm.handleSubmit(handleBasicSubmit)} className="space-y-3">
+          <form noValidate onSubmit={basicForm.handleSubmit(handleBasicSubmit)} className="space-y-3">
             <div className="space-y-2">
-              <Label>{t('search.basic.searchByLabel')}</Label>
+              <Label id="basic-search-by-label">{t('search.basic.searchByLabel')}</Label>
               <Select
                 value={searchByValue}
-                onValueChange={(v) => basicForm.setValue('searchBy', v)}
+                onValueChange={(v) => basicForm.setValue('searchBy', v as BasicSearchFormValues['searchBy'])}
               >
-                <SelectTrigger>
+                <SelectTrigger id="basic-search-by" aria-labelledby="basic-search-by-label">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -327,9 +356,20 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
               </Label>
               <Input
                 id="basic-value"
+                aria-invalid={Boolean(basicValueError)}
+                aria-describedby={joinDescribedBy(basicValueError && 'basic-value-error')}
                 placeholder={searchByValue === 'identifier' ? t('search.basic.identifierPlaceholder') : t('search.basic.namePlaceholder')}
-                {...basicForm.register('value', { required: true })}
+                {...basicForm.register('value', {
+                  required: searchByValue === 'identifier'
+                    ? t('search.errors.basicValueRequiredIdentifier')
+                    : t('search.errors.basicValueRequiredName')
+                })}
               />
+              {basicValueError && (
+                <p id="basic-value-error" role="alert" className="text-xs text-destructive">
+                  {basicValueError}
+                </p>
+              )}
             </div>
             <Button type="submit" disabled={isBusy} className="w-full">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
@@ -340,22 +380,36 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
 
         {/* Tab 2: Date search */}
         <TabsContent value="date">
-          <form onSubmit={dateForm.handleSubmit(handleDateSubmit)} className="space-y-3">
+          <form noValidate onSubmit={dateForm.handleSubmit(handleDateSubmit)} className="space-y-3">
             <div className="space-y-2">
               <Label htmlFor="date-id">{t('search.date.identifierLabel')}</Label>
               <Input
                 id="date-id"
+                aria-invalid={Boolean(dateIdentifierError)}
+                aria-describedby={joinDescribedBy(dateIdentifierError && 'date-id-error')}
                 placeholder={t('search.date.identifierPlaceholder')}
-                {...dateForm.register('identifier', { required: true })}
+                {...dateForm.register('identifier', { required: t('search.errors.dateIdentifierRequired') })}
               />
+              {dateIdentifierError && (
+                <p id="date-id-error" role="alert" className="text-xs text-destructive">
+                  {dateIdentifierError}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="search-date">{t('search.date.dateLabel')}</Label>
               <Input
                 id="search-date"
                 type="date"
-                {...dateForm.register('date', { required: true })}
+                aria-invalid={Boolean(dateValueError)}
+                aria-describedby={joinDescribedBy(dateValueError && 'search-date-error')}
+                {...dateForm.register('date', { required: t('search.errors.dateRequired') })}
               />
+              {dateValueError && (
+                <p id="search-date-error" role="alert" className="text-xs text-destructive">
+                  {dateValueError}
+                </p>
+              )}
             </div>
             <Button type="submit" disabled={isBusy} className="w-full">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
@@ -366,25 +420,32 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
 
         {/* Tab 3: Complex search */}
         <TabsContent value="complex">
-          <form onSubmit={complexForm.handleSubmit(handleComplexSubmit)} className="space-y-3">
+          <form noValidate onSubmit={complexForm.handleSubmit(handleComplexSubmit)} className="space-y-3">
             <div className="space-y-2">
               <Label htmlFor="complex-id">{t('search.complex.identifierLabel')}</Label>
               <Input
                 id="complex-id"
+                aria-invalid={Boolean(complexIdentifierError)}
+                aria-describedby={joinDescribedBy(complexIdentifierError && 'complex-id-error')}
                 placeholder={t('search.complex.identifierPlaceholder')}
-                {...complexForm.register('identifier', { required: true })}
+                {...complexForm.register('identifier', { required: t('search.errors.complexIdentifierRequired') })}
               />
+              {complexIdentifierError && (
+                <p id="complex-id-error" role="alert" className="text-xs text-destructive">
+                  {complexIdentifierError}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label>{t('search.complex.extraLabel')}</Label>
+              <Label id="complex-extra-label">{t('search.complex.extraLabel')}</Label>
               <Select
                 value={complexBy}
                 onValueChange={(v) => {
-                  complexForm.setValue('complexBy', v)
+                  complexForm.setValue('complexBy', v as ComplexSearchFormValues['complexBy'])
                   onComplexByChange?.(v as 'organization' | 'author')
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger id="complex-extra" aria-labelledby="complex-extra-label">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

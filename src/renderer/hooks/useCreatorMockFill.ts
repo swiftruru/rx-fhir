@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import type { ResourceKey } from '../types/fhir.d'
+import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useAppStore } from '../store/appStore'
 import { useLiveDemoStore } from '../store/liveDemoStore'
 import { useMockStore } from '../store/mockStore'
@@ -70,15 +71,24 @@ export function useLiveDemoTypedMockFill<T extends Record<string, unknown>>(
 ): () => Promise<void> {
   const getMockValues = useCreatorMockValues<T>(resourceKey)
   const playMode = useLiveDemoStore((state) => state.playMode)
+  const reducedMotion = useReducedMotion()
 
   return useCallback(async () => {
     const mock = getMockValues()
     if (!mock) return
 
-    const charDelay = playMode === 'auto' ? 75 : 40
-    const spaceDelay = playMode === 'auto' ? 40 : 25
-    const fieldDelay = playMode === 'auto' ? 180 : 120
-    const afterTypedFieldDelay = playMode === 'auto' ? 180 : 100
+    const charDelay = reducedMotion
+      ? playMode === 'auto' ? 42 : 28
+      : playMode === 'auto' ? 75 : 40
+    const spaceDelay = reducedMotion
+      ? playMode === 'auto' ? 24 : 16
+      : playMode === 'auto' ? 40 : 25
+    const fieldDelay = reducedMotion
+      ? playMode === 'auto' ? 88 : 64
+      : playMode === 'auto' ? 180 : 120
+    const afterTypedFieldDelay = reducedMotion
+      ? playMode === 'auto' ? 76 : 52
+      : playMode === 'auto' ? 180 : 100
 
     for (const [key, value] of Object.entries(mock)) {
       if (shouldTypeValue(key, value)) {
@@ -95,5 +105,5 @@ export function useLiveDemoTypedMockFill<T extends Record<string, unknown>>(
       applyValue(key as keyof T, value as T[keyof T])
       await sleep(fieldDelay)
     }
-  }, [applyValue, getMockValues, playMode])
+  }, [applyValue, getMockValues, playMode, reducedMotion])
 }

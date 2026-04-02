@@ -14,6 +14,7 @@
   "error": {
     "title": "特色導覽中斷"
   },
+  "reducedMotionHint": "你目前啟用了減少動態效果，spotlight 與導覽卡片會改成較靜態的轉換，自動播放也會縮短停留時間。",
   "sections": {
     "feature": "這是什麼",
     "problem": "解決什麼問題",

@@ -16,7 +16,9 @@ const bundleJsonBridge = {
       content?: string
     }>,
   openExternalUrl: (url: string) =>
-    ipcRenderer.invoke('external-url:open', url) as Promise<{ opened: boolean }>
+    ipcRenderer.invoke('external-url:open', url) as Promise<{ opened: boolean }>,
+  setAppZoomFactor: (zoomFactor: number) =>
+    ipcRenderer.invoke('app-zoom:set', zoomFactor) as Promise<{ zoomFactor: number }>
 }
 
 if (process.contextIsolated) {

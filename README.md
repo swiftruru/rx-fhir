@@ -3,7 +3,7 @@
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.13-d4779a?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.14-d4779a?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/github/license/swiftruru/rx-fhir?style=flat-square&color=d4779a" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-8e8e93?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
@@ -170,10 +170,23 @@ Search and inspect FHIR Bundles on the configured server:
 - Live server health check via `/metadata`
 - Testing the currently active server now immediately syncs the global connection status shown in Settings and the status bar
 - A dedicated Keyboard Shortcuts settings tab lets users inspect active bindings, customize selected shortcuts, detect conflicts, and restore defaults
+- Accessibility preferences now include motion behavior, text scale, full-app zoom, and enhanced keyboard focus visibility
+- App shell accessibility now includes a skip link, route-aware focus management, screen-reader announcements, and clearer status semantics
+- High-contrast, forced-colors, stronger disabled states, and clearer selected-state indicators are now supported across shared UI components
 - Light / Dark / System theme toggle
 - `zh-TW` / `en` language toggle
 - Embedded `Noto Sans TC` UI font for more consistent offline typography, especially on Windows
 - Custom macOS app naming, icon, and About window
+
+### Accessibility Highlights
+
+- Keyboard-first navigation across Creator, Consumer, Settings, dialogs, and shortcut help
+- Route-aware focus restoration, visible focus indicators, and an optional enhanced focus mode
+- Screen-reader support for page changes, async status updates, form errors, search results, stepper progress, and shortcut editing feedback
+- Reduced-motion support that still preserves the typed Live Demo rhythm, with user control through Settings
+- Text scale and Electron-level UI zoom preferences stored locally
+- JSON Viewer and FHIR Request Inspector now support readable summary mode in addition to raw JSON
+- Accessibility roadmap, checklist, component rules, and manual test docs are included under `docs/accessibility/`
 
 ---
 
@@ -272,6 +285,12 @@ npm run dev
 npm run typecheck
 ```
 
+### Accessibility Smoke Check
+
+```bash
+npm run a11y:check
+```
+
 ### Build
 
 ```bash
@@ -322,6 +341,7 @@ src/
 Current repository quality signals:
 
 - TypeScript typecheck is available and passes
+- Accessibility smoke check is available and passes
 - Production build is available and passes locally
 - No automated test suite is currently included
 
@@ -337,6 +357,7 @@ This repository now follows a version-scoped release process:
    - create or update `changelog/vX.Y.Z.md`
    - open `$EDITOR` for the changelog if it needs to scaffold a new file
    - update `package.json`, `package-lock.json`, and the README version badge
+   - run `npm run a11y:check`
    - run `npm run typecheck`
    - commit `Release vX.Y.Z`
    - create the matching annotated Git tag

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { LIVE_DEMO_STEPS } from '../demo/liveDemoScript'
 import type { LiveDemoControllerKey, LiveDemoStepDefinition } from '../demo/types'
 import { getPrimaryDemoScenarioId } from '../mocks/selectors'
+import { useReducedMotion } from '../hooks/useReducedMotion'
 import { resetLoggedRequests } from '../services/fhirClient'
 import { useAppStore } from '../store/appStore'
 import { useCreatorStore } from '../store/creatorStore'
@@ -14,8 +15,15 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-function getAutoPlaybackDelay(ms: number): number {
-  return Math.round(ms * 1.5)
+function getPlaybackDelay(ms: number, playMode: 'manual' | 'auto', reducedMotion: boolean): number {
+  if (ms <= 0) return 0
+  if (!reducedMotion) {
+    return playMode === 'auto' ? Math.round(ms * 1.5) : ms
+  }
+
+  return playMode === 'auto'
+    ? Math.min(520, Math.max(120, Math.round(ms * 0.42)))
+    : Math.min(360, Math.max(90, Math.round(ms * 0.34)))
 }
 
 async function waitUntilRunningOrAbort(runId: number): Promise<void> {
@@ -63,7 +71,7 @@ async function waitForController(runId: number, key: LiveDemoControllerKey) {
   return useLiveDemoStore.getState().controllers[key]
 }
 
-async function runCreatorStep(runId: number, step: LiveDemoStepDefinition): Promise<void> {
+async function runCreatorStep(runId: number, step: LiveDemoStepDefinition, reducedMotion: boolean): Promise<void> {
   const liveDemo = useLiveDemoStore.getState()
   const playMode = useLiveDemoStore.getState().playMode
   if (typeof step.creatorStepIndex === 'number') {
@@ -72,7 +80,7 @@ async function runCreatorStep(runId: number, step: LiveDemoStepDefinition): Prom
 
   liveDemo.setPhase('intro')
   if (playMode === 'auto') {
-    await waitForDelay(runId, getAutoPlaybackDelay(step.introDelayMs ?? 1000))
+    await waitForDelay(runId, getPlaybackDelay(step.introDelayMs ?? 1000, playMode, reducedMotion))
   } else {
     await waitForStepTrigger(runId)
   }
@@ -86,7 +94,7 @@ async function runCreatorStep(runId: number, step: LiveDemoStepDefinition): Prom
       await controller.fillDemo()
     } else {
       controller?.fillMock?.()
-      await waitForDelay(runId, 650)
+      await waitForDelay(runId, getPlaybackDelay(650, playMode, reducedMotion))
     }
   }
 
@@ -103,17 +111,13 @@ async function runCreatorStep(runId: number, step: LiveDemoStepDefinition): Prom
   }
 
   liveDemo.setPhase('reviewing')
-  await waitForDelay(
-    runId,
-    playMode === 'auto'
-      ? getAutoPlaybackDelay(step.settleDelayMs ?? 1100)
-      : (step.settleDelayMs ?? 1100)
-  )
+  await waitForDelay(runId, getPlaybackDelay(step.settleDelayMs ?? 1100, playMode, reducedMotion))
 }
 
 export default function LiveDemoRunner(): null {
   const runId = useLiveDemoStore((state) => state.runId)
   const navigate = useNavigate()
+  const reducedMotion = useReducedMotion()
 
   useEffect(() => {
     if (runId === 0) return
@@ -136,7 +140,10 @@ export default function LiveDemoRunner(): null {
         demoStore.resetConsumerSearchReady()
         navigate('/creator')
         demoStore.setPhase('preparing')
-        await waitForDelay(runId, useLiveDemoStore.getState().playMode === 'auto' ? 900 : 500)
+        await waitForDelay(
+          runId,
+          getPlaybackDelay(900, useLiveDemoStore.getState().playMode, reducedMotion)
+        )
 
         for (const [index, step] of LIVE_DEMO_STEPS.entries()) {
           if (disposed) return
@@ -156,26 +163,30 @@ export default function LiveDemoRunner(): null {
             demoStore.resetConsumerSearchReady()
             demoStore.setPhase('intro')
             if (useLiveDemoStore.getState().playMode === 'auto') {
-              await waitForDelay(runId, getAutoPlaybackDelay(step.introDelayMs ?? 1000))
+              await waitForDelay(
+                runId,
+                getPlaybackDelay(step.introDelayMs ?? 1000, useLiveDemoStore.getState().playMode, reducedMotion)
+              )
             } else {
               await waitForStepTrigger(runId)
             }
             demoStore.setPhase('navigating')
             navigate('/consumer', { state: launchState })
-            await waitForDelay(runId, useLiveDemoStore.getState().playMode === 'auto' ? 800 : 450)
+            await waitForDelay(
+              runId,
+              getPlaybackDelay(800, useLiveDemoStore.getState().playMode, reducedMotion)
+            )
             demoStore.setPhase('searching')
             await waitForCondition(runId, () => useLiveDemoStore.getState().consumerSearchReady)
             demoStore.setPhase('reviewing')
             await waitForDelay(
               runId,
-              useLiveDemoStore.getState().playMode === 'auto'
-                ? getAutoPlaybackDelay(step.settleDelayMs ?? 1400)
-                : (step.settleDelayMs ?? 1400)
+              getPlaybackDelay(step.settleDelayMs ?? 1400, useLiveDemoStore.getState().playMode, reducedMotion)
             )
             continue
           }
 
-          await runCreatorStep(runId, step)
+          await runCreatorStep(runId, step, reducedMotion)
         }
 
         useLiveDemoStore.getState().complete()
@@ -196,7 +207,7 @@ export default function LiveDemoRunner(): null {
     return () => {
       disposed = true
     }
-  }, [navigate, runId])
+  }, [navigate, reducedMotion, runId])
 
   return null
 }

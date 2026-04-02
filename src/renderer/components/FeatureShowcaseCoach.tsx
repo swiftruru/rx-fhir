@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Presentation, Pause, Play, SkipBack, SkipForward, Square, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useReducedMotion } from '../hooks/useReducedMotion'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { useFeatureShowcaseStore } from '../store/featureShowcaseStore'
@@ -164,6 +165,7 @@ function getConnectorLineClass(side: CoachSide): string {
 
 export default function FeatureShowcaseCoach(): React.JSX.Element | null {
   const { t } = useTranslation('showcase')
+  const reducedMotion = useReducedMotion()
   const status = useFeatureShowcaseStore((state) => state.status)
   const autoplay = useFeatureShowcaseStore((state) => state.autoplay)
   const currentStepId = useFeatureShowcaseStore((state) => state.currentStepId)
@@ -227,14 +229,13 @@ export default function FeatureShowcaseCoach(): React.JSX.Element | null {
   }, [cardHeight, completed, failed, placement, spotlightPadding, target])
 
   useLayoutEffect(() => {
-    if (status === 'idle') return
+    if (status === 'idle' || reducedMotion) return
     setPanelAnimationKey((value) => value + 1)
-  }, [currentStepId, currentStepIndex, currentTargetId, coachPosition.side, status])
+  }, [coachPosition.side, currentStepId, currentStepIndex, currentTargetId, reducedMotion, status])
 
   if (status === 'idle') return null
 
   const panelMotionStyle: React.CSSProperties = {
-    animation: 'feature-showcase-coach-shift 520ms cubic-bezier(0.22, 1, 0.36, 1)',
     transformOrigin:
       coachPosition.side === 'left'
         ? 'right center'
@@ -244,15 +245,26 @@ export default function FeatureShowcaseCoach(): React.JSX.Element | null {
             ? 'center bottom'
             : 'center top',
     ['--showcase-coach-translate-x' as any]:
-      coachPosition.side === 'left' ? '-12px' : coachPosition.side === 'right' ? '12px' : '0px',
+      reducedMotion ? '0px' : coachPosition.side === 'left' ? '-12px' : coachPosition.side === 'right' ? '12px' : '0px',
     ['--showcase-coach-translate-y' as any]:
-      coachPosition.side === 'top' ? '-12px' : coachPosition.side === 'bottom' ? '12px' : '0px'
+      reducedMotion ? '0px' : coachPosition.side === 'top' ? '-12px' : coachPosition.side === 'bottom' ? '12px' : '0px'
+  }
+
+  if (!reducedMotion) {
+    panelMotionStyle.animation = 'feature-showcase-coach-shift 520ms cubic-bezier(0.22, 1, 0.36, 1)'
   }
 
   return (
-    <div className="pointer-events-none fixed z-50 transition-all duration-500 ease-out" style={coachPosition.style}>
+    <div
+      className={`pointer-events-none fixed z-50 ${
+        reducedMotion
+          ? 'transition-[top,left,right,bottom,opacity] duration-200 ease-out'
+          : 'transition-all duration-500 ease-out'
+      }`}
+      style={coachPosition.style}
+    >
       <Card
-        key={panelAnimationKey}
+        key={reducedMotion ? 'feature-showcase-coach-static' : panelAnimationKey}
         ref={cardRef}
         className="pointer-events-auto relative w-[24rem] max-w-[calc(100vw-3rem)] max-h-[calc(100vh-3rem)] overflow-auto border-primary/20 bg-background shadow-2xl ring-1 ring-border/60 dark:ring-border/80"
         style={panelMotionStyle}
@@ -261,8 +273,18 @@ export default function FeatureShowcaseCoach(): React.JSX.Element | null {
           <div
             className={`pointer-events-none absolute z-10 flex items-center justify-center text-primary/70 ${getConnectorClass(coachPosition.side)}`}
           >
-            <div className={`bg-primary/50 shadow-[0_0_8px_rgba(244,114,182,0.28)] ${getConnectorLineClass(coachPosition.side)}`} />
-            <div className="h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_0_2px_rgba(255,255,255,0.9),0_0_12px_rgba(244,114,182,0.38)] dark:shadow-[0_0_0_2px_rgba(17,24,39,0.9),0_0_12px_rgba(244,114,182,0.38)]" />
+            <div
+              className={`${getConnectorLineClass(coachPosition.side)} bg-primary/50 ${
+                reducedMotion ? '' : 'shadow-[0_0_8px_rgba(244,114,182,0.28)]'
+              }`}
+            />
+            <div
+              className={`h-2.5 w-2.5 rounded-full bg-primary ${
+                reducedMotion
+                  ? 'shadow-[0_0_0_2px_rgba(255,255,255,0.88)] dark:shadow-[0_0_0_2px_rgba(17,24,39,0.88)]'
+                  : 'shadow-[0_0_0_2px_rgba(255,255,255,0.9),0_0_12px_rgba(244,114,182,0.38)] dark:shadow-[0_0_0_2px_rgba(17,24,39,0.9),0_0_12px_rgba(244,114,182,0.38)]'
+              }`}
+            />
           </div>
         )}
         <CardHeader className="space-y-3 pb-3">
@@ -319,6 +341,12 @@ export default function FeatureShowcaseCoach(): React.JSX.Element | null {
           ) : (
             <div className="rounded-xl border border-border/70 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
               {t('preparing.description')}
+            </div>
+          )}
+
+          {reducedMotion && (
+            <div className="rounded-xl border border-border/70 bg-muted/25 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+              {t('reducedMotionHint')}
             </div>
           )}
 

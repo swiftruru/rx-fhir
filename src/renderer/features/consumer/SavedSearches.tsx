@@ -82,6 +82,7 @@ function SearchRow({
           variant="ghost"
           size="icon"
           className="h-6 w-6"
+          aria-label={t('saved.runSearch')}
           title={t('saved.runSearch')}
           onClick={() => onRun(record.params)}
         >
@@ -92,6 +93,7 @@ function SearchRow({
           variant="ghost"
           size="icon"
           className={`h-6 w-6 ${record.pinned ? 'text-amber-500 hover:text-amber-600' : 'text-muted-foreground/70'}`}
+          aria-label={record.pinned ? t('saved.unpin') : t('saved.pin')}
           title={record.pinned ? t('saved.unpin') : t('saved.pin')}
           onClick={() => togglePinned(record.id)}
         >
@@ -102,6 +104,7 @@ function SearchRow({
           variant="ghost"
           size="icon"
           className="h-6 w-6 text-muted-foreground/60 hover:text-destructive"
+          aria-label={t('saved.deleteSearch')}
           title={t('saved.deleteSearch')}
           onClick={() => removeSearch(record.id)}
         >
@@ -124,6 +127,7 @@ export default function SavedSearches({
     ? 'overflow-hidden rounded-xl border border-border bg-background shadow-sm'
     : 'border-b border-border bg-gradient-to-b from-muted/35 to-background'
   const contentMaxHeightClass = variant === 'dashboard' ? 'max-h-80' : 'max-h-44'
+  const sectionId = `saved-searches-${variant}`
 
   const { pinnedRecords, recentRecords } = useMemo(() => ({
     pinnedRecords: records.filter((record) => record.pinned),
@@ -138,6 +142,8 @@ export default function SavedSearches({
         <button
           type="button"
           onClick={onToggle}
+          aria-expanded={open}
+          aria-controls={sectionId}
           className="min-w-0 flex-1 text-left hover:text-foreground transition-colors"
         >
           <span className="mb-2 inline-flex items-center gap-1 rounded-full border border-border bg-background/90 px-2 py-0.5 text-[10px] font-medium tracking-wide text-muted-foreground shadow-sm">
@@ -170,6 +176,7 @@ export default function SavedSearches({
               event.stopPropagation()
               clearRecentSearches()
             }}
+            aria-label={t('saved.clearRecent')}
             className="mt-0.5 shrink-0 rounded-md p-1 text-muted-foreground/60 hover:bg-background hover:text-destructive transition-colors"
             title={t('saved.clearRecent')}
           >
@@ -179,7 +186,7 @@ export default function SavedSearches({
       </div>
 
       {open && (
-        <div className={`${contentMaxHeightClass} space-y-3 overflow-y-auto border-t border-border/60 px-3 pb-3 pt-3`}>
+        <div id={sectionId} className={`${contentMaxHeightClass} space-y-3 overflow-y-auto border-t border-border/60 px-3 pb-3 pt-3`}>
           {pinnedRecords.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">

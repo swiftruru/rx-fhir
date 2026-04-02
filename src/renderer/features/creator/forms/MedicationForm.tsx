@@ -9,8 +9,10 @@ import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import FormGuideCard from '../../../components/FormGuideCard'
+import FormErrorSummary from '../../../components/FormErrorSummary'
 import CreatorFeedbackAlert from '../../../components/CreatorFeedbackAlert'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
+import { buildFormErrorSummaryItems } from '../../../lib/formErrorSummary'
 import { useCreatorMockFill, useLiveDemoTypedMockFill } from '../../../hooks/useCreatorMockFill'
 import { useLiveDemoFormController } from '../../../hooks/useLiveDemoFormController'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
@@ -87,6 +89,14 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
     resolver: zodResolver(schema),
     defaultValues: initialValues
   })
+  const errorSummaryItems = useMemo(
+    () => buildFormErrorSummaryItems<FormData>(errors, [
+      { name: 'code', fieldId: 'med-code', label: f('code.label') },
+      { name: 'display', fieldId: 'med-display', label: f('name.label') },
+      { name: 'form', fieldId: 'med-form', label: f('form.label') }
+    ]),
+    [errors, t]
+  )
 
   const fillMock = useCreatorMockFill<FormData>('medication', (key, value) => {
     setValue(key as keyof FormData, value as never)
@@ -171,7 +181,7 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
   useLiveDemoFormController('medication', fillMock, handleSubmit, onSubmit, fillDemo)
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex justify-end">
         <Button type="button" variant="ghost" size="sm" onClick={fillMock} className="h-7 px-2 text-xs text-muted-foreground">
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
@@ -208,6 +218,12 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
         </ul>
       </FormGuideCard>
 
+      <FormErrorSummary
+        title={t('forms.shared.errorSummaryTitle', { count: errorSummaryItems.length })}
+        description={t('forms.shared.errorSummaryDescription')}
+        items={errorSummaryItems}
+      />
+
       <div className="space-y-2">
         <Label>{f('codeSystem.label')}</Label>
         <Select value={codeSystem} onValueChange={(v) => setValue('codeSystem', v as FormData['codeSystem'])}>
@@ -240,7 +256,7 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
       <div className="space-y-2">
         <Label>{f('form.label')} *</Label>
         <Select value={selectedForm} onValueChange={(v) => setValue('form', v)}>
-          <SelectTrigger>
+          <SelectTrigger id="med-form">
             <SelectValue placeholder={f('form.placeholder')} />
           </SelectTrigger>
           <SelectContent>

@@ -59,5 +59,43 @@
   "lang": {
     "toggle": "繁中",
     "current": "EN"
+  },
+  "accessibility": {
+    "appName": "RxFHIR",
+    "skipToMain": "Skip to main content",
+    "mainContent": "Main content",
+    "sidebar": "Application sidebar",
+    "primaryNavigation": "Primary navigation",
+    "statusBar": "Status bar",
+    "documentTitle": "{{page}} | RxFHIR",
+    "routeChanged": "Switched to the {{page}} page"
+  },
+  "jsonViewer": {
+    "copy": "Copy JSON",
+    "viewModeLabel": "JSON view mode",
+    "summary": "Summary",
+    "raw": "Raw",
+    "overview": "Overview",
+    "fields": "Fields",
+    "preview": "Preview",
+    "noSummary": "No readable summary is available for this content. Switch to the raw JSON view instead.",
+    "emptyValue": "Empty",
+    "arrayWithPreview": "{{count}} items, first item: {{preview}}",
+    "arrayItems": "{{count}} items",
+    "objectKeys": "{{count}} keys",
+    "characters": "Characters",
+    "charactersCount": "{{count}} characters",
+    "lines": "Lines",
+    "linesCount": "{{count}} lines",
+    "value": "Value",
+    "itemLabel": "Item",
+    "items": "Items",
+    "resourceType": "Resource type",
+    "resourceId": "Resource ID",
+    "primaryText": "Primary text",
+    "status": "Status",
+    "type": "Type",
+    "date": "Date",
+    "topLevelKeys": "Top-level keys"
   }
 }

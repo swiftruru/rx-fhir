@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { JsonView, allExpanded, defaultStyles } from 'react-json-view-lite'
 import 'react-json-view-lite/dist/index.css'
-import { Copy, Check, ChevronDown, ChevronUp } from 'lucide-react'
+import { Copy, Check, ChevronDown, ChevronUp, FileJson, ListTree } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from './ui/button'
 import { cn } from '../lib/utils'
+import { buildJsonSummary } from '../lib/jsonSummary'
 
 interface JsonViewerProps {
   data: unknown
   title?: string
   defaultCollapsed?: boolean
+  defaultViewMode?: 'summary' | 'raw'
   className?: string
   fontSize?: 'sm' | 'md' | 'lg'
   fillHeight?: boolean
@@ -22,13 +25,16 @@ export default function JsonViewer({
   data,
   title,
   defaultCollapsed = false,
+  defaultViewMode = 'raw',
   className,
   fontSize = 'sm',
   fillHeight = false,
   collapseSync
 }: JsonViewerProps): React.JSX.Element {
+  const { t } = useTranslation('common')
   const [copied, setCopied] = useState(false)
   const [collapsed, setCollapsed] = useState(defaultCollapsed)
+  const [viewMode, setViewMode] = useState<'summary' | 'raw'>(defaultViewMode)
   const [isDark, setIsDark] = useState(() =>
     typeof document !== 'undefined' ? document.documentElement.classList.contains('dark') : false
   )
@@ -48,6 +54,10 @@ export default function JsonViewer({
     if (!collapseSync) return
     setCollapsed(collapseSync.value)
   }, [collapseSync?.token, collapseSync?.value])
+
+  useEffect(() => {
+    setViewMode(defaultViewMode)
+  }, [defaultViewMode])
 
   const jsonTheme = useMemo(() => ({
     ...defaultStyles,
@@ -72,6 +82,8 @@ export default function JsonViewer({
     noQuotesForStringValues: false
   }), [fontSize, isDark])
 
+  const summary = useMemo(() => buildJsonSummary(data, t), [data, t])
+
   const headerClasses = isDark
     ? 'bg-card border-border'
     : 'bg-secondary/70 border-border'
@@ -81,7 +93,8 @@ export default function JsonViewer({
     : 'bg-white/90'
 
   function handleCopy(): void {
-    navigator.clipboard.writeText(JSON.stringify(data, null, 2))
+    const content = typeof data === 'string' ? data : JSON.stringify(data, null, 2)
+    navigator.clipboard.writeText(content)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -104,16 +117,53 @@ export default function JsonViewer({
             {title && <span className="font-mono font-medium">{title}</span>}
           </button>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-background/70"
-          onClick={handleCopy}
-          title="複製 JSON"
-        >
-          {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <div
+            role="group"
+            aria-label={t('jsonViewer.viewModeLabel')}
+            className="inline-flex items-center rounded-md border border-border/70 bg-background/80 p-0.5"
+          >
+            <button
+              type="button"
+              onClick={() => setViewMode('summary')}
+              aria-pressed={viewMode === 'summary'}
+              className={cn(
+                'inline-flex items-center gap-1 rounded px-2 py-1 text-[10px] font-medium transition-colors',
+                viewMode === 'summary'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <ListTree className="h-3.5 w-3.5" />
+              <span>{t('jsonViewer.summary')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('raw')}
+              aria-pressed={viewMode === 'raw'}
+              className={cn(
+                'inline-flex items-center gap-1 rounded px-2 py-1 text-[10px] font-medium transition-colors',
+                viewMode === 'raw'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <FileJson className="h-3.5 w-3.5" />
+              <span>{t('jsonViewer.raw')}</span>
+            </button>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-background/70"
+            onClick={handleCopy}
+            title={t('jsonViewer.copy')}
+            aria-label={t('jsonViewer.copy')}
+          >
+            {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+          </Button>
+        </div>
       </div>
 
       {/* JSON content */}
@@ -125,13 +175,76 @@ export default function JsonViewer({
             contentClasses
           )}
         >
-          <div className="w-fit min-w-full p-3 align-top">
-            <JsonView
-              data={data as object}
-              shouldExpandNode={allExpanded}
-              style={jsonTheme}
-            />
-          </div>
+          {viewMode === 'summary' ? (
+            <div className="space-y-4 p-3 text-xs text-foreground">
+              {summary.overview.length > 0 && (
+                <section aria-label={t('jsonViewer.overview')} className="space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t('jsonViewer.overview')}
+                  </p>
+                  <dl className="grid gap-2 sm:grid-cols-2">
+                    {summary.overview.map((item) => (
+                      <div key={`${item.label}-${item.value}`} className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+                        <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                          {item.label}
+                        </dt>
+                        <dd className="mt-1 text-sm font-medium text-foreground break-words">
+                          {item.value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              )}
+
+              {summary.fields.length > 0 && (
+                <section aria-label={t('jsonViewer.fields')} className="space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t('jsonViewer.fields')}
+                  </p>
+                  <dl className="space-y-2">
+                    {summary.fields.map((item) => (
+                      <div key={`${item.label}-${item.value}`} className="rounded-lg border border-border/70 bg-muted/10 px-3 py-2">
+                        <dt className="text-[11px] font-medium text-muted-foreground">
+                          {item.label}
+                        </dt>
+                        <dd className="mt-1 break-words text-sm text-foreground">
+                          {item.value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              )}
+
+              {summary.preview && (
+                <section aria-label={t('jsonViewer.preview')} className="space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t('jsonViewer.preview')}
+                  </p>
+                  <div className="rounded-lg border border-border/70 bg-muted/10 px-3 py-2">
+                    <p className="whitespace-pre-wrap break-words text-sm leading-6 text-foreground">
+                      {summary.preview}
+                    </p>
+                  </div>
+                </section>
+              )}
+
+              {summary.overview.length === 0 && summary.fields.length === 0 && !summary.preview && (
+                <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 px-3 py-4 text-xs text-muted-foreground">
+                  {t('jsonViewer.noSummary')}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="w-fit min-w-full p-3 align-top">
+              <JsonView
+                data={data as never}
+                shouldExpandNode={allExpanded}
+                style={jsonTheme}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

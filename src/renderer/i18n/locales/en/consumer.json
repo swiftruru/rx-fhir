@@ -23,6 +23,7 @@
   "search": {
     "importButton": "Import Bundle JSON",
     "importSuccess": "Imported local Bundle: {{fileName}}",
+    "tabListLabel": "Search modes",
     "tabs": {
       "basic":   "Basic",
       "date":    "Date",
@@ -70,6 +71,17 @@
       "authorFallback": "(author chain is unsupported, so the app falls back to identifier search and filters afterward)",
       "filteredCounts": "Fetched {{fetched}} candidate bundle(s) -> matched {{matched}}",
       "organizationNotFound": "No organization matched the organization code."
+    },
+    "errors": {
+      "basicValueRequiredIdentifier": "Enter a patient identifier.",
+      "basicValueRequiredName": "Enter a patient name.",
+      "dateIdentifierRequired": "Enter a patient identifier.",
+      "dateRequired": "Select a prescription date.",
+      "complexIdentifierRequired": "Enter a patient identifier."
+    },
+    "status": {
+      "searching": "Searching prescriptions.",
+      "importing": "Importing a local Bundle."
     },
     "error": "Search failed"
   },
@@ -153,17 +165,31 @@
       "checkAuthor": "Confirm that the physician name exactly matches the value stored in the prescription details.",
       "broadenSearch": "Try removing the additional filter first, then narrow the results step by step."
     },
+    "keyboardHint": "Use the Up and Down arrow keys to move between results, then press Enter to open details.",
+    "listLabel": "Search results",
+    "announcements": {
+      "searchCompleted": "Search completed. {{count}} result(s) are available.",
+      "searchCompletedFiltered": "Search completed. Showing {{count}} result(s) out of {{total}}.",
+      "noResults": "Search completed, but no matching results were found.",
+      "searchFailed": "Search failed and no results were loaded.",
+      "bundleImported": "Imported a Bundle for {{patient}}."
+    },
     "count":          "Found {{total}} result(s)",
     "showing":        "Showing {{count}}",
+    "selectedBadge": "Selected",
     "unknownPatient": "Unknown Patient",
     "importedBadge": "Local Import"
   },
   "detail": {
     "title": "Prescription Details",
+    "closeButton": "Close prescription details",
+    "viewModeLabel": "Detail view mode",
     "toggleJson":       "JSON",
     "toggleStructured": "Structured",
+    "rawJsonTitle": "Raw FHIR JSON",
     "exportButton": "Export JSON",
     "exportSuccess": "Bundle JSON exported: {{fileName}}",
+    "exportSuccessAnnouncement": "Bundle JSON exported as {{fileName}}.",
     "importedBadge": "Local Import",
     "sections": {
       "prescription": {

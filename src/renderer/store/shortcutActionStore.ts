@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { SearchTab } from '../features/consumer/searchState'
 
-export type SettingsShortcutTab = 'server' | 'shortcuts'
+export type SettingsShortcutTab = 'server' | 'accessibility' | 'shortcuts'
 export type ConsumerMiddleTab = 'results' | 'quickstart'
 
 interface CreatorShortcutActions {

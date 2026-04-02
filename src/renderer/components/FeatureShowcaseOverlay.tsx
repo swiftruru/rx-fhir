@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useFeatureShowcaseStore } from '../store/featureShowcaseStore'
 
 const SPOTLIGHT_VIGNETTE_PADDING = 220
@@ -9,6 +10,7 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 export default function FeatureShowcaseOverlay(): React.JSX.Element | null {
+  const reducedMotion = useReducedMotion()
   const status = useFeatureShowcaseStore((state) => state.status)
   const currentTargetId = useFeatureShowcaseStore((state) => state.currentTargetId)
   const targets = useFeatureShowcaseStore((state) => state.targets)
@@ -32,15 +34,15 @@ export default function FeatureShowcaseOverlay(): React.JSX.Element | null {
   }, [padding, target])
 
   useEffect(() => {
-    if (!active || !currentTargetId) return
+    if (!active || !currentTargetId || reducedMotion) return
     setRingAnimationKey((value) => value + 1)
-  }, [active, currentTargetId, spotlight?.top, spotlight?.left, spotlight?.width, spotlight?.height])
+  }, [active, currentTargetId, reducedMotion, spotlight?.top, spotlight?.left, spotlight?.width, spotlight?.height])
 
   if (!active || !spotlight) return null
 
   const ringClass =
     highlightStyle === 'pulse'
-      ? 'border-primary/80 shadow-[0_0_0_1px_rgba(244,114,182,0.22),0_0_32px_rgba(244,114,182,0.28)] animate-pulse'
+      ? `border-primary/80 shadow-[0_0_0_1px_rgba(244,114,182,0.22),0_0_32px_rgba(244,114,182,0.28)] ${reducedMotion ? '' : 'animate-pulse'}`
       : highlightStyle === 'focus'
         ? 'border-primary/90 shadow-[0_0_0_1px_rgba(244,114,182,0.26),0_0_40px_rgba(244,114,182,0.34)]'
         : 'border-primary/75 shadow-[0_0_0_1px_rgba(244,114,182,0.18),0_0_28px_rgba(244,114,182,0.24)]'
@@ -52,9 +54,13 @@ export default function FeatureShowcaseOverlay(): React.JSX.Element | null {
   const outerVignetteRadius = innerVignetteRadius + SPOTLIGHT_OUTER_VIGNETTE
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-40">
+    <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-40">
       <div
-        className="absolute rounded-2xl transition-all duration-500 ease-out"
+        className={`absolute rounded-2xl ${
+          reducedMotion
+            ? 'transition-[top,left,width,height,opacity] duration-200 ease-out'
+            : 'transition-all duration-500 ease-out'
+        }`}
         style={{
           top: spotlight.top,
           left: spotlight.left,
@@ -65,21 +71,27 @@ export default function FeatureShowcaseOverlay(): React.JSX.Element | null {
       />
 
       <div
-        className="absolute inset-0 transition-all duration-500 ease-out"
+        className={`absolute inset-0 ${reducedMotion ? 'transition-opacity duration-200 ease-out' : 'transition-all duration-500 ease-out'}`}
         style={{
           background: `radial-gradient(circle at ${spotlightCenterX}px ${spotlightCenterY}px, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${innerVignetteRadius}px, rgba(0,0,0,0.08) ${innerVignetteRadius + 60}px, rgba(0,0,0,0.18) ${innerVignetteRadius + 140}px, rgba(0,0,0,0.30) ${innerVignetteRadius + 240}px, rgba(0,0,0,0.40) ${outerVignetteRadius}px, rgba(0,0,0,0.44) ${outerVignetteRadius + 80}px)`
         }}
       />
 
       <div
-        key={ringAnimationKey}
-        className={`absolute rounded-2xl border-2 bg-white/4 transition-all duration-500 ease-out ${ringClass}`}
+        key={reducedMotion ? 'feature-showcase-ring-static' : ringAnimationKey}
+        className={`absolute rounded-2xl border-2 bg-white/4 ${
+          reducedMotion
+            ? 'transition-[top,left,width,height,opacity,box-shadow] duration-200 ease-out'
+            : 'transition-all duration-500 ease-out'
+        } ${ringClass}`}
         style={{
           top: spotlight.top,
           left: spotlight.left,
           width: spotlight.width,
           height: spotlight.height,
-          animation: 'feature-showcase-spotlight-shift 620ms cubic-bezier(0.22, 1, 0.36, 1)'
+          ...(reducedMotion
+            ? {}
+            : { animation: 'feature-showcase-spotlight-shift 620ms cubic-bezier(0.22, 1, 0.36, 1)' })
         }}
       />
     </div>

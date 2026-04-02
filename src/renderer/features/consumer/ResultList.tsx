@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { FileText, CalendarDays, Building2, Pill, Stethoscope, Lightbulb, SearchX, TriangleAlert } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '../../components/ui/badge'
@@ -145,6 +146,31 @@ function getSuggestionTexts(execution: ConsumerSearchExecution, t: (key: string,
 
 export default function ResultList({ results, total, searchExecution, selected, onSelect }: Props): React.JSX.Element {
   const { t } = useTranslation('consumer')
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
+  const selectedIndex = selected ? results.findIndex((summary) => summary.id === selected.id) : -1
+
+  function focusOption(index: number): void {
+    optionRefs.current[index]?.focus()
+  }
+
+  function handleOptionKeyDown(event: React.KeyboardEvent<HTMLButtonElement>, index: number): void {
+    let nextIndex: number | null = null
+
+    if (event.key === 'ArrowDown') {
+      nextIndex = Math.min(results.length - 1, index + 1)
+    } else if (event.key === 'ArrowUp') {
+      nextIndex = Math.max(0, index - 1)
+    } else if (event.key === 'Home') {
+      nextIndex = 0
+    } else if (event.key === 'End') {
+      nextIndex = results.length - 1
+    }
+
+    if (nextIndex === null || nextIndex === index) return
+
+    event.preventDefault()
+    focusOption(nextIndex)
+  }
 
   if (results.length === 0) {
     const criteriaBadges = searchExecution ? getCriteriaBadges(searchExecution, t) : []
@@ -206,7 +232,7 @@ export default function ResultList({ results, total, searchExecution, selected, 
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-2 border-b bg-muted/30 flex items-center gap-2 shrink-0">
+      <div role="status" aria-live="polite" className="px-4 py-2 border-b bg-muted/30 flex items-center gap-2 shrink-0">
         <Badge variant="secondary" className="text-xs">{t('results.count', { total })}</Badge>
         {total !== results.length && (
           <span className="text-xs text-muted-foreground">{t('results.showing', { count: results.length })}</span>
@@ -214,78 +240,109 @@ export default function ResultList({ results, total, searchExecution, selected, 
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-3 space-y-2">
-          {results.map((summary) => (
-            <Card
-              key={summary.id}
-              className={`cursor-pointer transition-all hover:shadow-md ${
-                selected?.id === summary.id ? 'ring-2 ring-primary border-primary' : ''
-              }`}
-              onClick={() => onSelect(summary)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm truncate">
-                        {summary.patientName || t('results.unknownPatient')}
-                      </span>
-                      {summary.source === 'imported' && (
-                        <Badge variant="secondary" className="text-[10px]">
-                          {t('results.importedBadge')}
-                        </Badge>
-                      )}
-                      {summary.patientIdentifier && (
-                        <Badge variant="outline" className="text-[10px] font-mono shrink-0">
-                          {summary.patientIdentifier}
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                      {summary.fileName && (
-                        <span className="truncate max-w-[180px]" title={summary.fileName}>
-                          {summary.fileName}
-                        </span>
-                      )}
-                      {summary.date && (
-                        <span className="flex items-center gap-1">
-                          <CalendarDays className="h-3 w-3" />
-                          {summary.date.slice(0, 10)}
-                        </span>
-                      )}
-                      {summary.organizationName && (
-                        <span className="flex items-center gap-1">
-                          <Building2 className="h-3 w-3" />
-                          {summary.organizationName}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap gap-1">
-                      {(summary.conditions ?? []).slice(0, 2).map((c, i) => (
-                        <Badge key={i} variant="secondary" className="text-[10px]">
-                          <Stethoscope className="h-2.5 w-2.5 mr-1" />
-                          {c}
-                        </Badge>
-                      ))}
-                      {(summary.medications ?? []).slice(0, 2).map((m, i) => (
-                        <Badge key={i} variant="outline" className="text-[10px]">
-                          <Pill className="h-2.5 w-2.5 mr-1" />
-                          {m}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <code className="text-[10px] text-muted-foreground font-mono shrink-0 max-w-[80px] truncate" title={summary.id}>
-                    {summary.id}
-                  </code>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div id="consumer-results-keyboard-hint" className="sr-only">
+          {t('results.keyboardHint')}
         </div>
+        <ul
+          role="listbox"
+          aria-label={t('results.listLabel')}
+          aria-describedby="consumer-results-keyboard-hint"
+          className="p-3 space-y-2"
+        >
+          {results.map((summary, index) => {
+            const isSelected = selected?.id === summary.id
+            const patientName = summary.patientName || t('results.unknownPatient')
+            const optionTabIndex = selectedIndex >= 0 ? (selectedIndex === index ? 0 : -1) : index === 0 ? 0 : -1
+            const optionDescriptionId = `consumer-result-${summary.id}-description`
+
+            return (
+              <li key={summary.id}>
+                <Card className={isSelected ? 'ring-2 ring-primary border-primary' : ''}>
+                  <button
+                    ref={(element) => {
+                      optionRefs.current[index] = element
+                    }}
+                    type="button"
+                    role="option"
+                    data-result-id={summary.id}
+                    aria-selected={isSelected}
+                    aria-describedby={optionDescriptionId}
+                    tabIndex={optionTabIndex}
+                    onClick={() => onSelect(summary)}
+                    onKeyDown={(event) => handleOptionKeyDown(event, index)}
+                    className="w-full rounded-lg text-left transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm truncate">
+                              {patientName}
+                            </span>
+                            {isSelected && (
+                              <Badge variant="default" className="text-[10px]">
+                                {t('results.selectedBadge')}
+                              </Badge>
+                            )}
+                            {summary.source === 'imported' && (
+                              <Badge variant="secondary" className="text-[10px]">
+                                {t('results.importedBadge')}
+                              </Badge>
+                            )}
+                            {summary.patientIdentifier && (
+                              <Badge variant="outline" className="text-[10px] font-mono shrink-0">
+                                {summary.patientIdentifier}
+                              </Badge>
+                            )}
+                          </div>
+
+                          <div id={optionDescriptionId} className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                            {summary.fileName && (
+                              <span className="truncate max-w-[180px]" title={summary.fileName}>
+                                {summary.fileName}
+                              </span>
+                            )}
+                            {summary.date && (
+                              <span className="flex items-center gap-1">
+                                <CalendarDays aria-hidden="true" className="h-3 w-3" />
+                                {summary.date.slice(0, 10)}
+                              </span>
+                            )}
+                            {summary.organizationName && (
+                              <span className="flex items-center gap-1">
+                                <Building2 aria-hidden="true" className="h-3 w-3" />
+                                {summary.organizationName}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap gap-1">
+                            {(summary.conditions ?? []).slice(0, 2).map((c, i) => (
+                              <Badge key={i} variant="secondary" className="text-[10px]">
+                                <Stethoscope aria-hidden="true" className="h-2.5 w-2.5 mr-1" />
+                                {c}
+                              </Badge>
+                            ))}
+                            {(summary.medications ?? []).slice(0, 2).map((m, i) => (
+                              <Badge key={i} variant="outline" className="text-[10px]">
+                                <Pill aria-hidden="true" className="h-2.5 w-2.5 mr-1" />
+                                {m}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+
+                        <code className="text-[10px] text-muted-foreground font-mono shrink-0 max-w-[80px] truncate" title={summary.id}>
+                          {summary.id}
+                        </code>
+                      </div>
+                    </CardContent>
+                  </button>
+                </Card>
+              </li>
+            )
+          })}
+        </ul>
       </ScrollArea>
     </div>
   )

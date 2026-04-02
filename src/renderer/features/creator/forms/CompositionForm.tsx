@@ -10,8 +10,10 @@ import { useAppStore } from '../../../store/appStore'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
+import FormErrorSummary from '../../../components/FormErrorSummary'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
 import JsonViewer from '../../../components/JsonViewer'
+import { buildFormErrorSummaryItems } from '../../../lib/formErrorSummary'
 import { useCreatorMockFill, useLiveDemoTypedMockFill } from '../../../hooks/useCreatorMockFill'
 import { useLiveDemoFormController } from '../../../hooks/useLiveDemoFormController'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
@@ -73,6 +75,13 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
     resolver: zodResolver(schema),
     defaultValues: initialValues
   })
+  const errorSummaryItems = useMemo(
+    () => buildFormErrorSummaryItems<FormData>(errors, [
+      { name: 'title', fieldId: 'comp-title', label: f('docTitle.label') },
+      { name: 'date', fieldId: 'comp-date', label: f('date.label') }
+    ]),
+    [errors, t]
+  )
 
   const fillMock = useCreatorMockFill<FormData>('composition', (key, value) => {
     setValue(key as keyof FormData, value as never)
@@ -169,7 +178,7 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
   ] as const
 
   return (
-    <form id="composition-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form id="composition-form" noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="flex items-center justify-end gap-2">
           <Button
             type="button"
@@ -186,6 +195,11 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
             <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
           </Button>
         </div>
+        <FormErrorSummary
+          title={t('forms.shared.errorSummaryTitle', { count: errorSummaryItems.length })}
+          description={t('forms.shared.errorSummaryDescription')}
+          items={errorSummaryItems}
+        />
         <div className="space-y-2">
           <Label htmlFor="comp-title">{f('docTitle.label')} *</Label>
           <Input id="comp-title" placeholder={f('docTitle.placeholder')} {...register('title')} />

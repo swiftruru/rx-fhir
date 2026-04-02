@@ -1,11 +1,12 @@
-import { useEffect } from 'react'
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Sun, Moon, Monitor, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import i18n from './i18n'
 import { TooltipProvider } from './components/ui/tooltip'
 import Sidebar from './components/Sidebar'
 import StatusBar from './components/StatusBar'
+import ScreenReaderAnnouncer from './components/ScreenReaderAnnouncer'
 import CreatorPage from './features/creator/CreatorPage'
 import ConsumerPage from './features/consumer/ConsumerPage'
 import SettingsPage from './features/settings/SettingsPage'
@@ -18,9 +19,12 @@ import FeatureShowcaseOverlay from './components/FeatureShowcaseOverlay'
 import FeatureShowcaseTarget from './components/FeatureShowcaseTarget'
 import ShortcutHelpDialog from './components/ShortcutHelpDialog'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
-import { useAppStore, type ThemeMode } from './store/appStore'
+import { useReducedMotion } from './hooks/useReducedMotion'
+import { TEXT_SCALE_VALUES, UI_ZOOM_VALUES, useAppStore, type ThemeMode } from './store/appStore'
+import { useAccessibilityStore } from './store/accessibilityStore'
 import { useLiveDemoStore } from './store/liveDemoStore'
 import { useFeatureShowcaseStore } from './store/featureShowcaseStore'
+import { getRouteNavKey } from './lib/routeMeta'
 import { FEATURE_SHOWCASE_STEPS } from './showcase/featureShowcaseScript'
 
 const THEME_CYCLE: ThemeMode[] = ['light', 'dark', 'system']
@@ -77,14 +81,35 @@ function LanguageToggle({ disabled = false }: { disabled?: boolean }): React.JSX
 function AppShellContent(): React.JSX.Element {
   const theme = useAppStore((s) => s.theme)
   const locale = useAppStore((s) => s.locale)
+  const textScale = useAppStore((s) => s.textScale)
+  const uiZoom = useAppStore((s) => s.uiZoom)
+  const focusPreference = useAppStore((s) => s.focusPreference)
+  const location = useLocation()
+  const announcePolite = useAccessibilityStore((state) => state.announcePolite)
   const { t } = useTranslation('showcase')
+  const { t: tc } = useTranslation('common')
+  const { t: tn } = useTranslation('nav')
   const liveDemoStatus = useLiveDemoStore((state) => state.status)
   const featureShowcaseStatus = useFeatureShowcaseStore((state) => state.status)
   const startFeatureShowcase = useFeatureShowcaseStore((state) => state.start)
   const featureShowcaseActive = featureShowcaseStatus === 'running' || featureShowcaseStatus === 'paused'
   const liveDemoActive = liveDemoStatus === 'running' || liveDemoStatus === 'paused'
+  const reducedMotion = useReducedMotion()
+  const mainRef = useRef<HTMLElement>(null)
+  const previousPathRef = useRef<string>()
 
   useKeyboardShortcuts()
+
+  const routeKey = getRouteNavKey(location.pathname)
+  const routeLabel = routeKey ? tn(`items.${routeKey}.label`) : tc('accessibility.appName')
+
+  function focusCurrentPage(): void {
+    window.requestAnimationFrame(() => {
+      const pageHeading = document.querySelector<HTMLElement>('[data-page-heading="true"]')
+      const target = pageHeading ?? mainRef.current
+      target?.focus()
+    })
+  }
 
   // Sync locale from persisted store on mount
   useEffect(() => {
@@ -113,9 +138,58 @@ function AppShellContent(): React.JSX.Element {
     return () => mq.removeEventListener('change', apply)
   }, [theme])
 
+  useEffect(() => {
+    document.documentElement.dataset.motion = reducedMotion ? 'reduced' : 'full'
+  }, [reducedMotion])
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.dataset.textScale = textScale
+    root.style.setProperty('--app-font-scale', String(TEXT_SCALE_VALUES[textScale]))
+  }, [textScale])
+
+  useEffect(() => {
+    document.documentElement.dataset.focus = focusPreference
+  }, [focusPreference])
+
+  useEffect(() => {
+    if (!window.rxfhir?.setAppZoomFactor) return
+    void window.rxfhir.setAppZoomFactor(UI_ZOOM_VALUES[uiZoom])
+  }, [uiZoom])
+
+  useEffect(() => {
+    document.title = routeKey
+      ? tc('accessibility.documentTitle', { page: routeLabel })
+      : tc('accessibility.appName')
+  }, [routeKey, routeLabel, tc])
+
+  useEffect(() => {
+    const routeChanged = previousPathRef.current !== location.pathname
+
+    if (!routeChanged) return
+
+    focusCurrentPage()
+
+    if (previousPathRef.current && routeKey) {
+      announcePolite(tc('accessibility.routeChanged', { page: routeLabel }))
+    }
+
+    previousPathRef.current = location.pathname
+  }, [announcePolite, location.pathname, routeKey, routeLabel, tc])
+
   return (
     <TooltipProvider>
       <div className="flex h-screen overflow-hidden bg-background text-foreground">
+        <button
+          type="button"
+          onClick={focusCurrentPage}
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+        >
+          {tc('accessibility.skipToMain')}
+        </button>
+
+        <ScreenReaderAnnouncer />
+
         {/* Sidebar (includes macOS traffic-light drag zone at top) */}
         <Sidebar />
 
@@ -144,7 +218,13 @@ function AppShellContent(): React.JSX.Element {
             </FeatureShowcaseTarget>
           </div>
 
-          <main className="flex-1 overflow-auto">
+          <main
+            ref={mainRef}
+            id="app-main"
+            tabIndex={-1}
+            aria-label={tc('accessibility.mainContent')}
+            className="flex-1 overflow-auto outline-none"
+          >
             <Routes>
               <Route path="/" element={<Navigate to="/creator" replace />} />
               <Route path="/creator" element={<CreatorPage />} />

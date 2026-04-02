@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { GraduationCap, Pause, Play, SkipForward, Square, CheckCircle2, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useReducedMotion } from '../hooks/useReducedMotion'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { useAppStore } from '../store/appStore'
@@ -10,6 +11,7 @@ import { useLiveDemoStore } from '../store/liveDemoStore'
 export default function LiveDemoCoach(): React.JSX.Element | null {
   const { t } = useTranslation('creator')
   const locale = useAppStore((state) => state.locale)
+  const reducedMotion = useReducedMotion()
   const {
     status,
     playMode,
@@ -52,7 +54,13 @@ export default function LiveDemoCoach(): React.JSX.Element | null {
   if (collapsed) {
     return (
       <div className="pointer-events-none absolute bottom-6 right-3 z-50 max-w-[calc(100vw-1.5rem)]">
-        <Card className="pointer-events-auto w-auto border-primary/10 bg-background/80 shadow-lg ring-1 ring-black/5 opacity-85 transition-opacity duration-200 hover:opacity-100 dark:ring-white/5">
+        <Card
+          className={`pointer-events-auto w-auto border-primary/10 bg-background/80 shadow-lg ring-1 ring-black/5 dark:ring-white/5 ${
+            reducedMotion
+              ? 'opacity-100'
+              : 'opacity-85 transition-opacity duration-200 hover:opacity-100'
+          }`}
+        >
           <CardContent className="flex items-center gap-2 px-2.5 py-1.5">
             <div className="flex min-w-0 items-center gap-2">
               <div className="inline-flex h-[1.625rem] w-[1.625rem] shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -72,6 +80,7 @@ export default function LiveDemoCoach(): React.JSX.Element | null {
                     variant="outline"
                     className="h-[1.625rem] w-[1.625rem] p-0"
                     onClick={() => start(totalSteps || 13, 'manual')}
+                    aria-label={t('liveDemo.controls.replay')}
                     title={t('liveDemo.controls.replay')}
                   >
                     <Play className="h-3.5 w-3.5" />
@@ -81,6 +90,7 @@ export default function LiveDemoCoach(): React.JSX.Element | null {
                     variant="ghost"
                     className="h-[1.625rem] w-[1.625rem] p-0"
                     onClick={dismiss}
+                    aria-label={t('liveDemo.controls.close')}
                     title={t('liveDemo.controls.close')}
                   >
                     <Square className="h-3.5 w-3.5" />
@@ -95,6 +105,7 @@ export default function LiveDemoCoach(): React.JSX.Element | null {
                         variant="outline"
                         className="h-[1.625rem] w-[1.625rem] p-0"
                         onClick={requestAdvance}
+                        aria-label={t('liveDemo.controls.next')}
                         title={t('liveDemo.controls.next')}
                       >
                         <SkipForward className="h-3.5 w-3.5" />
@@ -103,6 +114,7 @@ export default function LiveDemoCoach(): React.JSX.Element | null {
                         size="sm"
                         className="h-[1.625rem] w-[1.625rem] p-0"
                         onClick={() => setPlayMode('auto')}
+                        aria-label={t('liveDemo.controls.enableAuto')}
                         title={t('liveDemo.controls.enableAuto')}
                       >
                         <Play className="h-3.5 w-3.5" />
@@ -114,6 +126,7 @@ export default function LiveDemoCoach(): React.JSX.Element | null {
                         size="sm"
                         className="h-[1.625rem] w-[1.625rem] p-0"
                         onClick={isPaused ? resume : pause}
+                        aria-label={isPaused ? t('liveDemo.controls.resume') : t('liveDemo.controls.pause')}
                         title={isPaused ? t('liveDemo.controls.resume') : t('liveDemo.controls.pause')}
                       >
                         {isPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
@@ -125,6 +138,7 @@ export default function LiveDemoCoach(): React.JSX.Element | null {
                     variant="ghost"
                     className="h-[1.625rem] w-[1.625rem] p-0"
                     onClick={stop}
+                    aria-label={t('liveDemo.controls.stop')}
                     title={t('liveDemo.controls.stop')}
                   >
                     <Square className="h-3.5 w-3.5" />
@@ -136,6 +150,7 @@ export default function LiveDemoCoach(): React.JSX.Element | null {
                 variant="ghost"
                 className="h-[1.625rem] w-[1.625rem] p-0"
                 onClick={() => setCollapsed(false)}
+                title={t('liveDemo.controls.expand')}
                 aria-label={t('liveDemo.controls.expand')}
               >
                 <ChevronUp className="h-3.5 w-3.5" />
@@ -168,6 +183,7 @@ export default function LiveDemoCoach(): React.JSX.Element | null {
                 variant="ghost"
                 className="h-8 w-8 p-0"
                 onClick={() => setCollapsed(true)}
+                title={t('liveDemo.controls.collapse')}
                 aria-label={t('liveDemo.controls.collapse')}
               >
                 <ChevronDown className="h-4 w-4" />
@@ -228,6 +244,12 @@ export default function LiveDemoCoach(): React.JSX.Element | null {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground leading-relaxed">{t('liveDemo.preparingDescription')}</p>
+          )}
+
+          {reducedMotion && (
+            <div className="rounded-lg border border-border/70 bg-muted/25 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+              {t('liveDemo.reducedMotionHint')}
+            </div>
           )}
 
           <div className="flex flex-wrap items-center gap-2 border-t pt-3">

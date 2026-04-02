@@ -59,5 +59,43 @@
   "lang": {
     "toggle": "EN",
     "current": "繁中"
+  },
+  "accessibility": {
+    "appName": "RxFHIR",
+    "skipToMain": "跳到主要內容",
+    "mainContent": "主要內容",
+    "sidebar": "應用程式側邊欄",
+    "primaryNavigation": "主要導覽",
+    "statusBar": "狀態列",
+    "documentTitle": "{{page}} | RxFHIR",
+    "routeChanged": "已切換到 {{page}} 頁面"
+  },
+  "jsonViewer": {
+    "copy": "複製 JSON",
+    "viewModeLabel": "JSON 檢視模式",
+    "summary": "摘要",
+    "raw": "原始",
+    "overview": "重點摘要",
+    "fields": "欄位內容",
+    "preview": "內容預覽",
+    "noSummary": "目前沒有可顯示的摘要，請改看原始 JSON。",
+    "emptyValue": "空值",
+    "arrayWithPreview": "{{count}} 筆項目，第一筆：{{preview}}",
+    "arrayItems": "{{count}} 筆項目",
+    "objectKeys": "{{count}} 個欄位",
+    "characters": "字元數",
+    "charactersCount": "{{count}} 個字元",
+    "lines": "行數",
+    "linesCount": "{{count}} 行",
+    "value": "值",
+    "itemLabel": "項目",
+    "items": "項目數",
+    "resourceType": "資源類型",
+    "resourceId": "資源 ID",
+    "primaryText": "主要文字",
+    "status": "狀態",
+    "type": "類型",
+    "date": "日期",
+    "topLevelKeys": "最上層欄位"
   }
 }

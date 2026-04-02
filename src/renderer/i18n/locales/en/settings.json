@@ -1,32 +1,141 @@
 {
   "page": {
     "title": "Settings",
-    "description": "Configure FHIR Server connection"
+    "description": "Configure the FHIR Server, motion preferences, and common app behavior"
   },
   "tabs": {
     "server": "Server",
+    "accessibility": "Accessibility",
     "shortcuts": "Keyboard Shortcuts"
   },
   "server": {
     "title":       "FHIR Server URL",
     "description": "Set the base URL of the target HAPI FHIR Server (baseR4)",
     "urlLabel":    "Server URL",
+    "urlHint": "Enter the FHIR Server base URL, for example https://hapi.fhir.org/baseR4.",
+    "urlRequired": "Enter the FHIR Server URL.",
     "presetsLabel": "Quick Select Preset Servers",
     "testSuccess":  "Connection successful!",
     "testFail":     "Connection failed. Please verify the URL or check your network.",
-    "saved":        "Settings saved."
+    "saved":        "Settings saved.",
+    "testingAnnouncement": "Testing the FHIR Server connection.",
+    "testSuccessAnnouncement": "FHIR Server connection successful.",
+    "testFailAnnouncement": "FHIR Server connection failed.",
+    "savedAnnouncement": "FHIR Server settings saved."
   },
   "status": {
     "title":       "Current Connection Status",
     "serverInfo":  "Server",
     "fhirVersion": "FHIR"
   },
+  "accessibility": {
+    "title": "Accessibility",
+    "description": "Adjust motion, text scale, and how the app responds to higher system contrast preferences.",
+    "motionTitle": "Motion Preferences",
+    "motionDescription": "Control how much motion is used in Live Demo, Feature Showcase, and major interface transitions. The app can follow the system setting or be overridden here.",
+    "groupLabel": "Motion preference",
+    "savedAnnouncement": "Motion preference updated to \"{{mode}}\".",
+    "effectiveTitle": "Currently active",
+    "effectiveFull": "Full motion is currently active.",
+    "effectiveReduced": "Reduced motion is currently active.",
+    "effectiveSystemFull": "The app is following the system and reduced motion is currently off.",
+    "effectiveSystemReduced": "The app is following the system and reduced motion is currently on.",
+    "behaviorHint": "When reduced motion is active, the app softens spotlight movement and larger scale transitions, shortens autoplay pauses, and still keeps the Live Demo typewriter rhythm with a gentler pace.",
+    "options": {
+      "system": {
+        "label": "Follow System",
+        "description": "Respect the macOS or Windows reduced motion preference automatically."
+      },
+      "full": {
+        "label": "Full Motion",
+        "description": "Keep the current typewriter cadence, spotlight emphasis, and interface transitions."
+      },
+      "reduced": {
+        "label": "Reduced Motion",
+        "description": "Lower stronger movement and scaling while preserving useful rhythm and presence."
+      }
+    },
+    "textScale": {
+      "title": "Text Scale",
+      "description": "Adjust app text size across headings, forms, result lists, and most spacing that is based on `rem` units.",
+      "groupLabel": "Text scale",
+      "savedAnnouncement": "Text scale updated to {{scale}}.",
+      "effectiveTitle": "Currently applied",
+      "effectiveDescription": "{{scale}} text scale is active across most text and rem-based interface spacing.",
+      "behaviorHint": "This affects Creator, Consumer, Settings, and About together. Most layouts expand with the text so horizontal scrolling should stay minimal.",
+      "options": {
+        "scale100": {
+          "label": "100%",
+          "description": "Default size for standard viewing distances."
+        },
+        "scale112": {
+          "label": "112%",
+          "description": "A gentle increase for easier everyday reading."
+        },
+        "scale125": {
+          "label": "125%",
+          "description": "A stronger increase for long forms and dense result views."
+        },
+        "scale137": {
+          "label": "137%",
+          "description": "The largest size, prioritizing readability and recognition."
+        }
+      }
+    },
+    "zoom": {
+      "title": "Interface Zoom",
+      "description": "Adjust the overall application zoom, including cards, buttons, panels, and most interactive surfaces.",
+      "groupLabel": "Interface zoom",
+      "savedAnnouncement": "Interface zoom updated to {{scale}}.",
+      "effectiveTitle": "Currently applied",
+      "effectiveDescription": "{{scale}} interface zoom is active across controls and layout surfaces.",
+      "behaviorHint": "This uses Electron window zoom. If you want to keep the overall layout density and only enlarge text, adjust Text Scale above instead.",
+      "options": {
+        "zoom100": {
+          "label": "100%",
+          "description": "Default interface size with the current layout density."
+        },
+        "zoom110": {
+          "label": "110%",
+          "description": "A gentle increase for controls and spacing while keeping visual balance."
+        },
+        "zoom125": {
+          "label": "125%",
+          "description": "A stronger increase that prioritizes target size and recognition."
+        }
+      }
+    },
+    "focus": {
+      "title": "Focus Visibility",
+      "description": "Adjust how prominent keyboard focus indicators appear so the current target is easier to spot.",
+      "groupLabel": "Focus visibility",
+      "savedAnnouncement": "Focus visibility updated to {{mode}}.",
+      "effectiveTitle": "Currently applied",
+      "effectiveDescription": "\"{{mode}}\" focus visibility is currently active.",
+      "behaviorHint": "Enhanced mode adds a stronger outline and glow on top of the existing design, but only when keyboard focus is visible. It does not restyle ordinary mouse browsing.",
+      "options": {
+        "standard": {
+          "label": "Standard",
+          "description": "Keep the current focus ring intensity and existing visual rhythm."
+        },
+        "enhanced": {
+          "label": "Enhanced",
+          "description": "Use a thicker outline and stronger visibility for keyboard focus."
+        }
+      }
+    },
+    "contrast": {
+      "title": "High Contrast Support",
+      "description": "When the operating system requests higher contrast or forced colors, RxFHIR now strengthens focus visibility and boundary clarity automatically.",
+      "hint": "This follows the system setting instead of adding a separate in-app toggle so the whole desktop stays consistent."
+    }
+  },
   "about": {
     "title":       "About RxFHIR",
     "tagline":     "℞ + FHIR = RxFHIR",
     "description": "Desktop application for Taiwan Core electronic prescription profiles",
     "spec":        "Based on MOHW EMR-IG Electronic Prescription 2.5 specification",
-    "version":     "Version 1.0.11 · Electron + React + FHIR R4",
+    "version":     "Version 1.0.14 · Electron + React + FHIR R4",
     "advisorsNote": "Listed alphabetically by English name; no ranking implied.",
     "fields": {
       "author":      "Author",

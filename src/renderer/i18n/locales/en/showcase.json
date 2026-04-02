@@ -14,6 +14,7 @@
   "error": {
     "title": "Showcase interrupted"
   },
+  "reducedMotionHint": "Reduced motion is enabled, so the spotlight and coach stay more static and autoplay uses shorter pauses.",
   "sections": {
     "feature": "What it is",
     "problem": "What it solves",

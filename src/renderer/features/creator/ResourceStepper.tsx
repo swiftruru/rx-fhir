@@ -9,6 +9,7 @@ import FhirRequestInspector from '../../components/FhirRequestInspector'
 import FeatureShowcaseTarget from '../../components/FeatureShowcaseTarget'
 import { cn } from '../../lib/utils'
 import { useCreatorStore } from '../../store/creatorStore'
+import { useAccessibilityStore } from '../../store/accessibilityStore'
 import { useFhirInspectorStore } from '../../store/fhirInspectorStore'
 import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
 import { useShortcutActionStore } from '../../store/shortcutActionStore'
@@ -188,6 +189,7 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
   } = useCreatorStore()
   const latestRequest = useFhirInspectorStore((state) => state.latest)
   const requestHistory = useFhirInspectorStore((state) => state.history)
+  const announcePolite = useAccessibilityStore((state) => state.announcePolite)
   const showcaseStatus = useFeatureShowcaseStore((state) => state.status)
   const showcaseUi = useFeatureShowcaseStore((state) => state.ui)
   const setCreatorActions = useShortcutActionStore((state) => state.setCreatorActions)
@@ -201,6 +203,7 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
   const [collapseAll, setCollapseAll] = useState(false)
   const stepButtonRefs = useRef<Array<HTMLButtonElement | null>>([])
   const shouldFocusCurrentStepRef = useRef(false)
+  const previousStepRef = useRef(currentStep)
   const showcaseBackupRef = useRef<{ showRightPanel: boolean; rightPanelMode: 'json' | 'request' }>()
   const showcaseActive = showcaseStatus === 'running' || showcaseStatus === 'paused'
 
@@ -345,6 +348,27 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
     setStep(nextStepIndex)
   }
   const currentStepSummary = stepSummaries[currentStepKey]
+
+  useEffect(() => {
+    if (previousStepRef.current === currentStep) return
+
+    announcePolite(
+      currentStepSummary
+        ? t('stepper.currentStepAnnouncementWithSummary', {
+            current: currentStep + 1,
+            total: RESOURCE_STEPS.length,
+            label: t(`steps.${currentStepKey}.label`),
+            summary: currentStepSummary
+          })
+        : t('stepper.currentStepAnnouncement', {
+            current: currentStep + 1,
+            total: RESOURCE_STEPS.length,
+            label: t(`steps.${currentStepKey}.label`)
+          })
+    )
+    previousStepRef.current = currentStep
+  }, [announcePolite, currentStep, currentStepKey, currentStepSummary, t])
+
   const jsonEntries = useMemo(
     () => Object.entries(resources).filter((entry): entry is [ResourceKey, NonNullable<CreatedResources[ResourceKey]>] => Boolean(entry[1])),
     [resources]
@@ -388,14 +412,16 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
   }
 
   return (
-    <div className="flex h-full gap-0">
+    <div className="flex h-full flex-col gap-0 xl:flex-row">
       {/* Left: Step indicator */}
-      <FeatureShowcaseTarget id="creator.stepper" className="w-48 border-r bg-muted/30 flex flex-col min-h-0">
+      <FeatureShowcaseTarget id="creator.stepper" className="flex max-h-64 flex-col border-b bg-muted/30 min-h-0 xl:max-h-none xl:w-48 xl:border-b-0 xl:border-r">
         <div className="flex h-full min-h-0 flex-col">
           <div className="px-3 py-3 border-b">
             <div className="text-xs text-muted-foreground">{t('stepper.progress')}</div>
-            <div className="text-sm font-semibold">{t('stepper.progressCount', { completed: completedCount, total: RESOURCE_STEPS.length })}</div>
-            <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground/80">
+            <div id="creator-stepper-progress" role="status" aria-live="polite" className="text-sm font-semibold">
+              {t('stepper.progressCount', { completed: completedCount, total: RESOURCE_STEPS.length })}
+            </div>
+            <p id="creator-stepper-shortcuts" className="mt-2 text-[10px] leading-relaxed text-muted-foreground/80">
               {t('stepper.shortcuts')}
             </p>
           </div>
@@ -404,84 +430,89 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
               className="p-2 space-y-1"
               data-stepper-nav="true"
               aria-label={t('stepper.progress')}
+              aria-describedby="creator-stepper-progress creator-stepper-shortcuts"
               onKeyDown={handleStepperKeyboardNavigation}
             >
-              {RESOURCE_STEPS.map((step, index) => {
-                const complete = isStepComplete(index)
-                const active = index === currentStep
-                return (
-                  <button
-                    key={step.key}
-                    ref={(element) => {
-                      stepButtonRefs.current[index] = element
-                    }}
-                    onClick={() => setStep(index)}
-                    aria-current={active ? 'step' : undefined}
-                    aria-label={t('stepper.stepButtonAriaLabel', {
-                      step: index + 1,
-                      total: RESOURCE_STEPS.length,
-                      label: t(`steps.${step.key}.label`)
-                    })}
-                    className={cn(
-                      'w-full rounded-md px-2 py-2 text-left text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                      'flex items-start gap-2',
-                      active
-                        ? 'bg-primary text-primary-foreground focus-visible:ring-primary'
-                        : complete
-                        ? 'text-emerald-800 hover:bg-emerald-50 focus-visible:ring-emerald-600'
-                        : 'text-muted-foreground hover:bg-accent'
-                    )}
-                  >
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${
-                      complete ? 'bg-emerald-600 text-white' : active ? 'bg-white/20 text-inherit' : 'bg-muted text-muted-foreground'
-                    }`}>
-                      {complete ? <Check className="h-3 w-3" /> : index + 1}
-                    </span>
-                    <div className="min-w-0">
-                      {(() => {
-                        const label = t(`steps.${step.key}.label`)
-                        const labelEn = t(`steps.${step.key}.labelEn`)
-                        const summary = complete ? stepSummaries[step.key] : undefined
-                        return (
-                          <>
-                            <div className="font-medium truncate">{label}</div>
-                            {label !== labelEn && <div className="text-[10px] opacity-60 truncate">{labelEn}</div>}
-                            {summary && (
-                              <div
-                                className={`mt-0.5 text-[10px] truncate ${
-                                  active
-                                    ? 'text-primary-foreground/80'
-                                    : complete
-                                    ? 'opacity-70'
-                                    : 'text-muted-foreground'
-                                }`}
-                                title={summary}
-                              >
-                                {summary}
-                              </div>
-                            )}
-                          </>
-                        )
-                      })()}
-                    </div>
-                  </button>
-                )
-              })}
+              <ol className="space-y-1">
+                {RESOURCE_STEPS.map((step, index) => {
+                  const complete = isStepComplete(index)
+                  const active = index === currentStep
+                  return (
+                    <li key={step.key}>
+                      <button
+                        ref={(element) => {
+                          stepButtonRefs.current[index] = element
+                        }}
+                        onClick={() => setStep(index)}
+                        aria-current={active ? 'step' : undefined}
+                        aria-controls="creator-step-panel"
+                        aria-label={t('stepper.stepButtonAriaLabel', {
+                          step: index + 1,
+                          total: RESOURCE_STEPS.length,
+                          label: t(`steps.${step.key}.label`)
+                        })}
+                        className={cn(
+                          'w-full rounded-md px-2 py-2 text-left text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                          'flex items-start gap-2',
+                          active
+                            ? 'bg-primary text-primary-foreground focus-visible:ring-primary'
+                            : complete
+                            ? 'text-emerald-800 hover:bg-emerald-50 focus-visible:ring-emerald-600'
+                            : 'text-muted-foreground hover:bg-accent'
+                        )}
+                      >
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${
+                          complete ? 'bg-emerald-600 text-white' : active ? 'bg-white/20 text-inherit' : 'bg-muted text-muted-foreground'
+                        }`}>
+                          {complete ? <Check className="h-3 w-3" /> : index + 1}
+                        </span>
+                        <div className="min-w-0">
+                          {(() => {
+                            const label = t(`steps.${step.key}.label`)
+                            const labelEn = t(`steps.${step.key}.labelEn`)
+                            const summary = complete ? stepSummaries[step.key] : undefined
+                            return (
+                              <>
+                                <div className="font-medium truncate">{label}</div>
+                                {label !== labelEn && <div className="text-[10px] opacity-60 truncate">{labelEn}</div>}
+                                {summary && (
+                                  <div
+                                    className={`mt-0.5 text-[10px] truncate ${
+                                      active
+                                        ? 'text-primary-foreground/80'
+                                        : complete
+                                        ? 'opacity-70'
+                                        : 'text-muted-foreground'
+                                    }`}
+                                    title={summary}
+                                  >
+                                    {summary}
+                                  </div>
+                                )}
+                              </>
+                            )
+                          })()}
+                        </div>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ol>
             </nav>
           </ScrollArea>
         </div>
       </FeatureShowcaseTarget>
 
       {/* Right: Form area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex min-w-0 flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b bg-background">
-          <div>
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b bg-background px-5 py-3">
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-[10px]">
                 {t('stepper.stepBadge', { current: currentStep + 1, total: RESOURCE_STEPS.length })}
               </Badge>
-              <h2 className="text-base font-semibold">{t(`steps.${currentStepKey}.label`)}</h2>
+              <h2 id="creator-current-step-heading" className="text-base font-semibold">{t(`steps.${currentStepKey}.label`)}</h2>
               {t(`steps.${currentStepKey}.label`) !== t(`steps.${currentStepKey}.labelEn`) && (
                 <span className="text-sm text-muted-foreground">{t(`steps.${currentStepKey}.labelEn`)}</span>
               )}
@@ -496,7 +527,7 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
             <button
               type="button"
               onClick={() => setShowRightPanel(!showRightPanel)}
-              className="rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="shrink-0 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               {showRightPanel ? t('stepper.hidePanel') : t('stepper.showPanel')}
             </button>
@@ -505,10 +536,10 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
 
         {/* Content area */}
         <div className="flex-1 overflow-auto">
-          <div className={showRightPanel ? 'grid grid-cols-2 gap-0 h-full' : 'h-full'}>
+          <div className={showRightPanel ? 'grid h-full grid-cols-1 gap-0 xl:grid-cols-2' : 'h-full'}>
             {/* Form */}
             <FeatureShowcaseTarget id="creator.form" className="h-full min-h-0">
-              <div className="flex flex-col h-full min-h-0">
+              <div id="creator-step-panel" className="flex flex-col h-full min-h-0" aria-labelledby="creator-current-step-heading">
                 <ScrollArea className="flex-1 min-h-0">
                   <div className="p-5">
                     {renderForm()}
@@ -539,7 +570,7 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
             {/* JSON Preview panel */}
             {showRightPanel && (
               <FeatureShowcaseTarget id="creator.rightPanel" className="h-full min-h-0">
-                <div className="h-full border-l overflow-auto p-4 bg-muted/35 transition-colors">
+                <div className="h-full overflow-auto border-t bg-muted/35 p-4 transition-colors xl:border-l xl:border-t-0">
                   <div className="mb-3 space-y-2">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -568,7 +599,7 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
                     </div>
                     {rightPanelMode === 'json' && (
                     <div className="flex justify-end">
-                      <div className="w-[18rem] max-w-full rounded-xl border border-border/80 bg-background/90 p-2 shadow-sm backdrop-blur-sm">
+                      <div className="w-full max-w-full rounded-xl border border-border/80 bg-background/90 p-2 shadow-sm backdrop-blur-sm md:w-[18rem]">
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center justify-end gap-2">
                             <div className="inline-flex h-8 min-w-0 items-center gap-1 rounded-lg border border-border/70 bg-muted/30 px-1">
@@ -604,11 +635,11 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
                             </Button>
                           </div>
 
-                          <div className="grid grid-cols-[minmax(0,1fr)_8.5rem] items-center gap-2">
+                          <div className="grid items-center gap-2 md:grid-cols-[minmax(0,1fr)_8.5rem]">
                             <div className="min-w-0 rounded-md border border-border/60 bg-muted/35 px-2.5 py-1 text-[11px] text-muted-foreground shadow-sm">
                               <span className="block truncate" title={jsonStatusLabel}>{jsonStatusLabel}</span>
                             </div>
-                            <div className="inline-flex h-8 w-[8.5rem] shrink-0 items-center rounded-lg border border-border/70 bg-muted/30 p-1">
+                            <div className="inline-flex h-8 w-full shrink-0 items-center rounded-lg border border-border/70 bg-muted/30 p-1 md:w-[8.5rem]">
                               <Button
                                 type="button"
                                 variant="ghost"

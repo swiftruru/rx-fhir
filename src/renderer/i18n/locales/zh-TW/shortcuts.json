@@ -64,8 +64,27 @@
     "resetAll": "全部恢復預設",
     "empty": "尚無可自訂的快捷鍵。",
     "customized": "已自訂",
-    "default": "預設",
+    "default": "使用預設",
+    "defaultBinding": "預設值：{{binding}}",
+    "platforms": {
+      "mac": "macOS",
+      "other": "Windows / Linux"
+    },
+    "summary": {
+      "categoryShortcuts": "目前分類快捷鍵",
+      "categoryCustomized": "本分類已自訂 {{count}} 組",
+      "customized": "全部已自訂",
+      "defaultCount": "仍使用預設 {{count}} 組",
+      "platform": "顯示平台"
+    },
     "recordingHint": "請直接按下新的組合鍵，Esc 可取消。",
+    "editingAction": "正在修改：{{action}}",
+    "editingCurrent": "目前綁定：{{binding}}",
+    "updated": "已將「{{action}}」更新為 {{binding}}。",
+    "restored": "已將「{{action}}」恢復為預設：{{binding}}。",
+    "alreadyDefault": "「{{action}}」目前已使用預設快捷鍵：{{binding}}。",
+    "resetAllDone": "所有自訂快捷鍵都已恢復為預設值。",
+    "resetAllAlreadyDefault": "目前所有快捷鍵都已使用預設值。",
     "notCustomizable": "此快捷鍵不可自訂。",
     "conflicts": {
       "invalid": "請使用帶有修飾鍵的有效組合，例如 Ctrl/⌘、Alt 或 Shift。",

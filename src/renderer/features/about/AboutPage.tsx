@@ -9,7 +9,9 @@ export default function AboutPage(): React.JSX.Element {
     <div className="h-full overflow-auto">
       <div className="max-w-2xl mx-auto p-6 space-y-6">
         <div>
-          <h1 className="text-xl font-bold">{t('about.title')}</h1>
+          <h1 data-page-heading="true" tabIndex={-1} className="text-xl font-bold outline-none">
+            {t('about.title')}
+          </h1>
         </div>
 
         <Card>

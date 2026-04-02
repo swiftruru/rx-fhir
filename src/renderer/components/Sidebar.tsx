@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { FilePlus2, Search, Settings, Activity, Info } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../lib/utils'
@@ -17,6 +17,9 @@ const navItems: { to: string; key: NavKey; icon: React.ElementType }[] = [
 export default function Sidebar(): React.JSX.Element {
   const { serverUrl } = useAppStore()
   const { t } = useTranslation('nav')
+  const { t: tc } = useTranslation('common')
+  const location = useLocation()
+  const navigate = useNavigate()
 
   const shortUrl = serverUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
 
@@ -25,7 +28,10 @@ export default function Sidebar(): React.JSX.Element {
       id="app.sidebar"
       className="w-56 shrink-0 border-r border-sidebar-border bg-sidebar"
     >
-      <aside className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
+      <aside
+        aria-label={tc('accessibility.sidebar')}
+        className="flex h-full flex-col bg-sidebar text-sidebar-foreground"
+      >
         {/* macOS traffic-light drag zone — same bg as sidebar so it blends in */}
         <div className="titlebar-drag-region" />
 
@@ -43,33 +49,36 @@ export default function Sidebar(): React.JSX.Element {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-3 space-y-1">
+      <nav aria-label={tc('accessibility.primaryNavigation')} className="flex-1 px-2 py-3 space-y-1">
         {navItems.map(({ to, key, icon: Icon }) => (
-          <NavLink
+          <button
             key={to}
-            to={to}
-            className={({ isActive }) =>
+            type="button"
+            onClick={() => navigate(to)}
+            aria-current={location.pathname === to ? 'page' : undefined}
+            className={
               cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors group',
-                isActive
+                'flex w-full items-center gap-3 px-3 py-2.5 rounded-md text-left transition-colors group',
+                location.pathname === to
                   ? 'bg-sidebar-primary text-sidebar-primary-foreground'
                   : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
               )
             }
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           >
-            <Icon className="h-4 w-4 shrink-0" />
+            <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
             <div className="min-w-0">
               <div className="text-sm font-medium leading-none">{t(`items.${key}.label`)}</div>
               <div className="text-[11px] opacity-60 mt-0.5">{t(`items.${key}.sublabel`)}</div>
             </div>
-          </NavLink>
+          </button>
         ))}
       </nav>
 
       {/* Server info */}
       <div className="px-4 py-3 border-t border-sidebar-border">
         <div className="flex items-center gap-1.5 text-[11px] text-sidebar-foreground/50">
-          <Activity className="h-3 w-3" />
+          <Activity aria-hidden="true" className="h-3 w-3" />
           <span className="truncate" title={serverUrl}>
             {shortUrl}
           </span>

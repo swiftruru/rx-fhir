@@ -7,6 +7,7 @@
   :root {
     --font-sans: "Noto Sans TC", "PingFang TC", "PingFang SC", "Hiragino Sans GB",
       "Microsoft JhengHei UI", "Microsoft JhengHei", "Heiti TC", sans-serif;
+    --app-font-scale: 1;
     --background: 340 35% 98.5%;
     --foreground: 330 20% 17%;
     --card: 0 0% 100%;
@@ -26,6 +27,9 @@
     --border: 340 20% 90%;
     --input: 340 20% 90%;
     --ring: 352 38% 62%;
+    --disabled-background: 340 14% 93%;
+    --disabled-foreground: 330 8% 44%;
+    --disabled-border: 340 16% 84%;
     --radius: 0.5rem;
 
     /* Sidebar — 淡粉灰面板（light mode 用淺色 sidebar） */
@@ -60,6 +64,9 @@
     --border: 330 8% 22%;
     --input: 330 8% 22%;
     --ring: 350 36% 64%;
+    --disabled-background: 330 8% 18%;
+    --disabled-foreground: 30 8% 66%;
+    --disabled-border: 330 8% 28%;
 
     /* Sidebar — 暖暗玫瑰炭（比 background 略深略帶粉） */
     --sidebar-background: 330 14% 13%;
@@ -76,6 +83,7 @@
 @layer base {
   html {
     font-family: var(--font-sans);
+    font-size: calc(16px * var(--app-font-scale, 1));
   }
 
   * {
@@ -169,5 +177,82 @@
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
     filter: saturate(1);
+  }
+}
+
+html[data-motion='reduced']:focus-within {
+  scroll-behavior: auto;
+}
+
+html[data-focus='enhanced'] :where(
+  button,
+  a[href],
+  input,
+  select,
+  textarea,
+  summary,
+  [role='button'],
+  [role='tab'],
+  [role='option'],
+  [role='switch'],
+  [role='checkbox'],
+  [role='radio'],
+  [tabindex]:not([tabindex='-1'])
+):focus-visible {
+  outline: 3px solid hsl(var(--ring));
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px hsl(var(--ring) / 0.2);
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --muted-foreground: 330 10% 36%;
+    --border: 340 22% 76%;
+    --input: 340 22% 76%;
+    --ring: 352 54% 48%;
+    --disabled-background: 340 18% 88%;
+    --disabled-foreground: 330 12% 30%;
+    --disabled-border: 340 20% 68%;
+    --sidebar-border: 335 18% 72%;
+    --sidebar-foreground: 330 22% 22%;
+  }
+
+  .dark {
+    --foreground: 30 12% 92%;
+    --muted-foreground: 30 8% 74%;
+    --border: 30 8% 40%;
+    --input: 30 8% 40%;
+    --ring: 30 18% 86%;
+    --disabled-background: 30 6% 22%;
+    --disabled-foreground: 30 10% 80%;
+    --disabled-border: 30 8% 46%;
+    --sidebar-border: 30 8% 30%;
+    --sidebar-foreground: 30 10% 90%;
+  }
+}
+
+@media (forced-colors: active) {
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  body {
+    forced-color-adjust: auto;
+  }
+
+  :focus-visible {
+    outline: 2px solid Highlight !important;
+    outline-offset: 2px;
+  }
+
+  .titlebar-drag-region,
+  .titlebar-spacer {
+    background: Canvas;
+  }
+
+  ::selection {
+    background: Highlight;
+    color: HighlightText;
   }
 }

@@ -6,6 +6,11 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 // Must be set before app.ready so the macOS menu bar picks it up
 app.name = 'RxFHIR'
 
+function clampZoomFactor(value: number): number {
+  if (!Number.isFinite(value)) return 1
+  return Math.min(1.25, Math.max(1, value))
+}
+
 function getIconPath(): string {
   if (is.dev) {
     return join(__dirname, '../../build/icon.png')
@@ -75,7 +80,7 @@ async function createAboutWindow(): Promise<void> {
 <body>
   ${iconDataUrl ? `<img src="${iconDataUrl}" alt="RxFHIR" />` : ''}
   <h1>RxFHIR</h1>
-  <p class="version">版本 1.0.11</p>
+  <p class="version">版本 1.0.14</p>
   <p class="desc">℞ + FHIR = RxFHIR<br>基於 TW Core 電子處方箋 Profile 的桌面應用程式</p>
 </body>
 </html>`)
@@ -226,6 +231,18 @@ ipcMain.handle('external-url:open', async (_event, url: string) => {
 
   await shell.openExternal(parsed.toString())
   return { opened: true }
+})
+
+ipcMain.handle('app-zoom:set', async (event, zoomFactor: number) => {
+  const targetWindow = BrowserWindow.fromWebContents(event.sender)
+  if (!targetWindow) {
+    return { zoomFactor: 1 }
+  }
+
+  const nextZoomFactor = clampZoomFactor(zoomFactor)
+  targetWindow.webContents.setZoomFactor(nextZoomFactor)
+
+  return { zoomFactor: targetWindow.webContents.getZoomFactor() }
 })
 
 app.whenReady().then(() => {

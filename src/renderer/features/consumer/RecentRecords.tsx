@@ -24,6 +24,7 @@ export default function RecentRecords({
     ? 'overflow-hidden rounded-xl border border-border bg-background shadow-sm'
     : 'border-b border-border bg-gradient-to-b from-primary/8 to-background'
   const contentMaxHeightClass = variant === 'dashboard' ? 'max-h-80' : 'max-h-40'
+  const sectionId = `recent-records-${variant}`
 
   if (bundleRecords.length === 0) return <></>
 
@@ -33,6 +34,8 @@ export default function RecentRecords({
         <button
           type="button"
           onClick={onToggle}
+          aria-expanded={open}
+          aria-controls={sectionId}
           className="min-w-0 flex-1 text-left hover:text-foreground transition-colors"
         >
           <span className="mb-2 inline-flex items-center gap-1 rounded-full border border-primary/20 bg-background/90 px-2 py-0.5 text-[10px] font-medium tracking-wide text-primary shadow-sm">
@@ -57,6 +60,7 @@ export default function RecentRecords({
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); clearHistory() }}
+          aria-label={t('recent.clearAll')}
           className="mt-0.5 shrink-0 rounded-md p-1 text-muted-foreground/60 hover:bg-background hover:text-destructive transition-colors"
           title={t('recent.clearAll')}
         >
@@ -65,7 +69,7 @@ export default function RecentRecords({
       </div>
 
       {open && (
-        <div className={`${contentMaxHeightClass} space-y-2 overflow-y-auto border-t border-primary/10 px-3 pb-3 pt-3`}>
+        <div id={sectionId} className={`${contentMaxHeightClass} space-y-2 overflow-y-auto border-t border-primary/10 px-3 pb-3 pt-3`}>
           {bundleRecords.map((rec) => (
             <div
               key={rec.id}
@@ -91,6 +95,7 @@ export default function RecentRecords({
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6"
+                  aria-label={t('recent.fillSearch')}
                   title={t('recent.fillSearch')}
                   onClick={() => onFill(rec)}
                 >
@@ -101,6 +106,7 @@ export default function RecentRecords({
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 text-muted-foreground/60 hover:text-destructive"
+                  aria-label={t('recent.deleteRecord')}
                   title={t('recent.deleteRecord')}
                   onClick={(e) => { e.stopPropagation(); removeRecord(rec.id) }}
                 >

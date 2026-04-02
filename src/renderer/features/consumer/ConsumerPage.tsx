@@ -16,6 +16,7 @@ import { useSearchHistoryStore } from '../../store/searchHistoryStore'
 import { useLiveDemoStore } from '../../store/liveDemoStore'
 import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
 import { useShortcutActionStore } from '../../store/shortcutActionStore'
+import { useAccessibilityStore } from '../../store/accessibilityStore'
 import { fetchBundleById } from '../../services/fhirClient'
 import { extractBundleHistoryMetadata } from '../../services/searchService'
 import {
@@ -48,6 +49,7 @@ export default function ConsumerPage(): React.JSX.Element {
   const { t } = useTranslation('consumer')
   const location = useLocation()
   const navigate = useNavigate()
+  const announcePolite = useAccessibilityStore((state) => state.announcePolite)
   const records = useHistoryStore((state) => state.records)
   const updateRecord = useHistoryStore((state) => state.updateRecord)
   const historyCount = records.filter((record) => record.type === 'bundle').length
@@ -206,9 +208,9 @@ export default function ConsumerPage(): React.JSX.Element {
     setSelected(consumerUi.showDetail && nextMiddleTab === 'results' ? nextSelected : null)
   }, [showcaseActive, showcaseSnapshot, showcaseUi.consumer])
 
-  function handleResults(r: BundleSummary[], t: number, execution: ConsumerSearchExecution): void {
+  function handleResults(r: BundleSummary[], totalCount: number, execution: ConsumerSearchExecution): void {
     setResults(r)
-    setTotal(t)
+    setTotal(totalCount)
     setSearchExecution(execution)
     recordSearch(execution.params)
     setMiddleTab('results')
@@ -221,6 +223,27 @@ export default function ConsumerPage(): React.JSX.Element {
     }
     setHasSearched(true)
     markConsumerSearchReady()
+
+    if (execution.error) {
+      announcePolite(t('results.announcements.searchFailed'))
+      return
+    }
+
+    if (r.length === 0) {
+      announcePolite(t('results.announcements.noResults'))
+      return
+    }
+
+    announcePolite(
+      t(
+        totalCount !== r.length
+          ? 'results.announcements.searchCompletedFiltered'
+          : 'results.announcements.searchCompleted',
+        totalCount !== r.length
+          ? { count: r.length, total: totalCount }
+          : { count: r.length }
+      )
+    )
   }
 
   function handleImportedBundle(summary: BundleSummary): void {
@@ -232,6 +255,11 @@ export default function ConsumerPage(): React.JSX.Element {
     setTargetBundleId(null)
     setMiddleTab('results')
     setPrefillNotice(null)
+    announcePolite(
+      t('results.announcements.bundleImported', {
+        patient: summary.patientName || t('results.unknownPatient')
+      })
+    )
   }
 
   function getSearchIdentifier(rec: SubmissionRecord): string {
@@ -404,15 +432,28 @@ export default function ConsumerPage(): React.JSX.Element {
     searchFormRef.current?.fillMock()
   }
 
+  function handleCloseDetail(): void {
+    const closingId = selected?.id
+    setSelected(null)
+
+    if (!closingId) return
+
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>(`[data-result-id="${closingId}"]`)?.focus()
+    })
+  }
+
   const showDetail = middleTab === 'results' && Boolean(selected)
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full flex-col xl:flex-row">
       {/* Left panel: Search form */}
-      <FeatureShowcaseTarget id="consumer.searchPanel" className="w-72 border-r flex flex-col shrink-0">
-        <div className="h-full">
+      <FeatureShowcaseTarget id="consumer.searchPanel" className="flex shrink-0 flex-col border-b xl:w-72 xl:border-b-0 xl:border-r">
+        <div className="flex h-full min-h-0 flex-col">
           <div className="px-4 py-4 border-b bg-background shrink-0">
-            <h1 className="text-base font-bold">{t('page.title')}</h1>
+            <h1 data-page-heading="true" tabIndex={-1} className="text-base font-bold outline-none">
+              {t('page.title')}
+            </h1>
             <p className="text-xs text-muted-foreground mt-0.5">{t('page.description')}</p>
           </div>
           <div className="flex-1 overflow-auto bg-muted/10 px-4 py-4">
@@ -436,7 +477,7 @@ export default function ConsumerPage(): React.JSX.Element {
       </FeatureShowcaseTarget>
 
       {/* Middle panel: Result list */}
-      <div className="flex-1 min-w-0 border-r flex flex-col shrink-0">
+      <div className="flex min-w-0 flex-1 shrink-0 flex-col xl:border-r">
         <div className="border-b bg-background px-4 py-3 shrink-0">
           <Tabs value={middleTab} onValueChange={(value) => setMiddleTab(value as 'results' | 'quickstart')}>
             <TabsList className="grid w-full max-w-xs grid-cols-2">
@@ -533,11 +574,11 @@ export default function ConsumerPage(): React.JSX.Element {
 
       {/* Right panel: Detail */}
       {showDetail && selected && (
-        <FeatureShowcaseTarget id="consumer.detailPane" className="w-[clamp(26rem,42vw,44rem)] min-w-[26rem] max-w-[44rem] flex flex-col shrink-0">
-          <div className="h-full">
+        <FeatureShowcaseTarget id="consumer.detailPane" className="flex shrink-0 flex-col border-t xl:w-[clamp(26rem,42vw,44rem)] xl:min-w-[26rem] xl:max-w-[44rem] xl:border-t-0">
+          <div className="flex h-full min-h-0 flex-col">
             <PrescriptionDetail
               summary={selected}
-              onClose={() => setSelected(null)}
+              onClose={handleCloseDetail}
             />
           </div>
         </FeatureShowcaseTarget>

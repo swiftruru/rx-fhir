@@ -39,7 +39,12 @@ function getBundleEntryCount(payload: unknown): number | undefined {
   return undefined
 }
 
-function renderPayload(title: string, payload: unknown, emptyLabel: string): React.JSX.Element {
+function renderPayload(
+  title: string,
+  payload: unknown,
+  emptyLabel: string,
+  defaultViewMode: 'summary' | 'raw' = 'raw'
+): React.JSX.Element {
   if (payload === undefined || payload === null || payload === '') {
     return (
       <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 px-3 py-4 text-xs text-muted-foreground">
@@ -59,7 +64,15 @@ function renderPayload(title: string, payload: unknown, emptyLabel: string): Rea
     )
   }
 
-  return <JsonViewer data={payload} title={title} defaultCollapsed={false} fontSize="sm" />
+  return (
+    <JsonViewer
+      data={payload}
+      title={title}
+      defaultCollapsed={false}
+      defaultViewMode={defaultViewMode}
+      fontSize="sm"
+    />
+  )
 }
 
 function getFlowTitle(
@@ -328,9 +341,9 @@ export default function FhirRequestInspector({ request, history }: Props): React
 
       <div className="grid gap-3">
         {renderPayload(t('stepper.requestHeadersTitle'), request.requestHeaders, emptyLabel)}
-        {renderPayload(t('stepper.requestBodyTitle'), request.requestBody, emptyLabel)}
+        {renderPayload(t('stepper.requestBodyTitle'), request.requestBody, emptyLabel, 'summary')}
         {renderPayload(t('stepper.responseHeadersTitle'), request.responseHeaders, emptyLabel)}
-        {renderPayload(t('stepper.responseBodyTitle'), request.responseBody, emptyLabel)}
+        {renderPayload(t('stepper.responseBodyTitle'), request.responseBody, emptyLabel, 'summary')}
       </div>
     </div>
   )

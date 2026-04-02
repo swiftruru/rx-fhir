@@ -61,9 +61,11 @@ export default function ShortcutHelpDialog(): React.JSX.Element {
                                   <code className="rounded-md bg-muted px-2.5 py-1 text-[11px] font-medium">
                                     {formatBinding(shortcut.binding)}
                                   </code>
-                                  <Badge variant={overrides[shortcut.id] ? 'default' : 'secondary'}>
-                                    {overrides[shortcut.id] ? t('settings.customized') : t('settings.default')}
-                                  </Badge>
+                                  {overrides[shortcut.id] && (
+                                    <Badge variant="default">
+                                      {t('settings.customized')}
+                                    </Badge>
+                                  )}
                                 </div>
                               </div>
                             </div>

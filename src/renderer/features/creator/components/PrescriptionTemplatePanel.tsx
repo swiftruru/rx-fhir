@@ -14,9 +14,15 @@ import { useMockStore } from '../../../store/mockStore'
 
 interface Props {
   disabled?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export default function PrescriptionTemplatePanel({ disabled = false }: Props): React.JSX.Element | null {
+export default function PrescriptionTemplatePanel({
+  disabled = false,
+  open: controlledOpen,
+  onOpenChange
+}: Props): React.JSX.Element | null {
   const { t } = useTranslation('creator')
   const locale = useAppStore((s) => s.locale)
   const resources = useCreatorStore((s) => s.resources)
@@ -26,7 +32,8 @@ export default function PrescriptionTemplatePanel({ disabled = false }: Props): 
   const activateScenario = useMockStore((s) => s.activateScenario)
   const [category, setCategory] = useState<MockScenarioCategory | 'all'>('all')
   const [pendingTemplateId, setPendingTemplateId] = useState<string>()
-  const [open, setOpen] = useState(false)
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
+  const open = controlledOpen ?? uncontrolledOpen
 
   const templates = useMemo(() => getPrescriptionTemplateScenarios(locale), [locale])
   const filteredTemplates = useMemo(
@@ -39,11 +46,18 @@ export default function PrescriptionTemplatePanel({ disabled = false }: Props): 
     [bundleId, drafts, resources]
   )
 
+  function setPanelOpen(next: boolean): void {
+    if (controlledOpen === undefined) {
+      setUncontrolledOpen(next)
+    }
+    onOpenChange?.(next)
+  }
+
   function applyTemplate(template: MockPrescriptionTemplate): void {
     applyTemplateDrafts(buildTemplateDraftsFromScenario(template.scenario))
     activateScenario(template.id)
     setPendingTemplateId(undefined)
-    setOpen(false)
+    setPanelOpen(false)
   }
 
   function handleApplyTemplate(templateId: string): void {
@@ -66,7 +80,7 @@ export default function PrescriptionTemplatePanel({ disabled = false }: Props): 
 
   return (
     <>
-      <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)} disabled={disabled}>
+      <Button type="button" variant="outline" size="sm" onClick={() => setPanelOpen(true)} disabled={disabled}>
         <LayoutTemplate className="h-4 w-4" />
         {t('templates.trigger')}
       </Button>
@@ -79,7 +93,7 @@ export default function PrescriptionTemplatePanel({ disabled = false }: Props): 
             className="absolute inset-0 cursor-default"
             onClick={() => {
               setPendingTemplateId(undefined)
-              setOpen(false)
+              setPanelOpen(false)
             }}
           />
 
@@ -104,7 +118,7 @@ export default function PrescriptionTemplatePanel({ disabled = false }: Props): 
                     className="h-8 w-8"
                     onClick={() => {
                       setPendingTemplateId(undefined)
-                      setOpen(false)
+                      setPanelOpen(false)
                     }}
                   >
                     <X className="h-4 w-4" />

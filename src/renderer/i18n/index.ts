@@ -7,6 +7,7 @@ import zhCreator  from './locales/zh-TW/creator.json'
 import zhConsumer from './locales/zh-TW/consumer.json'
 import zhSettings from './locales/zh-TW/settings.json'
 import zhShowcase from './locales/zh-TW/showcase.json'
+import zhShortcuts from './locales/zh-TW/shortcuts.json'
 
 import enCommon   from './locales/en/common.json'
 import enNav      from './locales/en/nav.json'
@@ -14,6 +15,7 @@ import enCreator  from './locales/en/creator.json'
 import enConsumer from './locales/en/consumer.json'
 import enSettings from './locales/en/settings.json'
 import enShowcase from './locales/en/showcase.json'
+import enShortcuts from './locales/en/shortcuts.json'
 
 export type SupportedLocale = 'zh-TW' | 'en'
 
@@ -36,7 +38,8 @@ i18n.use(initReactI18next).init({
       creator:  zhCreator,
       consumer: zhConsumer,
       settings: zhSettings,
-      showcase: zhShowcase
+      showcase: zhShowcase,
+      shortcuts: zhShortcuts
     },
     en: {
       common:   enCommon,
@@ -44,12 +47,13 @@ i18n.use(initReactI18next).init({
       creator:  enCreator,
       consumer: enConsumer,
       settings: enSettings,
-      showcase: enShowcase
+      showcase: enShowcase,
+      shortcuts: enShortcuts
     }
   },
   lng: detectLanguage(),
   fallbackLng: 'zh-TW',
-  ns: ['common', 'nav', 'creator', 'consumer', 'settings', 'showcase'],
+  ns: ['common', 'nav', 'creator', 'consumer', 'settings', 'showcase', 'shortcuts'],
   defaultNS: 'common',
   interpolation: { escapeValue: false }
 })

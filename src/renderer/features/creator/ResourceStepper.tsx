@@ -11,6 +11,7 @@ import { cn } from '../../lib/utils'
 import { useCreatorStore } from '../../store/creatorStore'
 import { useFhirInspectorStore } from '../../store/fhirInspectorStore'
 import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
+import { useShortcutActionStore } from '../../store/shortcutActionStore'
 import { RESOURCE_STEPS } from '../../types/fhir.d'
 import type { CreatedResources, ResourceKey } from '../../types/fhir.d'
 
@@ -189,6 +190,8 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
   const requestHistory = useFhirInspectorStore((state) => state.history)
   const showcaseStatus = useFeatureShowcaseStore((state) => state.status)
   const showcaseUi = useFeatureShowcaseStore((state) => state.ui)
+  const setCreatorActions = useShortcutActionStore((state) => state.setCreatorActions)
+  const clearCreatorActions = useShortcutActionStore((state) => state.clearCreatorActions)
   const [showRightPanel, setShowRightPanel] = useState(false)
   const [rightPanelMode, setRightPanelMode] = useState<'json' | 'request'>('json')
   const [expandSeq, setExpandSeq] = useState(0)
@@ -245,35 +248,15 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
   }, [showcaseActive, showcaseUi.creator])
 
   useEffect(() => {
-    function handleStepperKeyboardNavigation(event: KeyboardEvent): void {
-      if (event.defaultPrevented || event.metaKey || event.ctrlKey) return
-      if (isEditableTarget(event.target)) return
+    setCreatorActions({
+      toggleRightPanel: () => setShowRightPanel((current) => !current),
+      toggleRightPanelMode: () => setRightPanelMode((current) => current === 'json' ? 'request' : 'json')
+    })
 
-      const target = event.target instanceof HTMLElement ? event.target : null
-      const inStepper = Boolean(target?.closest('[data-stepper-nav="true"]'))
-
-      let nextStepIndex: number | null = null
-
-      if ((event.altKey || inStepper) && event.key === 'ArrowUp') {
-        nextStepIndex = Math.max(0, currentStep - 1)
-      } else if ((event.altKey || inStepper) && event.key === 'ArrowDown') {
-        nextStepIndex = Math.min(RESOURCE_STEPS.length - 1, currentStep + 1)
-      } else if ((event.altKey || inStepper) && event.key === 'Home' && !event.shiftKey) {
-        nextStepIndex = 0
-      } else if ((event.altKey || inStepper) && event.key === 'End' && !event.shiftKey) {
-        nextStepIndex = RESOURCE_STEPS.length - 1
-      }
-
-      if (nextStepIndex === null || nextStepIndex === currentStep) return
-
-      event.preventDefault()
-      shouldFocusCurrentStepRef.current = true
-      setStep(nextStepIndex)
+    return () => {
+      clearCreatorActions(['toggleRightPanel', 'toggleRightPanelMode'])
     }
-
-    window.addEventListener('keydown', handleStepperKeyboardNavigation)
-    return () => window.removeEventListener('keydown', handleStepperKeyboardNavigation)
-  }, [currentStep, setStep])
+  }, [clearCreatorActions, setCreatorActions])
 
   useEffect(() => {
     if (!shouldFocusCurrentStepRef.current) return
@@ -338,6 +321,29 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
 
   const currentStepKey = RESOURCE_STEPS[currentStep].key
   const completedCount = RESOURCE_STEPS.filter((_, i) => isStepComplete(i)).length
+
+  function handleStepperKeyboardNavigation(event: React.KeyboardEvent<HTMLElement>): void {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey) return
+    if (isEditableTarget(event.target)) return
+
+    let nextStepIndex: number | null = null
+
+    if (event.key === 'ArrowUp') {
+      nextStepIndex = Math.max(0, currentStep - 1)
+    } else if (event.key === 'ArrowDown') {
+      nextStepIndex = Math.min(RESOURCE_STEPS.length - 1, currentStep + 1)
+    } else if (event.key === 'Home' && !event.shiftKey) {
+      nextStepIndex = 0
+    } else if (event.key === 'End' && !event.shiftKey) {
+      nextStepIndex = RESOURCE_STEPS.length - 1
+    }
+
+    if (nextStepIndex === null || nextStepIndex === currentStep) return
+
+    event.preventDefault()
+    shouldFocusCurrentStepRef.current = true
+    setStep(nextStepIndex)
+  }
   const currentStepSummary = stepSummaries[currentStepKey]
   const jsonEntries = useMemo(
     () => Object.entries(resources).filter((entry): entry is [ResourceKey, NonNullable<CreatedResources[ResourceKey]>] => Boolean(entry[1])),
@@ -394,7 +400,12 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
             </p>
           </div>
           <ScrollArea className="min-h-0 flex-1">
-            <nav className="p-2 space-y-1" data-stepper-nav="true" aria-label={t('stepper.progress')}>
+            <nav
+              className="p-2 space-y-1"
+              data-stepper-nav="true"
+              aria-label={t('stepper.progress')}
+              onKeyDown={handleStepperKeyboardNavigation}
+            >
               {RESOURCE_STEPS.map((step, index) => {
                 const complete = isStepComplete(index)
                 const active = index === currentStep

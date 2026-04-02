@@ -1,0 +1,76 @@
+{
+  "dialog": {
+    "title": "Keyboard Shortcuts",
+    "description": "Browse the active shortcuts and their current bindings."
+  },
+  "platformHint": "Shortcuts are rendered in platform format, such as ⌘ on macOS.",
+  "categories": {
+    "global": "Global",
+    "creator": "Creator",
+    "consumer": "Consumer",
+    "settings": "Settings"
+  },
+  "actions": {
+    "global": {
+      "openHelp": { "label": "Open shortcut help", "description": "Show the shortcut reference dialog." },
+      "goCreator": { "label": "Go to Creator", "description": "Navigate to the prescription creation page." },
+      "goConsumer": { "label": "Go to Consumer", "description": "Navigate to the prescription query page." },
+      "goSettings": { "label": "Go to Settings", "description": "Navigate to the settings page." },
+      "toggleTheme": { "label": "Toggle theme", "description": "Cycle between light, dark, and system theme." },
+      "toggleLocale": { "label": "Toggle locale", "description": "Switch between Chinese and English UI." }
+    },
+    "creator": {
+      "prevStep": { "label": "Previous step", "description": "Move to the previous Creator step." },
+      "nextStep": { "label": "Next step", "description": "Move to the next Creator step." },
+      "firstStep": { "label": "First step", "description": "Jump to the first resource step." },
+      "lastStep": { "label": "Last step", "description": "Jump to the final document bundle step." },
+      "submitStep": { "label": "Submit current step", "description": "Submit the current form and create the current resource." },
+      "fillMock": { "label": "Fill mock data", "description": "Quickly fill mock data for the current step." },
+      "openTemplate": { "label": "Open prescription templates", "description": "Open the prescription template picker." },
+      "toggleRightPanel": { "label": "Toggle right panel", "description": "Show or hide the JSON / FHIR request side panel." },
+      "toggleRightPanelMode": { "label": "Toggle right panel mode", "description": "Switch between Resources JSON and FHIR Request." },
+      "toggleLiveDemo": { "label": "Toggle Live Demo", "description": "Start or stop the guided Live Demo flow." },
+      "toggleFeatureShowcase": { "label": "Toggle Feature Showcase", "description": "Start or stop the spotlight-based feature tour." }
+    },
+    "consumer": {
+      "focusSearch": { "label": "Focus search field", "description": "Move focus to the main input of the active search tab." },
+      "searchBasic": { "label": "Switch to Basic Search", "description": "Show the Basic Search form." },
+      "searchDate": { "label": "Switch to Date Search", "description": "Show the Date Search form." },
+      "searchComplex": { "label": "Switch to Complex Search", "description": "Show the Complex Search form." },
+      "submitSearch": { "label": "Run search", "description": "Submit the current search form." },
+      "showResults": { "label": "Show results", "description": "Switch to the Results tab." },
+      "showShortcuts": { "label": "Show shortcuts", "description": "Switch to the Query Helpers tab." },
+      "importBundle": { "label": "Import Bundle JSON", "description": "Import a local FHIR Bundle JSON file." },
+      "fillExample": { "label": "Apply query example", "description": "Fill an example query for the active search tab." },
+      "toggleDetailView": { "label": "Toggle detail view", "description": "Switch between structured detail and JSON view." }
+    },
+    "settings": {
+      "save": { "label": "Save settings", "description": "Save the current FHIR server settings." },
+      "testConnection": { "label": "Test connection", "description": "Run a connection check against the current server URL." },
+      "tabServer": { "label": "Open Server tab", "description": "Show the FHIR server configuration tab." },
+      "tabShortcuts": { "label": "Open Keyboard Shortcuts tab", "description": "Show the keyboard shortcut settings tab." }
+    }
+  },
+  "settings": {
+    "title": "Keyboard Shortcuts",
+    "description": "Review, customize, and resolve shortcut bindings in one place.",
+    "categoryLabel": "Category",
+    "currentBinding": "Current binding",
+    "actions": "Actions",
+    "edit": "Edit",
+    "editing": "Press a new shortcut",
+    "cancelEditing": "Cancel",
+    "reset": "Restore default",
+    "resetAll": "Reset all to defaults",
+    "empty": "No customizable shortcuts available.",
+    "customized": "Customized",
+    "default": "Default",
+    "recordingHint": "Press the new key combination now. Press Esc to cancel.",
+    "notCustomizable": "This shortcut cannot be customized.",
+    "conflicts": {
+      "invalid": "Use a valid shortcut with at least one modifier key.",
+      "reserved": "This shortcut is reserved for common system actions. Please choose another one.",
+      "duplicate": "This shortcut is already used by: {{action}}"
+    }
+  }
+}

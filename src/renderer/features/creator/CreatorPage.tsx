@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CheckCircle2, RotateCcw, AlertTriangle, Save, GraduationCap } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -11,6 +11,7 @@ import { useMockStore } from '../../store/mockStore'
 import { LIVE_DEMO_STEPS } from '../../demo/liveDemoScript'
 import { useLiveDemoStore } from '../../store/liveDemoStore'
 import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
+import { useShortcutActionStore } from '../../store/shortcutActionStore'
 import type { ConsumerLaunchState } from '../consumer/searchState'
 
 export default function CreatorPage(): React.JSX.Element {
@@ -19,10 +20,13 @@ export default function CreatorPage(): React.JSX.Element {
   const liveDemoStatus = useLiveDemoStore((s) => s.status)
   const startLiveDemo = useLiveDemoStore((s) => s.start)
   const featureShowcaseStatus = useFeatureShowcaseStore((s) => s.status)
+  const setCreatorActions = useShortcutActionStore((state) => state.setCreatorActions)
+  const clearCreatorActions = useShortcutActionStore((state) => state.clearCreatorActions)
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
   const navigate = useNavigate()
   const [confirming, setConfirming] = useState(false)
+  const [templatePanelOpen, setTemplatePanelOpen] = useState(false)
 
   const formattedDraftTime = useMemo(() => {
     if (!draftSavedAt) return undefined
@@ -75,6 +79,16 @@ export default function CreatorPage(): React.JSX.Element {
   const liveDemoActive = liveDemoStatus === 'running' || liveDemoStatus === 'paused'
   const featureShowcaseActive = featureShowcaseStatus === 'running' || featureShowcaseStatus === 'paused'
 
+  useEffect(() => {
+    setCreatorActions({
+      openTemplates: () => setTemplatePanelOpen(true)
+    })
+
+    return () => {
+      clearCreatorActions(['openTemplates'])
+    }
+  }, [clearCreatorActions, setCreatorActions])
+
   return (
     <div className="flex flex-col h-full">
       {/* Page header */}
@@ -107,7 +121,11 @@ export default function CreatorPage(): React.JSX.Element {
               <GraduationCap className="h-4 w-4" />
               {liveDemoActive ? t('liveDemo.runningButton') : t('liveDemo.startButton')}
             </Button>
-            <PrescriptionTemplatePanel disabled={liveDemoActive || featureShowcaseActive} />
+            <PrescriptionTemplatePanel
+              disabled={liveDemoActive || featureShowcaseActive}
+              open={templatePanelOpen}
+              onOpenChange={setTemplatePanelOpen}
+            />
             <Button variant="outline" size="sm" onClick={handleResetClick} disabled={liveDemoActive || featureShowcaseActive}>
               <RotateCcw className="h-4 w-4" />
               {tc('buttons.reset')}

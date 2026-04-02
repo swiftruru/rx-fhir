@@ -3,7 +3,7 @@
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.10-d4779a?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.11-d4779a?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/github/license/swiftruru/rx-fhir?style=flat-square&color=d4779a" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-8e8e93?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
@@ -104,9 +104,9 @@ Current Creator capabilities:
 - Step success / reuse alerts now remain visible when you leave a completed step and come back later
 - Human-friendly FHIR `OperationOutcome` messages are shown first, with expandable raw error details for troubleshooting
 - Most Creator forms now include consistent inline guide cards with examples and field-level hints for identifiers, encounter timing, ICD-10, LOINC, insurance, medication coding, medication route, and supplemental extensions
-- Keyboard accessibility is improved with stepper shortcuts (`Alt + ↑ / ↓`, `Alt + Home / End`) and clearer focus-visible states for keyboard navigation
+- Keyboard accessibility is improved with stepper shortcuts, clearer focus-visible states, and an app-wide shortcut system with a help dialog plus customizable bindings in Settings
 - Live Demo mode provides a guided, step-by-step teaching flow with manual-first pacing, optional autoplay, and human-like typed mock input
-- Feature Showcase mode provides a spotlight-style product tour with target highlighting, background dimming, and feature-by-feature coaching text
+- Feature Showcase mode provides a spotlight-style product tour with adjacent coaching panels, highlighted targets, darker background dimming, and polished product-style transitions
 - Live JSON preview of created resources
 - JSON preview now follows the active light / dark theme instead of staying fixed in a dark-only style
 - JSON preview now includes a compact toolbar with font-size switching, collapse, and all/latest-resource toggles for demos
@@ -169,6 +169,7 @@ Search and inspect FHIR Bundles on the configured server:
 - FHIR Server URL configuration with preset servers
 - Live server health check via `/metadata`
 - Testing the currently active server now immediately syncs the global connection status shown in Settings and the status bar
+- A dedicated Keyboard Shortcuts settings tab lets users inspect active bindings, customize selected shortcuts, detect conflicts, and restore defaults
 - Light / Dark / System theme toggle
 - `zh-TW` / `en` language toggle
 - Embedded `Noto Sans TC` UI font for more consistent offline typography, especially on Windows

@@ -1,0 +1,76 @@
+{
+  "dialog": {
+    "title": "快速鍵",
+    "description": "集中查看目前生效的快速鍵設定。"
+  },
+  "platformHint": "顯示會依目前平台自動格式化，例如 macOS 顯示為 ⌘。",
+  "categories": {
+    "global": "全域",
+    "creator": "Creator",
+    "consumer": "Consumer",
+    "settings": "Settings"
+  },
+  "actions": {
+    "global": {
+      "openHelp": { "label": "開啟快速鍵說明", "description": "查看所有快速鍵與目前設定。" },
+      "goCreator": { "label": "前往 Creator", "description": "切換到處方建立頁。" },
+      "goConsumer": { "label": "前往 Consumer", "description": "切換到處方查詢頁。" },
+      "goSettings": { "label": "前往 Settings", "description": "切換到系統設定頁。" },
+      "toggleTheme": { "label": "切換主題", "description": "在亮色、暗色與系統主題之間切換。" },
+      "toggleLocale": { "label": "切換語系", "description": "在中文與英文介面之間切換。" }
+    },
+    "creator": {
+      "prevStep": { "label": "上一個步驟", "description": "切到上一個 Creator 步驟。" },
+      "nextStep": { "label": "下一個步驟", "description": "切到下一個 Creator 步驟。" },
+      "firstStep": { "label": "跳到第一步", "description": "直接移動到第一個 Resource 步驟。" },
+      "lastStep": { "label": "跳到最後一步", "description": "直接移動到文件組裝步驟。" },
+      "submitStep": { "label": "提交目前步驟", "description": "送出目前表單或建立當前 Resource。" },
+      "fillMock": { "label": "填入示範資料", "description": "快速填入目前步驟的 mock data。" },
+      "openTemplate": { "label": "開啟範本處方", "description": "打開範本處方視窗並選擇情境。" },
+      "toggleRightPanel": { "label": "切換右側面板", "description": "顯示或隱藏 JSON / FHIR 請求面板。" },
+      "toggleRightPanelMode": { "label": "切換右側面板模式", "description": "在資源 JSON 與 FHIR Request 之間切換。" },
+      "toggleLiveDemo": { "label": "啟動或停止 Live Demo", "description": "切換逐步教學示範模式。" },
+      "toggleFeatureShowcase": { "label": "啟動或停止特色導覽", "description": "切換 Feature Showcase spotlight 導覽。" }
+    },
+    "consumer": {
+      "focusSearch": { "label": "聚焦查詢欄位", "description": "把焦點移到目前查詢頁籤的主要輸入欄位。" },
+      "searchBasic": { "label": "切到基本查詢", "description": "顯示 Basic Search 表單。" },
+      "searchDate": { "label": "切到日期查詢", "description": "顯示 Date Search 表單。" },
+      "searchComplex": { "label": "切到複合查詢", "description": "顯示 Complex Search 表單。" },
+      "submitSearch": { "label": "執行查詢", "description": "送出目前查詢條件。" },
+      "showResults": { "label": "顯示搜尋結果", "description": "切到 Results 分頁。" },
+      "showShortcuts": { "label": "顯示查詢輔助", "description": "切到 Query Helpers 分頁。" },
+      "importBundle": { "label": "匯入 Bundle JSON", "description": "從本機匯入 FHIR Bundle JSON。" },
+      "fillExample": { "label": "套用查詢範例", "description": "依目前頁籤快速帶入查詢範例。" },
+      "toggleDetailView": { "label": "切換詳情檢視", "description": "在結構化檢視與 JSON 檢視之間切換。" }
+    },
+    "settings": {
+      "save": { "label": "儲存設定", "description": "儲存目前 FHIR Server 設定。" },
+      "testConnection": { "label": "測試連線", "description": "立即測試目前 Server URL 的連線狀態。" },
+      "tabServer": { "label": "切到 Server 分頁", "description": "顯示 FHIR Server 設定內容。" },
+      "tabShortcuts": { "label": "切到快速鍵分頁", "description": "顯示 Keyboard Shortcuts 設定頁。" }
+    }
+  },
+  "settings": {
+    "title": "Keyboard Shortcuts",
+    "description": "查看、修改目前快捷鍵，並避免不同功能之間的衝突。",
+    "categoryLabel": "分類",
+    "currentBinding": "目前快速鍵",
+    "actions": "功能",
+    "edit": "編輯",
+    "editing": "請按下新的組合鍵",
+    "cancelEditing": "取消",
+    "reset": "恢復預設",
+    "resetAll": "全部恢復預設",
+    "empty": "尚無可自訂的快捷鍵。",
+    "customized": "已自訂",
+    "default": "預設",
+    "recordingHint": "請直接按下新的組合鍵，Esc 可取消。",
+    "notCustomizable": "此快捷鍵不可自訂。",
+    "conflicts": {
+      "invalid": "請使用帶有修飾鍵的有效組合，例如 Ctrl/⌘、Alt 或 Shift。",
+      "reserved": "這組按鍵保留給系統常用操作，請換一組。",
+      "duplicate": "這組按鍵已被其他功能使用：{{action}}"
+    }
+  }
+}

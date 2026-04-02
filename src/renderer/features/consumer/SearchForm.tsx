@@ -34,6 +34,8 @@ interface Props {
 export interface SearchFormHandle {
   fillMock: () => void
   importBundle: () => Promise<void>
+  submit: () => Promise<void>
+  focusPrimaryInput: () => void
 }
 
 const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
@@ -148,6 +150,34 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
     onTabChange(value as SearchTab)
   }
 
+  function focusPrimaryInput(): void {
+    if (activeTab === 'basic') {
+      basicForm.setFocus('value')
+      return
+    }
+
+    if (activeTab === 'date') {
+      dateForm.setFocus('identifier')
+      return
+    }
+
+    complexForm.setFocus('identifier')
+  }
+
+  async function submitCurrentTab(): Promise<void> {
+    if (activeTab === 'basic') {
+      await basicForm.handleSubmit(handleBasicSubmit)()
+      return
+    }
+
+    if (activeTab === 'date') {
+      await dateForm.handleSubmit(handleDateSubmit)()
+      return
+    }
+
+    await complexForm.handleSubmit(handleComplexSubmit)()
+  }
+
   async function doSearch(params: SearchParams): Promise<void> {
     setLoading(true)
     setError(undefined)
@@ -247,8 +277,10 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
 
   useImperativeHandle(ref, () => ({
     fillMock,
-    importBundle: handleImportBundle
-  }), [activeTab, consumerBasicMocks, consumerComplexMocks, consumerDateMocks, importing, loading])
+    importBundle: handleImportBundle,
+    submit: submitCurrentTab,
+    focusPrimaryInput
+  }), [activeTab, basicForm, complexForm, consumerBasicMocks, consumerComplexMocks, consumerDateMocks, dateForm, importing, loading])
 
   return (
     <div className="space-y-4">

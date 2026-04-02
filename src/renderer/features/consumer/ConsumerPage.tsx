@@ -15,6 +15,7 @@ import { useHistoryStore, type SubmissionRecord } from '../../store/historyStore
 import { useSearchHistoryStore } from '../../store/searchHistoryStore'
 import { useLiveDemoStore } from '../../store/liveDemoStore'
 import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
+import { useShortcutActionStore } from '../../store/shortcutActionStore'
 import { fetchBundleById } from '../../services/fhirClient'
 import { extractBundleHistoryMetadata } from '../../services/searchService'
 import {
@@ -56,6 +57,8 @@ export default function ConsumerPage(): React.JSX.Element {
   const showcaseStatus = useFeatureShowcaseStore((state) => state.status)
   const showcaseUi = useFeatureShowcaseStore((state) => state.ui)
   const showcaseSnapshot = useFeatureShowcaseStore((state) => state.snapshot)
+  const setConsumerActions = useShortcutActionStore((state) => state.setConsumerActions)
+  const clearConsumerActions = useShortcutActionStore((state) => state.clearConsumerActions)
   const [results, setResults] = useState<BundleSummary[]>([])
   const [total, setTotal] = useState(0)
   const [selected, setSelected] = useState<BundleSummary | null>(null)
@@ -95,6 +98,28 @@ export default function ConsumerPage(): React.JSX.Element {
   useEffect(() => {
     setDashboardSavedOpen(savedSearchCount > 0)
   }, [savedSearchCount])
+
+  useEffect(() => {
+    setConsumerActions({
+      focusSearch: () => searchFormRef.current?.focusPrimaryInput(),
+      submitSearch: () => void searchFormRef.current?.submit(),
+      importBundle: () => searchFormRef.current?.importBundle(),
+      fillExample: () => searchFormRef.current?.fillMock(),
+      setSearchTab: setActiveTab,
+      setMiddleTab
+    })
+
+    return () => {
+      clearConsumerActions([
+        'focusSearch',
+        'submitSearch',
+        'importBundle',
+        'fillExample',
+        'setSearchTab',
+        'setMiddleTab'
+      ])
+    }
+  }, [clearConsumerActions, setConsumerActions])
 
   useEffect(() => {
     if (showcaseActive && !showcaseBackupRef.current) {

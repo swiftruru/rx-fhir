@@ -11,6 +11,7 @@ import JsonViewer from '../../components/JsonViewer'
 import type { BundleSummary } from '../../types/fhir.d'
 import { exportBundleJson, getBundleFileErrorMessage } from '../../services/bundleFileService'
 import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
+import { useShortcutActionStore } from '../../store/shortcutActionStore'
 
 interface Props {
   summary: BundleSummary
@@ -41,6 +42,8 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
   const { t: tc } = useTranslation('common')
   const showcaseStatus = useFeatureShowcaseStore((state) => state.status)
   const showcaseUi = useFeatureShowcaseStore((state) => state.ui)
+  const setConsumerActions = useShortcutActionStore((state) => state.setConsumerActions)
+  const clearConsumerActions = useShortcutActionStore((state) => state.clearConsumerActions)
   const [showJson, setShowJson] = useState(false)
   const [fileMessage, setFileMessage] = useState<string>()
   const [fileError, setFileError] = useState<string>()
@@ -85,6 +88,16 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
       setShowJson(detailView === 'json')
     }
   }, [showcaseActive, showcaseUi.consumer?.detailView])
+
+  useEffect(() => {
+    setConsumerActions({
+      toggleDetailView: () => setShowJson((current) => !current)
+    })
+
+    return () => {
+      clearConsumerActions(['toggleDetailView'])
+    }
+  }, [clearConsumerActions, setConsumerActions])
 
   async function handleExport(): Promise<void> {
     setExporting(true)

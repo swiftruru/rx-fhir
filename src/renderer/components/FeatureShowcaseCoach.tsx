@@ -372,7 +372,12 @@ export default function FeatureShowcaseCoach(): React.JSX.Element | null {
                     {isPaused ? t('controls.resume') : t('controls.pause')}
                   </Button>
                 )}
-                <Button size="sm" variant="ghost" onClick={stop}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={stop}
+                >
                   <Square className="h-4 w-4" />
                   {t('controls.stop')}
                 </Button>

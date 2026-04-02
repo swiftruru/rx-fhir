@@ -331,9 +331,16 @@ Current repository quality signals:
 
 This repository now follows a version-scoped release process:
 
-1. Create a changelog file in [`changelog/`](./changelog) named after the release tag, for example `v1.2.0.md`.
-2. Write only the changes introduced in that version.
-3. Commit the changelog file before pushing the matching Git tag, for example `v1.2.0`.
+1. Merge the release-ready changes onto `main`.
+2. Run `npm run release -- patch` or `npm run release -- 1.2.0`.
+3. The release script will:
+   - create or update `changelog/vX.Y.Z.md`
+   - open `$EDITOR` for the changelog if it needs to scaffold a new file
+   - update `package.json`, `package-lock.json`, and the README version badge
+   - run `npm run typecheck`
+   - commit `Release vX.Y.Z`
+   - create the matching annotated Git tag
+   - push the branch and tag to GitHub
 4. GitHub Actions will automatically build:
    - `RxFHIR-macOS-<version>.dmg`
    - `RxFHIR-macOS-<version>.zip`
@@ -342,6 +349,8 @@ This repository now follows a version-scoped release process:
    - `RxFHIR-Linux-<version>.AppImage`
    - `RxFHIR-Linux-<version>.deb`
 5. GitHub Release notes will prepend a platform download guide, then include only that version's changelog file from the tagged commit.
+
+If you already have release notes in another file, use `npm run release -- patch --notes-file ./path/to/notes.md`.
 
 ---
 

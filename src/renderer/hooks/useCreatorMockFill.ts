@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import type { ResourceKey } from '../types/fhir.d'
 import { useReducedMotion } from '../hooks/useReducedMotion'
+import { revealLiveDemoField } from '../lib/liveDemoDom'
 import { useAppStore } from '../store/appStore'
 import { useLiveDemoStore } from '../store/liveDemoStore'
 import { useMockStore } from '../store/mockStore'
@@ -91,6 +92,8 @@ export function useLiveDemoTypedMockFill<T extends Record<string, unknown>>(
       : playMode === 'auto' ? 180 : 100
 
     for (const [key, value] of Object.entries(mock)) {
+      await revealLiveDemoField(resourceKey, key, reducedMotion)
+
       if (shouldTypeValue(key, value)) {
         let current = ''
         for (const char of value) {

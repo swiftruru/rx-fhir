@@ -70,6 +70,7 @@ export default function CommandPaletteDialog(): React.JSX.Element {
   const startLiveDemo = useLiveDemoStore((state) => state.start)
   const stopLiveDemo = useLiveDemoStore((state) => state.stop)
   const [query, setQuery] = useState('')
+  const [selectedIndex, setSelectedIndex] = useState(0)
   const [recentFiles, setRecentFiles] = useState<RecentBundleFileEntry[]>([])
   const normalizedQuery = normalizeQuery(query)
   const liveDemoActive = liveDemoStatus === 'running' || liveDemoStatus === 'paused'
@@ -81,6 +82,7 @@ export default function CommandPaletteDialog(): React.JSX.Element {
     if (!open) {
       setQuery('')
       setRecentFiles([])
+      setSelectedIndex(0)
       return
     }
 
@@ -233,7 +235,7 @@ export default function CommandPaletteDialog(): React.JSX.Element {
         group: t('commandPalette.groups.currentPage'),
         label: t('commandPalette.actions.toggleInspector.label'),
         description: t('commandPalette.actions.toggleInspector.description'),
-        keywords: ['panel', 'inspector', 'json', 'request', '右側面板'],
+        keywords: ['panel', 'inspector', 'json', 'request', '資訊面板'],
         icon: Sparkles,
         run: () => creatorActions.toggleRightPanel?.()
       },
@@ -339,12 +341,29 @@ export default function CommandPaletteDialog(): React.JSX.Element {
     [actions, normalizedQuery]
   )
 
+  useEffect(() => {
+    if (!open) return
+    setSelectedIndex(0)
+  }, [normalizedQuery, open])
+
+  useEffect(() => {
+    if (filtered.length === 0) {
+      setSelectedIndex(0)
+      return
+    }
+
+    if (selectedIndex > filtered.length - 1) {
+      setSelectedIndex(filtered.length - 1)
+    }
+  }, [filtered.length, selectedIndex])
+
   const grouped = useMemo(() => {
     return filtered.reduce<Record<string, PaletteAction[]>>((acc, action) => {
       acc[action.group] = [...(acc[action.group] ?? []), action]
       return acc
     }, {})
   }, [filtered])
+  const selectedAction = filtered[selectedIndex] ?? null
 
   function runAction(action: PaletteAction): void {
     action.run()
@@ -353,10 +372,12 @@ export default function CommandPaletteDialog(): React.JSX.Element {
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && closePalette()}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{t('commandPalette.title')}</DialogTitle>
-          <DialogDescription>{t('commandPalette.description')}</DialogDescription>
+      <DialogContent className="max-h-[min(88vh,820px)] overflow-y-auto pr-14 sm:max-w-3xl sm:pr-16 [&>button]:right-5 [&>button]:top-5 [&>button]:opacity-45 [&>button]:hover:opacity-80">
+        <DialogHeader className="space-y-2 pr-2">
+          <DialogTitle className="text-xl sm:text-[22px]">{t('commandPalette.title')}</DialogTitle>
+          <DialogDescription className="max-w-2xl leading-relaxed">
+            {t('commandPalette.description')}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -367,50 +388,126 @@ export default function CommandPaletteDialog(): React.JSX.Element {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t('commandPalette.placeholder')}
-              className="pl-9"
+              className="h-11 rounded-xl pl-9 pr-4"
               onKeyDown={(event) => {
-                if (event.key === 'Enter' && filtered[0]) {
+                if (event.key === 'Enter' && selectedAction) {
                   event.preventDefault()
-                  runAction(filtered[0])
+                  runAction(selectedAction)
+                  return
+                }
+
+                if (event.key === 'ArrowDown') {
+                  event.preventDefault()
+                  if (filtered.length === 0) return
+                  setSelectedIndex((current) => Math.min(filtered.length - 1, current + 1))
+                  return
+                }
+
+                if (event.key === 'ArrowUp') {
+                  event.preventDefault()
+                  if (filtered.length === 0) return
+                  setSelectedIndex((current) => Math.max(0, current - 1))
+                  return
+                }
+
+                if (event.key === 'Home') {
+                  event.preventDefault()
+                  if (filtered.length === 0) return
+                  setSelectedIndex(0)
+                  return
+                }
+
+                if (event.key === 'End') {
+                  event.preventDefault()
+                  if (filtered.length === 0) return
+                  setSelectedIndex(Math.max(filtered.length - 1, 0))
                 }
               }}
             />
           </div>
 
+          {filtered.length > 0 && (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/10 px-3 py-2 text-[11px] text-muted-foreground">
+              <span>{t('commandPalette.resultsCount', { count: filtered.length })}</span>
+              <div className="flex items-center gap-2">
+                <span className="rounded-md border border-border/70 bg-background/80 px-1.5 py-0.5 text-[10px] font-medium text-foreground/80">
+                  Enter
+                </span>
+                <span>{t('commandPalette.enterHint')}</span>
+              </div>
+            </div>
+          )}
+
           {filtered.length === 0 ? (
-            <div className="rounded-xl border border-dashed bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
+            <div className="rounded-2xl border border-dashed bg-muted/20 px-4 py-8 text-sm text-muted-foreground">
               {t('commandPalette.empty')}
             </div>
           ) : (
-            <div className="max-h-[55vh] space-y-4 overflow-y-auto pr-1">
+            <div className="max-h-[52vh] space-y-3 overflow-y-auto pr-1">
               {Object.entries(grouped).map(([group, items]) => (
-                <section key={group} className="space-y-2">
-                  <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {group}
-                  </h3>
+                <section key={group} className="rounded-2xl border border-border/60 bg-muted/[0.08] p-3">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <h3 className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      {group}
+                    </h3>
+                    <span className="rounded-full border border-border/70 bg-background/70 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      {items.length}
+                    </span>
+                  </div>
                   <div className="space-y-2">
                     {items.map((action, index) => {
                       const Icon = action.icon
+                      const isSelected = action.id === selectedAction?.id
                       return (
                         <button
                           key={action.id}
                           type="button"
                           onClick={() => runAction(action)}
+                          onMouseEnter={() => {
+                            const nextIndex = filtered.findIndex((candidate) => candidate.id === action.id)
+                            if (nextIndex >= 0) {
+                              setSelectedIndex(nextIndex)
+                            }
+                          }}
+                          aria-selected={isSelected}
                           className={cn(
-                            'flex w-full items-start gap-3 rounded-xl border bg-card px-4 py-3 text-left transition-colors',
+                            'relative flex w-full items-start justify-between gap-3 rounded-xl border bg-card px-4 py-3 text-left transition-colors',
                             'hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                            index === 0 && 'border-primary/30'
+                            isSelected
+                              ? 'border-primary/45 bg-primary/[0.12] shadow-sm'
+                              : index === 0 && 'border-primary/20'
                           )}
                         >
-                          <div className="rounded-lg border bg-muted/30 p-2 text-primary">
-                            <Icon className="h-4 w-4" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-sm font-medium text-foreground">{action.label}</div>
-                            <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                              {action.description}
+                          <span
+                            aria-hidden="true"
+                            className={cn(
+                              'absolute inset-y-2 left-1 w-1 rounded-full transition-opacity',
+                              isSelected ? 'bg-primary opacity-100' : 'opacity-0'
+                            )}
+                          />
+                          <div className="flex min-w-0 items-start gap-3">
+                            <div
+                              className={cn(
+                                'rounded-lg border p-2 text-primary transition-colors',
+                                isSelected
+                                  ? 'border-primary/30 bg-primary/[0.12] shadow-sm'
+                                  : 'bg-muted/30'
+                              )}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium text-foreground">{action.label}</div>
+                              <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                                {action.description}
+                              </div>
                             </div>
                           </div>
+                          {isSelected && (
+                            <span className="shrink-0 rounded-md border border-primary/30 bg-primary/[0.12] px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                              Enter
+                            </span>
+                          )}
                         </button>
                       )
                     })}

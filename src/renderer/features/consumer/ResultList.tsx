@@ -179,9 +179,9 @@ export default function ResultList({ results, total, searchExecution, selected, 
     const hasError = Boolean(searchExecution?.error)
 
     return (
-      <div className="h-full overflow-auto p-4">
-        <Card className="border-dashed bg-muted/20">
-          <CardContent className="p-5 space-y-5">
+      <div className="h-full overflow-auto bg-muted/[0.08] p-4">
+        <Card className="rounded-[24px] border-dashed border-border/70 bg-background/85 shadow-sm">
+          <CardContent className="space-y-5 p-5">
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground gap-2 py-2">
               {hasError ? <TriangleAlert className="h-10 w-10 opacity-70 text-amber-600" /> : <SearchX className="h-10 w-10 opacity-30" />}
               <p className="text-sm font-medium text-foreground">{hasError ? t('results.errorTitle') : t('results.empty')}</p>
@@ -232,14 +232,22 @@ export default function ResultList({ results, total, searchExecution, selected, 
 
   return (
     <div className="flex flex-col h-full">
-      <div role="status" aria-live="polite" className="px-4 py-2 border-b bg-muted/30 flex items-center gap-2 shrink-0">
-        <Badge variant="secondary" className="text-xs">{t('results.count', { total })}</Badge>
+      <div
+        role="status"
+        aria-live="polite"
+        className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-background/85 px-4 py-3 backdrop-blur"
+      >
+        <Badge variant="secondary" className="rounded-full px-2.5 text-[11px]">
+          {t('results.count', { total })}
+        </Badge>
         {total !== results.length && (
-          <span className="text-xs text-muted-foreground">{t('results.showing', { count: results.length })}</span>
+          <span className="rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-[11px] text-muted-foreground">
+            {t('results.showing', { count: results.length })}
+          </span>
         )}
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 bg-muted/[0.08]">
         <div id="consumer-results-keyboard-hint" className="sr-only">
           {t('results.keyboardHint')}
         </div>
@@ -247,7 +255,7 @@ export default function ResultList({ results, total, searchExecution, selected, 
           role="listbox"
           aria-label={t('results.listLabel')}
           aria-describedby="consumer-results-keyboard-hint"
-          className="p-3 space-y-2"
+          className="space-y-3 p-4"
         >
           {results.map((summary, index) => {
             const isSelected = selected?.id === summary.id
@@ -257,7 +265,13 @@ export default function ResultList({ results, total, searchExecution, selected, 
 
             return (
               <li key={summary.id}>
-                <Card className={isSelected ? 'ring-2 ring-primary border-primary' : ''}>
+                <Card
+                  className={
+                    isSelected
+                      ? 'overflow-hidden rounded-[22px] border-primary bg-background shadow-sm ring-2 ring-primary/20'
+                      : 'overflow-hidden rounded-[22px] border-border/70 bg-background/90 shadow-sm transition-colors hover:border-primary/25'
+                  }
+                >
                   <button
                     ref={(element) => {
                       optionRefs.current[index] = element
@@ -270,33 +284,39 @@ export default function ResultList({ results, total, searchExecution, selected, 
                     tabIndex={optionTabIndex}
                     onClick={() => onSelect(summary)}
                     onKeyDown={(event) => handleOptionKeyDown(event, index)}
-                    className="w-full rounded-lg text-left transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="group w-full overflow-hidden rounded-[22px] text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1 space-y-2">
-                          <div className="flex items-center gap-2">
+                    <CardContent className="p-0">
+                      <div className="flex">
+                        <div className={isSelected ? 'w-1.5 bg-primary/90' : 'w-1.5 bg-transparent transition-colors group-hover:bg-primary/20'} />
+                        <div className="min-w-0 flex-1 p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1 space-y-3">
+                              <div className="flex flex-wrap items-center gap-2">
                             <span className="font-semibold text-sm truncate">
                               {patientName}
                             </span>
                             {isSelected && (
-                              <Badge variant="default" className="text-[10px]">
+                              <Badge variant="default" className="rounded-full text-[10px]">
                                 {t('results.selectedBadge')}
                               </Badge>
                             )}
                             {summary.source === 'imported' && (
-                              <Badge variant="secondary" className="text-[10px]">
+                              <Badge variant="secondary" className="rounded-full text-[10px]">
                                 {t('results.importedBadge')}
                               </Badge>
                             )}
                             {summary.patientIdentifier && (
-                              <Badge variant="outline" className="text-[10px] font-mono shrink-0">
+                              <Badge variant="outline" className="rounded-full text-[10px] font-mono shrink-0">
                                 {summary.patientIdentifier}
                               </Badge>
                             )}
                           </div>
 
-                          <div id={optionDescriptionId} className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                          <div
+                            id={optionDescriptionId}
+                            className="flex flex-wrap gap-3 rounded-2xl bg-muted/[0.25] px-3 py-2 text-xs text-muted-foreground"
+                          >
                             {summary.fileName && (
                               <span className="truncate max-w-[180px]" title={summary.fileName}>
                                 {summary.fileName}
@@ -318,13 +338,13 @@ export default function ResultList({ results, total, searchExecution, selected, 
 
                           <div className="flex flex-wrap gap-1">
                             {(summary.conditions ?? []).slice(0, 2).map((c, i) => (
-                              <Badge key={i} variant="secondary" className="text-[10px]">
+                              <Badge key={i} variant="secondary" className="rounded-full text-[10px]">
                                 <Stethoscope aria-hidden="true" className="h-2.5 w-2.5 mr-1" />
                                 {c}
                               </Badge>
                             ))}
                             {(summary.medications ?? []).slice(0, 2).map((m, i) => (
-                              <Badge key={i} variant="outline" className="text-[10px]">
+                              <Badge key={i} variant="outline" className="rounded-full text-[10px]">
                                 <Pill aria-hidden="true" className="h-2.5 w-2.5 mr-1" />
                                 {m}
                               </Badge>
@@ -332,9 +352,14 @@ export default function ResultList({ results, total, searchExecution, selected, 
                           </div>
                         </div>
 
-                        <code className="text-[10px] text-muted-foreground font-mono shrink-0 max-w-[80px] truncate" title={summary.id}>
-                          {summary.id}
-                        </code>
+                            <code
+                              className="shrink-0 rounded-xl border border-border/70 bg-background/70 px-2 py-1 text-[10px] text-muted-foreground font-mono max-w-[96px] truncate"
+                              title={summary.id}
+                            >
+                              {summary.id}
+                            </code>
+                          </div>
+                        </div>
                       </div>
                     </CardContent>
                   </button>

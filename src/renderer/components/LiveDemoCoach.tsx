@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { GraduationCap, Pause, Play, SkipForward, Square, CheckCircle2, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useReducedMotion } from '../hooks/useReducedMotion'
@@ -20,21 +19,16 @@ export default function LiveDemoCoach(): React.JSX.Element | null {
     currentIndex,
     totalSteps,
     error,
+    coachCollapsed,
     pause,
     resume,
     stop,
     dismiss,
     requestAdvance,
     setPlayMode,
+    setCoachCollapsed,
     start
   } = useLiveDemoStore()
-  const [collapsed, setCollapsed] = useState(false)
-
-  useEffect(() => {
-    if (status === 'idle') {
-      setCollapsed(false)
-    }
-  }, [status])
 
   if (status === 'idle') return null
 
@@ -51,7 +45,7 @@ export default function LiveDemoCoach(): React.JSX.Element | null {
       ? t('liveDemo.errorTitle')
       : narrative?.title ?? t('liveDemo.preparingTitle')
 
-  if (collapsed) {
+  if (coachCollapsed) {
     return (
       <div className="pointer-events-none absolute bottom-6 right-3 z-50 max-w-[calc(100vw-1.5rem)]">
         <Card
@@ -149,7 +143,7 @@ export default function LiveDemoCoach(): React.JSX.Element | null {
                 size="sm"
                 variant="ghost"
                 className="h-[1.625rem] w-[1.625rem] p-0"
-                onClick={() => setCollapsed(false)}
+                onClick={() => setCoachCollapsed(false)}
                 title={t('liveDemo.controls.expand')}
                 aria-label={t('liveDemo.controls.expand')}
               >
@@ -182,7 +176,7 @@ export default function LiveDemoCoach(): React.JSX.Element | null {
                 size="sm"
                 variant="ghost"
                 className="h-8 w-8 p-0"
-                onClick={() => setCollapsed(true)}
+                onClick={() => setCoachCollapsed(true)}
                 title={t('liveDemo.controls.collapse')}
                 aria-label={t('liveDemo.controls.collapse')}
               >

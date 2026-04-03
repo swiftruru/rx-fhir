@@ -9,6 +9,11 @@
     "quickStartScenario": {
       "exampleLoaded": "已為你帶入一組基本查詢範例，接下來可以直接查詢或先調整條件。"
     },
+    "metrics": {
+      "records": "{{count}} 筆提交",
+      "saved": "{{count}} 個常用",
+      "files": "{{count}} 份 JSON"
+    },
     "shortcuts": {
       "sourceLabel": "資料來源",
       "importTitle": "匯入本機 Bundle",

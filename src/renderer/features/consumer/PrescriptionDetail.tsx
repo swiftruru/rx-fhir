@@ -3,7 +3,6 @@ import { X, Code2, Braces, Download } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
-import { Separator } from '../../components/ui/separator'
 import { ScrollArea } from '../../components/ui/scroll-area'
 import { Alert, AlertDescription } from '../../components/ui/alert'
 import FhirErrorAlert from '../../components/FhirErrorAlert'
@@ -21,9 +20,9 @@ interface Props {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }): React.JSX.Element {
   return (
-    <div>
-      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{title}</h3>
-      <div className="space-y-1">{children}</div>
+    <div className="space-y-3 rounded-[22px] border border-border/70 bg-background/90 p-4 shadow-sm">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
+      <div className="space-y-2">{children}</div>
     </div>
   )
 }
@@ -31,9 +30,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Field({ label, value }: { label: string; value?: string }): React.JSX.Element {
   if (!value) return <></>
   return (
-    <div className="flex gap-2 text-sm">
-      <span className="text-muted-foreground w-24 shrink-0">{label}</span>
-      <span className="font-medium">{value}</span>
+    <div className="grid grid-cols-[5.5rem,minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="break-words font-medium">{value}</span>
     </div>
   )
 }
@@ -129,78 +128,91 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
   }
 
   return (
-    <section aria-labelledby="prescription-detail-heading" className="flex flex-col h-full border-l">
-      <div className="flex items-start justify-between gap-3 px-4 py-3 border-b bg-background shrink-0">
-        <div className="min-w-0 flex-1 space-y-2">
-          <h2
-            id="prescription-detail-heading"
-            ref={headingRef}
-            tabIndex={-1}
-            className="text-sm font-semibold outline-none"
-          >
-            {t('detail.title')}
-          </h2>
-          <div className="flex flex-wrap items-center gap-3 pt-1">
-            <code className="rounded-md bg-muted/40 px-2 py-1 text-[11px] text-muted-foreground font-mono">
-              {summary.id}
-            </code>
-            {summary.source === 'imported' && (
-              <Badge variant="secondary" className="text-[10px]">
-                {t('detail.importedBadge')}
-              </Badge>
-            )}
-            {summary.fileName && (
-              <span className="text-xs text-muted-foreground truncate max-w-[220px]" title={summary.fileName}>
-                {summary.fileName}
-              </span>
-            )}
-            <div role="group" aria-label={t('detail.viewModeLabel')} className="inline-flex items-center rounded-lg border bg-muted/40 p-1">
+    <section
+      aria-labelledby="prescription-detail-heading"
+      className="flex h-full min-h-0 flex-col border-t bg-muted/[0.08] xl:border-l xl:border-t-0"
+    >
+      <div className="shrink-0 border-b bg-background/90 px-4 py-4 backdrop-blur">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="space-y-2">
+              <h2
+                id="prescription-detail-heading"
+                ref={headingRef}
+                tabIndex={-1}
+                className="text-base font-semibold outline-none"
+              >
+                {t('detail.title')}
+              </h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <code className="rounded-xl border border-border/70 bg-muted/40 px-2.5 py-1 text-[11px] text-muted-foreground font-mono">
+                  {summary.id}
+                </code>
+                {summary.source === 'imported' && (
+                  <Badge variant="secondary" className="rounded-full text-[10px]">
+                    {t('detail.importedBadge')}
+                  </Badge>
+                )}
+                {summary.fileName && (
+                  <span className="truncate rounded-full border border-border/60 bg-background/80 px-2.5 py-1 text-[11px] text-muted-foreground max-w-[220px]" title={summary.fileName}>
+                    {summary.fileName}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div
+                role="group"
+                aria-label={t('detail.viewModeLabel')}
+                className="inline-flex items-center rounded-xl border border-border/70 bg-muted/40 p-1"
+              >
+                <Button
+                  type="button"
+                  variant={!showJson ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-8 gap-1.5 rounded-lg px-3"
+                  aria-pressed={!showJson}
+                  onClick={() => setShowJson(false)}
+                >
+                  <Code2 className="h-3.5 w-3.5" />
+                  {t('detail.toggleStructured')}
+                </Button>
+                <Button
+                  type="button"
+                  variant={showJson ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-8 gap-1.5 rounded-lg px-3"
+                  aria-pressed={showJson}
+                  onClick={() => setShowJson(true)}
+                >
+                  <Braces className="h-3.5 w-3.5" />
+                  {t('detail.toggleJson')}
+                </Button>
+              </div>
               <Button
                 type="button"
-                variant={!showJson ? 'secondary' : 'ghost'}
+                variant="outline"
                 size="sm"
-                className="h-8 gap-1.5 px-3"
-                aria-pressed={!showJson}
-                onClick={() => setShowJson(false)}
+                className="h-8 gap-1.5 rounded-xl px-3"
+                disabled={exporting}
+                onClick={() => void handleExport()}
               >
-                <Code2 className="h-3.5 w-3.5" />
-                {t('detail.toggleStructured')}
-              </Button>
-              <Button
-                type="button"
-                variant={showJson ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-8 gap-1.5 px-3"
-                aria-pressed={showJson}
-                onClick={() => setShowJson(true)}
-              >
-                <Braces className="h-3.5 w-3.5" />
-                {t('detail.toggleJson')}
+                <Download className="h-3.5 w-3.5" />
+                {t('detail.exportButton')}
               </Button>
             </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
             <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5 px-3"
-              disabled={exporting}
-              onClick={() => void handleExport()}
+              variant="ghost"
+              size="icon"
+              aria-label={t('detail.closeButton')}
+              className="h-8 w-8 rounded-xl"
+              onClick={onClose}
             >
-              <Download className="h-3.5 w-3.5" />
-              {t('detail.exportButton')}
+              <X className="h-4 w-4" />
             </Button>
           </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label={t('detail.closeButton')}
-            className="h-8 w-8"
-            onClick={onClose}
-          >
-            <X className="h-4 w-4" />
-          </Button>
         </div>
       </div>
 
@@ -216,7 +228,7 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
       )}
 
       {showJson ? (
-        <div className="flex-1 min-h-0 p-4">
+        <div className="flex-1 min-h-0 p-4 sm:p-5">
           <JsonViewer
             data={bundle}
             title={t('detail.rawJsonTitle')}
@@ -227,8 +239,8 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
         </div>
       ) : (
         <ScrollArea className="flex-1">
-          <div className="p-4">
-            <div className="space-y-5">
+          <div className="p-4 sm:p-5">
+            <div className="mx-auto max-w-3xl space-y-4">
               {composition && (
                 <Section title={s('prescription', 'title')}>
                   <Field label={s('prescription', 'docTitle')} value={composition.title} />
@@ -237,8 +249,6 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
                   <Field label={s('prescription', 'bundleId')} value={summary.id} />
                 </Section>
               )}
-
-              <Separator />
 
               {patient && (
                 <Section title={s('patient', 'title')}>
@@ -249,8 +259,6 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
                 </Section>
               )}
 
-              <Separator />
-
               {practitioner && (
                 <Section title={s('practitioner', 'title')}>
                   <Field label={s('practitioner', 'name')} value={practitioner.name?.[0]?.text} />
@@ -260,92 +268,74 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
               )}
 
               {organization && (
-                <>
-                  <Separator />
-                  <Section title={s('organization', 'title')}>
-                    <Field label={s('organization', 'name')} value={organization.name} />
-                    <Field label={s('organization', 'identifier')} value={organization.identifier?.[0]?.value} />
-                    <Field label={s('organization', 'type')} value={organization.type?.[0]?.coding?.[0]?.display} />
-                  </Section>
-                </>
+                <Section title={s('organization', 'title')}>
+                  <Field label={s('organization', 'name')} value={organization.name} />
+                  <Field label={s('organization', 'identifier')} value={organization.identifier?.[0]?.value} />
+                  <Field label={s('organization', 'type')} value={organization.type?.[0]?.coding?.[0]?.display} />
+                </Section>
               )}
 
               {encounter && (
-                <>
-                  <Separator />
-                  <Section title={s('encounter', 'title')}>
-                    <Field label={s('encounter', 'type')} value={encounter.class?.display} />
-                    <Field label={s('encounter', 'start')} value={encounter.period?.start} />
-                    <Field label={s('encounter', 'end')} value={encounter.period?.end} />
-                    <Field label={s('encounter', 'status')} value={encounter.status} />
-                  </Section>
-                </>
+                <Section title={s('encounter', 'title')}>
+                  <Field label={s('encounter', 'type')} value={encounter.class?.display} />
+                  <Field label={s('encounter', 'start')} value={encounter.period?.start} />
+                  <Field label={s('encounter', 'end')} value={encounter.period?.end} />
+                  <Field label={s('encounter', 'status')} value={encounter.status} />
+                </Section>
               )}
 
               {condition && (
-                <>
-                  <Separator />
-                  <Section title={s('condition', 'title')}>
-                    <div className="flex gap-2 flex-wrap">
-                      {condition.code?.coding?.map((c, i) => (
-                        <Badge key={i} variant="outline">
-                          {c.code} — {c.display}
-                        </Badge>
-                      ))}
-                    </div>
-                    <Field label={s('condition', 'clinicalStatus')} value={condition.clinicalStatus?.coding?.[0]?.code} />
-                  </Section>
-                </>
+                <Section title={s('condition', 'title')}>
+                  <div className="flex flex-wrap gap-2">
+                    {condition.code?.coding?.map((c, i) => (
+                      <Badge key={i} variant="outline" className="rounded-full">
+                        {c.code} — {c.display}
+                      </Badge>
+                    ))}
+                  </div>
+                  <Field label={s('condition', 'clinicalStatus')} value={condition.clinicalStatus?.coding?.[0]?.code} />
+                </Section>
               )}
 
               {observation && (
-                <>
-                  <Separator />
-                  <Section title={s('observation', 'title')}>
-                    <Field label={s('observation', 'item')} value={observation.code?.text} />
-                    <Field
-                      label={s('observation', 'result')}
-                      value={observation.valueQuantity
-                        ? `${observation.valueQuantity.value} ${observation.valueQuantity.unit}`
-                        : undefined}
-                    />
-                    <Field label={s('observation', 'status')} value={observation.status} />
-                  </Section>
-                </>
+                <Section title={s('observation', 'title')}>
+                  <Field label={s('observation', 'item')} value={observation.code?.text} />
+                  <Field
+                    label={s('observation', 'result')}
+                    value={observation.valueQuantity
+                      ? `${observation.valueQuantity.value} ${observation.valueQuantity.unit}`
+                      : undefined}
+                  />
+                  <Field label={s('observation', 'status')} value={observation.status} />
+                </Section>
               )}
 
               {coverage && (
-                <>
-                  <Separator />
-                  <Section title={s('coverage', 'title')}>
-                    <Field label={s('coverage', 'type')} value={coverage.type?.text} />
-                    <Field label={s('coverage', 'insuranceId')} value={coverage.subscriberId} />
-                    <Field label={s('coverage', 'effectiveDate')} value={coverage.period?.start} />
-                  </Section>
-                </>
+                <Section title={s('coverage', 'title')}>
+                  <Field label={s('coverage', 'type')} value={coverage.type?.text} />
+                  <Field label={s('coverage', 'insuranceId')} value={coverage.subscriberId} />
+                  <Field label={s('coverage', 'effectiveDate')} value={coverage.period?.start} />
+                </Section>
               )}
 
               {medication && (
-                <>
-                  <Separator />
-                  <Section title={s('medicationAndRequest', 'title')}>
-                    <Field label={s('medicationAndRequest', 'medicationName')} value={medication.code?.text} />
-                    <Field label={s('medicationAndRequest', 'medicationCode')} value={medication.code?.coding?.[0]?.code} />
-                    <Field label={s('medicationAndRequest', 'form')} value={medication.form?.text} />
-                    {medicationRequest && (
-                      <>
-                        <Field
-                          label={s('medicationAndRequest', 'dose')}
-                          value={medicationRequest.dosageInstruction?.[0]?.text}
-                        />
-                        <Field
-                          label={s('medicationAndRequest', 'route')}
-                          value={medicationRequest.dosageInstruction?.[0]?.route?.coding?.[0]?.display}
-                        />
-                      </>
-                    )}
-                  </Section>
-                </>
+                <Section title={s('medicationAndRequest', 'title')}>
+                  <Field label={s('medicationAndRequest', 'medicationName')} value={medication.code?.text} />
+                  <Field label={s('medicationAndRequest', 'medicationCode')} value={medication.code?.coding?.[0]?.code} />
+                  <Field label={s('medicationAndRequest', 'form')} value={medication.form?.text} />
+                  {medicationRequest && (
+                    <>
+                      <Field
+                        label={s('medicationAndRequest', 'dose')}
+                        value={medicationRequest.dosageInstruction?.[0]?.text}
+                      />
+                      <Field
+                        label={s('medicationAndRequest', 'route')}
+                        value={medicationRequest.dosageInstruction?.[0]?.route?.coding?.[0]?.display}
+                      />
+                    </>
+                  )}
+                </Section>
               )}
             </div>
           </div>

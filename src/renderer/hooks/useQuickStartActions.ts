@@ -25,8 +25,8 @@ export function useQuickStartActions(): {
 
   function runScenario(scenarioId: QuickStartScenarioId): void {
     switch (scenarioId) {
-      case 'creator-primary-template':
-        routeTo('/creator', { quickStartScenario: 'primary-template' }, tn('items.creator.label'))
+      case 'creator-overview':
+        routeTo('/creator', { quickStartScenario: 'overview' }, tn('items.creator.label'))
         return
       case 'consumer-example-query':
         routeTo('/consumer', { quickStartScenario: 'example-query' }, tn('items.consumer.label'))

@@ -1,4 +1,4 @@
 export type QuickStartScenarioId =
-  | 'creator-primary-template'
+  | 'creator-overview'
   | 'consumer-example-query'
   | 'settings-accessibility'

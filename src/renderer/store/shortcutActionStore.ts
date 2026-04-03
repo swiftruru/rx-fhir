@@ -8,6 +8,8 @@ interface CreatorShortcutActions {
   openTemplates?: () => void
   toggleRightPanel?: () => void
   toggleRightPanelMode?: () => void
+  showInfoPanel?: () => void
+  setInfoPanelMode?: (mode: 'json' | 'request') => void
 }
 
 interface ConsumerShortcutActions {

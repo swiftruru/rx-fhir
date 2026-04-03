@@ -188,7 +188,7 @@
     "tagline":     "℞ + FHIR = RxFHIR",
     "description": "Desktop application for Taiwan Core electronic prescription profiles",
     "spec":        "Based on MOHW EMR-IG Electronic Prescription 2.5 specification",
-    "version":     "Version 1.0.15 · Electron + React + FHIR R4",
+    "version":     "Version 1.0.16 · Electron + React + FHIR R4",
     "advisorsNote": "Listed alphabetically by English name; no ranking implied.",
     "fields": {
       "author":      "Author",

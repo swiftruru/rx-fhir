@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LIVE_DEMO_STEPS } from '../demo/liveDemoScript'
 import type { LiveDemoControllerKey, LiveDemoStepDefinition } from '../demo/types'
+import { revealLiveDemoInfoPanel } from '../lib/liveDemoDom'
 import { getPrimaryDemoScenarioId } from '../mocks/selectors'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { resetLoggedRequests } from '../services/fhirClient'
@@ -9,6 +10,7 @@ import { useAppStore } from '../store/appStore'
 import { useCreatorStore } from '../store/creatorStore'
 import { useLiveDemoStore } from '../store/liveDemoStore'
 import { useMockStore } from '../store/mockStore'
+import { useShortcutActionStore } from '../store/shortcutActionStore'
 import type { ConsumerLaunchState } from '../features/consumer/searchState'
 
 function sleep(ms: number): Promise<void> {
@@ -71,6 +73,52 @@ async function waitForController(runId: number, key: LiveDemoControllerKey) {
   return useLiveDemoStore.getState().controllers[key]
 }
 
+async function showcaseRequestPanel(runId: number, reducedMotion: boolean): Promise<void> {
+  const liveDemoStore = useLiveDemoStore.getState()
+  const creatorActions = useShortcutActionStore.getState().creator
+  const wasCollapsed = liveDemoStore.coachCollapsed
+
+  liveDemoStore.setCoachCollapsed(true)
+  creatorActions.showInfoPanel?.()
+  creatorActions.setInfoPanelMode?.('request')
+
+  await waitForDelay(runId, getPlaybackDelay(420, useLiveDemoStore.getState().playMode, reducedMotion))
+
+  const scrollContainer = await revealLiveDemoInfoPanel(reducedMotion)
+  if (!scrollContainer) {
+    if (!wasCollapsed) {
+      liveDemoStore.setCoachCollapsed(false)
+    }
+    return
+  }
+
+  scrollContainer.scrollTo({ top: 0, behavior: 'auto' })
+  await waitForDelay(runId, getPlaybackDelay(260, useLiveDemoStore.getState().playMode, reducedMotion))
+
+  const maxScrollTop = Math.max(0, scrollContainer.scrollHeight - scrollContainer.clientHeight)
+  if (maxScrollTop > 0) {
+    const steps = reducedMotion ? 8 : 18
+    for (let index = 0; index <= steps; index += 1) {
+      await waitUntilRunningOrAbort(runId)
+      const progress = index / steps
+      scrollContainer.scrollTop = Math.round(maxScrollTop * progress)
+      await waitForDelay(runId, reducedMotion ? 80 : 140)
+    }
+
+    await waitForDelay(runId, getPlaybackDelay(320, useLiveDemoStore.getState().playMode, reducedMotion))
+    scrollContainer.scrollTo({
+      top: 0,
+      behavior: reducedMotion ? 'auto' : 'smooth'
+    })
+    await waitForDelay(runId, getPlaybackDelay(340, useLiveDemoStore.getState().playMode, reducedMotion))
+  }
+
+  if (!wasCollapsed) {
+    liveDemoStore.setCoachCollapsed(false)
+    await waitForDelay(runId, getPlaybackDelay(220, useLiveDemoStore.getState().playMode, reducedMotion))
+  }
+}
+
 async function runCreatorStep(runId: number, step: LiveDemoStepDefinition, reducedMotion: boolean): Promise<void> {
   const liveDemo = useLiveDemoStore.getState()
   const playMode = useLiveDemoStore.getState().playMode
@@ -87,6 +135,7 @@ async function runCreatorStep(runId: number, step: LiveDemoStepDefinition, reduc
 
   if (!step.controllerKey) return
   const controller = await waitForController(runId, step.controllerKey)
+  await controller?.reveal?.()
 
   if (step.mode === 'fill-submit' || step.mode === 'fill-only') {
     liveDemo.setPhase('filling')
@@ -111,6 +160,9 @@ async function runCreatorStep(runId: number, step: LiveDemoStepDefinition, reduc
   }
 
   liveDemo.setPhase('reviewing')
+  if (step.mode === 'fill-submit' || step.mode === 'submit-only') {
+    await showcaseRequestPanel(runId, reducedMotion)
+  }
   await waitForDelay(runId, getPlaybackDelay(step.settleDelayMs ?? 1100, playMode, reducedMotion))
 }
 

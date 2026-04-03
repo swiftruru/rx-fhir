@@ -3,7 +3,7 @@
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.15-d4779a?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.16-d4779a?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/github/license/swiftruru/rx-fhir?style=flat-square&color=d4779a" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-8e8e93?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
@@ -105,13 +105,15 @@ Current Creator capabilities:
 - Human-friendly FHIR `OperationOutcome` messages are shown first, with expandable raw error details for troubleshooting
 - Most Creator forms now include consistent inline guide cards with examples and field-level hints for identifiers, encounter timing, ICD-10, LOINC, insurance, medication coding, medication route, and supplemental extensions
 - Keyboard accessibility is improved with stepper shortcuts, clearer focus-visible states, and an app-wide shortcut system with a help dialog plus customizable bindings in Settings
-- Live Demo mode provides a guided, step-by-step teaching flow with manual-first pacing, optional autoplay, and human-like typed mock input
+- Live Demo mode provides a guided, step-by-step teaching flow with manual-first pacing, optional autoplay, human-like typed mock input, and in-view scrolling so fields and submit actions are demonstrated on screen instead of updating off-screen
 - Feature Showcase mode provides a spotlight-style product tour with adjacent coaching panels, highlighted targets, darker background dimming, and polished product-style transitions
 - Live JSON preview of created resources
 - JSON preview now follows the active light / dark theme instead of staying fixed in a dark-only style
 - JSON preview now includes a compact toolbar with font-size switching, collapse, and all/latest-resource toggles for demos
-- The right-side panel can switch between resource JSON and a Postman-style FHIR request inspector showing request flow, method, URL, headers, body, and response details
+- The Creator info panel can switch between resource JSON and a Postman-style FHIR request inspector showing request flow, method, URL, headers, body, and response details
+- The Creator info panel is now resizable like a desktop split view, with horizontal resizing on wide layouts and vertical resizing when the panel moves below the form on narrower windows
 - The FHIR request inspector now includes clickable URLs, request-flow notes, method explanations, and a compact `GET / POST / PUT` quick guide in the empty state
+- FHIR request and response bodies now default to `Raw`, and Live Demo can temporarily collapse the coaching card to spotlight the request flow after each server submission
 - Final submission now includes a structured prescription summary review card before bundle assembly
 - Composition-first, then document bundle submission
 - The final Creator step can export the assembled FHIR Bundle as local JSON
@@ -175,7 +177,7 @@ Search and inspect FHIR Bundles on the configured server:
 - Settings now include search, dirty markers, and per-section reset actions for faster maintenance
 - Command Palette provides a searchable action layer for navigation, settings actions, quick-start entry points, and recent local bundle files
 - Activity Center now keeps a local notification history with unread state and filter tabs instead of relying on transient toasts only
-- First-run onboarding and task-based Quick Start scenarios now provide guided entry points into Creator, Consumer, and Accessibility settings
+- First-run onboarding and task-based Quick Start scenarios now provide guided entry points into Creator, Consumer, and Accessibility settings, with a blank Creator starting point that no longer auto-loads sample data unexpectedly
 - The macOS title-bar utility controls now use a more consistent spacing model, including a cleaner unread badge for Activity Center
 - Electron window size and position are now persisted locally between launches
 - App shell accessibility now includes a skip link, route-aware focus management, screen-reader announcements, and clearer status semantics
@@ -189,6 +191,7 @@ Search and inspect FHIR Bundles on the configured server:
 
 - Creator now shows draft save state more explicitly and blocks accidental navigation away from unfinished work
 - Creator also keeps a post-submission diff summary so users can quickly see what changed since the last successful bundle submission
+- Creator layout is now more responsive on narrower desktop windows, while keeping the stepper and info panel visible in desktop-style split layouts
 - Consumer now supports both native file import and drag-and-drop Bundle inspection in the real Electron window
 - Consumer quick-start, recent files, recent submissions, and saved searches now work together as a more complete desktop query workspace
 - Toast feedback is now backed by a local Activity Center instead of disappearing without history

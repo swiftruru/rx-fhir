@@ -181,7 +181,7 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
   useLiveDemoFormController('medication', fillMock, handleSubmit, onSubmit, fillDemo)
 
   return (
-    <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form data-live-demo-form="medication" noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex justify-end">
         <Button type="button" variant="ghost" size="sm" onClick={fillMock} className="h-7 px-2 text-xs text-muted-foreground">
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
@@ -227,7 +227,7 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
       <div className="space-y-2">
         <Label>{f('codeSystem.label')}</Label>
         <Select value={codeSystem} onValueChange={(v) => setValue('codeSystem', v as FormData['codeSystem'])}>
-          <SelectTrigger>
+          <SelectTrigger data-live-demo-field="codeSystem">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -256,7 +256,7 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
       <div className="space-y-2">
         <Label>{f('form.label')} *</Label>
         <Select value={selectedForm} onValueChange={(v) => setValue('form', v)}>
-          <SelectTrigger id="med-form">
+          <SelectTrigger id="med-form" data-live-demo-field="form">
             <SelectValue placeholder={f('form.placeholder')} />
           </SelectTrigger>
           <SelectContent>
@@ -272,7 +272,7 @@ export default function MedicationForm({ onSuccess }: Props): React.JSX.Element 
       {feedback && status !== 'loading' && <CreatorFeedbackAlert feedback={feedback} resourceType="Medication" />}
       {status === 'error' && <FhirErrorAlert error={errorMsg} />}
 
-      <Button type="submit" disabled={status === 'loading'} variant={status === 'success' ? 'outline' : 'default'} className="w-full">
+      <Button data-live-demo-submit="medication" type="submit" disabled={status === 'loading'} variant={status === 'success' ? 'outline' : 'default'} className="w-full">
         {status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}
         {status === 'success' ? tc('buttons.resubmit') : tc('buttons.submit')}
       </Button>

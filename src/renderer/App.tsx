@@ -56,7 +56,7 @@ function ThemeToggle({ disabled = false }: { disabled?: boolean }): React.JSX.El
       onClick={cycleTheme}
       title={label}
       disabled={disabled}
-      className="flex h-full min-w-[52px] items-center justify-center gap-1.5 px-2.5 text-[11px] font-medium text-foreground/50 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex h-6 min-w-[56px] items-center justify-center gap-1.5 rounded-full px-2.5 text-[11px] font-medium text-foreground/55 transition-colors hover:bg-accent/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
       style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
     >
       <Icon className="h-3.5 w-3.5" />
@@ -80,7 +80,7 @@ function LanguageToggle({ disabled = false }: { disabled?: boolean }): React.JSX
       onClick={toggle}
       title={t('lang.current')}
       disabled={disabled}
-      className="flex h-full min-w-9 items-center justify-center px-2.5 text-[11px] font-medium text-foreground/50 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex h-6 min-w-9 items-center justify-center rounded-full px-2.5 text-[11px] font-medium text-foreground/55 transition-colors hover:bg-accent/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
       style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
     >
       {t('lang.toggle')}
@@ -224,14 +224,15 @@ function AppShellContent(): React.JSX.Element {
           {/* macOS titlebar spacer — draggable, with controls pinned right */}
           <div className="titlebar-spacer flex items-center justify-end pr-1">
             <FeatureShowcaseTarget id="app.utilityControls">
-              <div className="flex h-full items-center gap-0.5 pr-1">
+              <div className="flex items-center pr-1">
+                <div className="flex h-7 items-center gap-0.5 rounded-full border border-border/60 bg-background/90 px-1 shadow-sm backdrop-blur">
                 <button
                   type="button"
                   onClick={() => toggleActivityCenter()}
                   title={tc('activityCenter.open')}
                   disabled={featureShowcaseActive}
                   className={cn(
-                    'relative flex h-full min-w-[58px] items-center justify-center rounded-md text-[11px] font-medium text-foreground/50 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40',
+                    'relative flex h-6 min-w-[62px] items-center justify-center rounded-full text-[11px] font-medium text-foreground/55 transition-colors hover:bg-accent/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40',
                     unreadActivityCount > 0 ? 'pl-2.5 pr-[30px]' : 'px-2.5'
                   )}
                   style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
@@ -251,22 +252,23 @@ function AppShellContent(): React.JSX.Element {
                     </span>
                   )}
                 </button>
-                <div className="h-3.5 w-px bg-foreground/12" />
+                <div className="h-3.5 w-px bg-foreground/10" />
                 <button
                   type="button"
                   onClick={() => startFeatureShowcase(FEATURE_SHOWCASE_STEPS.length)}
                   title={t('startButton')}
                   disabled={liveDemoActive || featureShowcaseActive}
-                  className="flex h-full min-w-[74px] items-center justify-center gap-1.5 rounded-md px-2.5 text-[11px] font-medium text-foreground/50 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex h-6 min-w-[78px] items-center justify-center gap-1.5 rounded-full px-2.5 text-[11px] font-medium text-foreground/55 transition-colors hover:bg-accent/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
                   style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                 >
                   <Sparkles className="h-3.5 w-3.5" />
                   <span>{featureShowcaseActive ? t('runningButton') : t('startButton')}</span>
                 </button>
-                <div className="h-3.5 w-px bg-foreground/12" />
+                <div className="h-3.5 w-px bg-foreground/10" />
                 <ThemeToggle disabled={featureShowcaseActive} />
-                <div className="h-3.5 w-px bg-foreground/12" />
+                <div className="h-3.5 w-px bg-foreground/10" />
                 <LanguageToggle disabled={featureShowcaseActive} />
+                </div>
               </div>
             </FeatureShowcaseTarget>
           </div>

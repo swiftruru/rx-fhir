@@ -9,6 +9,11 @@
     "quickStartScenario": {
       "exampleLoaded": "A basic query example was loaded for you. Search now or refine the criteria first."
     },
+    "metrics": {
+      "records": "{{count}} records",
+      "saved": "{{count}} saved",
+      "files": "{{count}} JSON"
+    },
     "shortcuts": {
       "sourceLabel": "Data Source",
       "importTitle": "Import a Local Bundle",

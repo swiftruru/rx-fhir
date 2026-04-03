@@ -51,4 +51,5 @@ export interface LiveDemoFormController {
   fillMock?: () => void
   fillDemo?: () => Promise<void>
   submit?: () => Promise<void> | void
+  reveal?: () => Promise<void>
 }

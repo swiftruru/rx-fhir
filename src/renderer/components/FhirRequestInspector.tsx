@@ -341,9 +341,9 @@ export default function FhirRequestInspector({ request, history }: Props): React
 
       <div className="grid gap-3">
         {renderPayload(t('stepper.requestHeadersTitle'), request.requestHeaders, emptyLabel)}
-        {renderPayload(t('stepper.requestBodyTitle'), request.requestBody, emptyLabel, 'summary')}
+        {renderPayload(t('stepper.requestBodyTitle'), request.requestBody, emptyLabel, 'raw')}
         {renderPayload(t('stepper.responseHeadersTitle'), request.responseHeaders, emptyLabel)}
-        {renderPayload(t('stepper.responseBodyTitle'), request.responseBody, emptyLabel, 'summary')}
+        {renderPayload(t('stepper.responseBodyTitle'), request.responseBody, emptyLabel, 'raw')}
       </div>
     </div>
   )

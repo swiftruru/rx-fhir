@@ -63,6 +63,9 @@
   "onboarding": {
     "badge": "Quick Start",
     "progress": "Step {{current}} / {{total}}",
+    "preview": "Preview",
+    "highlights": "This step will show you",
+    "actionReady": "If you want to jump in now",
     "skip": "Skip",
     "back": "Back",
     "next": "Next",
@@ -72,6 +75,12 @@
       "openCreator": "Go to Creator",
       "openConsumer": "Go to Consumer",
       "openSettings": "Go to Settings"
+    },
+    "actionHints": {
+      "welcome": "If you already want hands-on entry points, switch to Quick Start Tasks and skip the guesswork.",
+      "creator": "This is the best place to open a blank Creator workspace and understand the fields, step order, and submission rhythm.",
+      "consumer": "If you want to inspect the search workspace first, load an example query and then decide whether to refine it.",
+      "settings": "If readability and interaction comfort matter first, open Accessibility before anything else."
     },
     "steps": {
       "welcome": {
@@ -117,6 +126,8 @@
     "description": "Search pages and common actions without memorizing every shortcut first.",
     "placeholder": "Search Creator, Consumer, toggle theme, shortcut help…",
     "empty": "No matching command is available right now.",
+    "resultsCount": "{{count}} results",
+    "enterHint": "Press Enter to run the highlighted command",
     "groups": {
       "navigation": "Navigation",
       "actions": "Global Actions",
@@ -164,11 +175,11 @@
         "description": "Stop the current guided walkthrough."
       },
       "toggleInspector": {
-        "label": "Toggle right panel",
+        "label": "Toggle info panel",
         "description": "Open or close the Creator JSON / Request inspector panel."
       },
       "toggleInspectorMode": {
-        "label": "Switch panel mode",
+        "label": "Switch info panel mode",
         "description": "Switch between JSON and FHIR Request views."
       },
       "focusSearch": {
@@ -203,11 +214,17 @@
     "openWithCount": "Open Activity Center, {{count}} unread notifications",
     "title": "Activity Center",
     "description": "Review recent operation feedback and notification history in one place.",
+    "overview": "Overview & Filters",
     "empty": "No notifications have been recorded yet.",
     "emptyFiltered": "No notifications match the {{filter}} filter right now.",
     "clear": "Clear All",
     "markRead": "Mark Read",
     "markAllRead": "Mark All Read",
+    "summary": {
+      "total": "All notifications",
+      "unread": "Unread notifications",
+      "filter": "Current filter"
+    },
     "filters": {
       "all": "All",
       "unread": "Unread",
@@ -229,17 +246,20 @@
   },
   "quickStart": {
     "title": "Quick Start Tasks",
+    "badge": "Ready to Run",
     "description": "Launch a runnable demo task directly instead of figuring out where to begin on your own.",
     "highlights": "This task will help you",
     "scenarios": {
-      "creator-primary-template": {
-        "title": "Build your first demo prescription",
-        "description": "Move Creator into a ready-to-use demo scenario so you can understand the full creation flow faster.",
-        "action": "Load Demo Prescription",
+      "creator-overview": {
+        "badge": "Blank Start",
+        "title": "Understand the Creator workflow",
+        "description": "Jump back to Creator step 1 without auto-loading demo data, so the fields and step order stay easy to understand.",
+        "note": "This entry does not prefill any fields, so it is easier to recognize placeholders, required fields, and the submission flow.",
+        "action": "Open Blank Creator",
         "bullets": {
-          "1": "If Creator is empty, the primary demo template will be loaded right away.",
-          "2": "If Creator already has work, the template panel will open instead of overwriting it directly.",
-          "3": "You can then submit each step and assemble the final Document Bundle."
+          "1": "This opens the first Creator resource step without applying any demo template automatically.",
+          "2": "If you already have a draft, the current work stays in place and is not overwritten.",
+          "3": "If you want sample data later, you can open the Templates panel yourself."
         }
       },
       "consumer-example-query": {

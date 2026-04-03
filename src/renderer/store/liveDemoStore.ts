@@ -12,6 +12,7 @@ export type LiveDemoPlayMode = 'manual' | 'auto'
 interface LiveDemoState {
   status: LiveDemoStatus
   playMode: LiveDemoPlayMode
+  coachCollapsed: boolean
   phase?: LiveDemoPhase
   currentStepId?: LiveDemoStepId
   currentIndex: number
@@ -30,6 +31,7 @@ interface LiveDemoState {
   fail: (message: string) => void
   setCurrentStep: (stepId: LiveDemoStepId, index: number, totalSteps: number) => void
   setPhase: (phase: LiveDemoPhase) => void
+  setCoachCollapsed: (collapsed: boolean) => void
   setPlayMode: (mode: LiveDemoPlayMode) => void
   requestAdvance: () => void
   registerController: (key: LiveDemoControllerKey, controller: LiveDemoFormController) => void
@@ -41,6 +43,7 @@ interface LiveDemoState {
 export const useLiveDemoStore = create<LiveDemoState>((set) => ({
   status: 'idle',
   playMode: 'manual',
+  coachCollapsed: false,
   phase: undefined,
   currentStepId: undefined,
   currentIndex: 0,
@@ -55,6 +58,7 @@ export const useLiveDemoStore = create<LiveDemoState>((set) => ({
     set((state) => ({
       status: 'running',
       playMode,
+      coachCollapsed: false,
       phase: 'preparing',
       currentStepId: undefined,
       currentIndex: 0,
@@ -72,6 +76,7 @@ export const useLiveDemoStore = create<LiveDemoState>((set) => ({
     set((state) => ({
       status: 'idle',
       playMode: 'manual',
+      coachCollapsed: false,
       phase: undefined,
       currentStepId: undefined,
       currentIndex: 0,
@@ -85,6 +90,7 @@ export const useLiveDemoStore = create<LiveDemoState>((set) => ({
     set({
       status: 'idle',
       playMode: 'manual',
+      coachCollapsed: false,
       phase: undefined,
       currentStepId: undefined,
       currentIndex: 0,
@@ -104,6 +110,7 @@ export const useLiveDemoStore = create<LiveDemoState>((set) => ({
     }),
 
   setPhase: (phase) => set({ phase }),
+  setCoachCollapsed: (collapsed) => set({ coachCollapsed: collapsed }),
   setPlayMode: (mode) =>
     set((state) => ({
       playMode: mode,

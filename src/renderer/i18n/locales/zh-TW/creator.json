@@ -15,8 +15,17 @@
     "bundleToastTitle": "Document Bundle 已建立",
     "bundleToastDescription": "Bundle ID：{{bundleId}}",
     "quickStart": {
-      "templateApplied": "已載入「{{template}}」示範處方，可以直接從第一步開始操作。",
-      "templatePanelOpened": "Creator 目前已有內容，已為你打開範本面板，可選擇是否套用「{{template}}」。"
+      "creatorOpened": "已切到 Creator 第一步，不會自動載入範本資料；若想看示範資料，可自行開啟「範本處方」。",
+      "creatorOpenedWithDraft": "已切到 Creator 第一步，並保留你目前的草稿內容；若想看示範資料，可自行開啟「範本處方」。"
+    },
+    "headerMetrics": {
+      "progress": "建立進度",
+      "progressValue": "{{completed}} / {{total}} 步",
+      "draft": "草稿狀態",
+      "draftEmpty": "尚無草稿",
+      "bundle": "Bundle 狀態",
+      "bundleReady": "已組裝完成",
+      "bundlePending": "尚未提交"
     },
     "compare": {
       "title": "自上次提交後的變更",
@@ -125,8 +134,10 @@
     "stepButtonAriaLabel": "步驟 {{step}} / {{total}}：{{label}}",
     "currentStepAnnouncement": "目前為第 {{current}} / {{total}} 步：{{label}}。",
     "currentStepAnnouncementWithSummary": "目前為第 {{current}} / {{total}} 步：{{label}}。目前內容：{{summary}}。",
-    "showPanel": "顯示右側面板",
-    "hidePanel": "隱藏右側面板",
+    "showPanel": "顯示資訊面板",
+    "hidePanel": "隱藏資訊面板",
+    "resizePanel": "調整面板寬度",
+    "resizeBottomPanel": "調整面板高度",
     "jsonPanelTitle": "已建立資源 JSON",
     "panelModeJson": "資源 JSON",
     "panelModeRequest": "FHIR 請求",

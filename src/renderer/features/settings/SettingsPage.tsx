@@ -459,60 +459,112 @@ export default function SettingsPage(): React.JSX.Element {
 
   return (
     <div className="h-full overflow-auto">
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
-      <div>
-        <h1 data-page-heading="true" tabIndex={-1} className="text-xl font-bold outline-none">
-          {t('page.title')}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">{t('page.description')}</p>
-      </div>
+      <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as SettingsShortcutTab)} className="space-y-5">
+          <section className="rounded-[28px] border border-border/70 bg-card/70 p-5 shadow-sm ring-1 ring-border/40 backdrop-blur-sm sm:p-6">
+            <div className="space-y-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="space-y-2">
+                  <h1 data-page-heading="true" tabIndex={-1} className="text-2xl font-bold tracking-tight outline-none">
+                    {t('page.title')}
+                  </h1>
+                  <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">
+                    {t('page.description')}
+                  </p>
+                </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="settings-search">{t('search.label')}</Label>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            id="settings-search"
-            value={settingsQuery}
-            onChange={(event) => setSettingsQuery(event.target.value)}
-            placeholder={t('search.placeholder')}
-            className="pl-9"
-          />
-        </div>
-        <p className="text-xs text-muted-foreground">{t('search.hint')}</p>
-      </div>
+                <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[360px]">
+                  <div className="rounded-2xl border border-border/70 bg-background/70 px-3 py-3">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      {t('tabs.server')}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {serverHasUnsavedChanges ? (
+                        <Badge variant="warning">{t('badges.unsaved')}</Badge>
+                      ) : serverUsesCustomUrl ? (
+                        <Badge variant="outline">{t('badges.customized')}</Badge>
+                      ) : (
+                        <Badge variant="outline">{t('badges.default')}</Badge>
+                      )}
+                    </div>
+                  </div>
 
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as SettingsShortcutTab)} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="server" className="gap-2">
+                  <div className="rounded-2xl border border-border/70 bg-background/70 px-3 py-3">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      {t('tabs.accessibility')}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <Badge variant="outline">
+                        {accessibilityCustomized ? t('badges.customized') : t('badges.default')}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-border/70 bg-background/70 px-3 py-3">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      {t('tabs.shortcuts')}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {shortcutOverrideCount > 0 ? (
+                        <Badge variant="outline">
+                          {t('badges.customizedCount', { count: shortcutOverrideCount })}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">{t('badges.default')}</Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="settings-search">{t('search.label')}</Label>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="settings-search"
+                    value={settingsQuery}
+                    onChange={(event) => setSettingsQuery(event.target.value)}
+                    placeholder={t('search.placeholder')}
+                    className="h-11 rounded-xl pl-9"
+                  />
+                </div>
+                <p className="text-xs leading-relaxed text-muted-foreground">{t('search.hint')}</p>
+              </div>
+
+              <TabsList className="h-auto w-full flex-wrap justify-start gap-2 rounded-2xl bg-muted/45 p-2">
+                <TabsTrigger value="server" className="min-h-10 flex-1 basis-[calc(50%-0.25rem)] gap-2 rounded-xl sm:basis-auto sm:flex-none">
             <span>{t('tabs.server')}</span>
             {serverHasUnsavedChanges ? (
               <Badge variant="warning" className="px-2 py-0 text-[10px]">{t('badges.unsaved')}</Badge>
             ) : serverUsesCustomUrl ? (
               <Badge variant="outline" className="px-2 py-0 text-[10px]">{t('badges.customized')}</Badge>
             ) : null}
-          </TabsTrigger>
-          <TabsTrigger value="accessibility" className="gap-2">
+                </TabsTrigger>
+                <TabsTrigger value="accessibility" className="min-h-10 flex-1 basis-[calc(50%-0.25rem)] gap-2 rounded-xl sm:basis-auto sm:flex-none">
             <span>{t('tabs.accessibility')}</span>
             {accessibilityCustomized && (
               <Badge variant="outline" className="px-2 py-0 text-[10px]">{t('badges.customized')}</Badge>
             )}
-          </TabsTrigger>
-          <TabsTrigger value="shortcuts" className="gap-2">
+                </TabsTrigger>
+                <TabsTrigger value="shortcuts" className="min-h-10 flex-1 basis-full gap-2 rounded-xl sm:basis-auto sm:flex-none">
             <span>{t('tabs.shortcuts')}</span>
             {shortcutOverrideCount > 0 && (
               <Badge variant="outline" className="px-2 py-0 text-[10px]">
                 {t('badges.customizedCount', { count: shortcutOverrideCount })}
               </Badge>
             )}
-          </TabsTrigger>
-        </TabsList>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+          </section>
 
         <TabsContent value="server" className="space-y-6">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]">
           {serverMainVisible && (
             <FeatureShowcaseTarget id="settings.serverCard">
-              <Card>
-              <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+              <Card className="rounded-[26px] border-border/70 bg-card/75">
+              <CardHeader className="flex flex-col gap-4 space-y-0 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
                     <CardTitle className="text-base">{t('server.title')}</CardTitle>
@@ -526,16 +578,16 @@ export default function SettingsPage(): React.JSX.Element {
                   </div>
                   <CardDescription>{t('server.description')}</CardDescription>
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={handleResetServerSection}>
+                <Button type="button" variant="outline" size="sm" onClick={handleResetServerSection} className="w-full sm:w-auto">
                   <RotateCcw className="h-4 w-4" />
                   {t('actions.resetSection')}
                 </Button>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit(handleSave)} className="space-y-4">
+                <form onSubmit={handleSubmit(handleSave)} className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="server-url">{t('server.urlLabel')}</Label>
-                  <p id="server-url-hint" className="text-xs text-muted-foreground">
+                  <p id="server-url-hint" className="text-xs leading-relaxed text-muted-foreground">
                     {t('server.urlHint')}
                   </p>
                   <Input
@@ -561,10 +613,10 @@ export default function SettingsPage(): React.JSX.Element {
                         key={url}
                         type="button"
                         onClick={() => setValue('serverUrl', url)}
-                        className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${
+                        className={`w-full rounded-xl border px-3 py-2 text-sm transition-colors sm:w-auto ${
                           currentUrl === url
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'border-border hover:bg-accent'
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-border bg-background/70 hover:bg-accent'
                         }`}
                       >
                         {label}
@@ -573,12 +625,13 @@ export default function SettingsPage(): React.JSX.Element {
                   </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={handleTest}
                     disabled={testStatus === 'testing'}
+                    className="w-full sm:w-auto"
                   >
                     {testStatus === 'testing' && <Loader2 className="h-4 w-4 animate-spin" />}
                     {testStatus !== 'testing' && (
@@ -592,7 +645,7 @@ export default function SettingsPage(): React.JSX.Element {
                     )}
                     {tc('buttons.test')}
                   </Button>
-                  <Button type="submit">
+                  <Button type="submit" className="w-full sm:w-auto">
                     <Save className="h-4 w-4" />
                     {tc('buttons.save')}
                   </Button>
@@ -628,11 +681,11 @@ export default function SettingsPage(): React.JSX.Element {
 
           {serverStatusVisible && (
             <FeatureShowcaseTarget id="settings.statusCard">
-              <Card>
+              <Card className="rounded-[26px] border-border/70 bg-card/75">
               <CardHeader>
                 <CardTitle className="text-base">{t('status.title')}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm">
+              <CardContent className="space-y-4 text-sm">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${
                     serverStatus === 'online' ? 'bg-green-500' :
@@ -641,7 +694,9 @@ export default function SettingsPage(): React.JSX.Element {
                   }`} />
                   <span className="capitalize">{serverStatus}</span>
                 </div>
-                <div className="font-mono text-xs text-muted-foreground break-all">{serverUrl}</div>
+                <div className="rounded-2xl border border-border/70 bg-background/70 px-3 py-3">
+                  <div className="font-mono text-xs leading-relaxed text-muted-foreground break-all">{serverUrl}</div>
+                </div>
                 {serverName && <div className="text-muted-foreground">{t('status.serverInfo')}: {serverName}</div>}
                 {serverVersion && <div className="text-muted-foreground">{t('status.fhirVersion')}: R{serverVersion}</div>}
               </CardContent>
@@ -650,15 +705,16 @@ export default function SettingsPage(): React.JSX.Element {
           )}
 
           {!tabVisibility.server && (
-            <Alert>
+            <Alert className="xl:col-span-2">
               <AlertDescription>{t('search.noResults')}</AlertDescription>
             </Alert>
           )}
+          </div>
         </TabsContent>
 
         <TabsContent value="accessibility" className="space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+          <Card className="rounded-[26px] border-border/70 bg-card/75">
+            <CardHeader className="flex flex-col gap-4 space-y-0 sm:flex-row sm:items-start sm:justify-between">
               <div className="space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <CardTitle className="text-base">{t('accessibility.title')}</CardTitle>
@@ -670,7 +726,7 @@ export default function SettingsPage(): React.JSX.Element {
                 </div>
                 <CardDescription>{t('accessibility.description')}</CardDescription>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={handleResetAccessibilitySection}>
+              <Button type="button" variant="outline" size="sm" onClick={handleResetAccessibilitySection} className="w-full sm:w-auto">
                 <RotateCcw className="h-4 w-4" />
                 {t('actions.resetSection')}
               </Button>
@@ -913,19 +969,19 @@ export default function SettingsPage(): React.JSX.Element {
           </Card>
         </TabsContent>
 
-        <TabsContent value="shortcuts">
+        <TabsContent value="shortcuts" className="space-y-6">
           {tabVisibility.shortcuts ? (
             <div className="space-y-6">
               {shortcutsVisible && <ShortcutSettingsPanel />}
 
               {workspaceToolsVisible && (
-                <Card>
+                <Card className="rounded-[26px] border-border/70 bg-card/75">
                   <CardHeader>
                     <CardTitle className="text-base">{t('workspaceTools.title')}</CardTitle>
                     <CardDescription>{t('workspaceTools.description')}</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <section className="rounded-xl border border-border/70 bg-muted/15 px-4 py-4">
+                  <CardContent className="grid gap-4 xl:grid-cols-3">
+                    <section className="rounded-2xl border border-border/70 bg-muted/15 px-4 py-4">
                       <div className="space-y-1">
                         <h2 className="text-sm font-semibold text-foreground">
                           {t('workspaceTools.preferences.title')}
@@ -934,12 +990,13 @@ export default function SettingsPage(): React.JSX.Element {
                           {t('workspaceTools.preferences.description')}
                         </p>
                       </div>
-                      <div className="mt-4 flex flex-wrap gap-2">
+                      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                         <Button
                           type="button"
                           variant="outline"
                           onClick={() => void handleExportPreferences()}
                           disabled={preferencesStatus !== 'idle'}
+                          className="w-full sm:w-auto"
                         >
                           {preferencesStatus === 'exporting' ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -953,6 +1010,7 @@ export default function SettingsPage(): React.JSX.Element {
                           variant="outline"
                           onClick={() => void handleImportPreferences()}
                           disabled={preferencesStatus !== 'idle'}
+                          className="w-full sm:w-auto"
                         >
                           {preferencesStatus === 'importing' ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -964,7 +1022,7 @@ export default function SettingsPage(): React.JSX.Element {
                       </div>
                     </section>
 
-                    <section className="rounded-xl border border-border/70 bg-muted/15 px-4 py-4">
+                    <section className="rounded-2xl border border-border/70 bg-muted/15 px-4 py-4">
                       <div className="space-y-1">
                         <h2 className="text-sm font-semibold text-foreground">
                           {t('workspaceTools.onboarding.title')}
@@ -974,14 +1032,14 @@ export default function SettingsPage(): React.JSX.Element {
                         </p>
                       </div>
                       <div className="mt-4">
-                        <Button type="button" variant="outline" onClick={handleReplayOnboarding}>
+                        <Button type="button" variant="outline" onClick={handleReplayOnboarding} className="w-full sm:w-auto">
                           <Sparkles className="h-4 w-4" />
                           {t('workspaceTools.onboarding.replay')}
                         </Button>
                       </div>
                     </section>
 
-                    <section className="rounded-xl border border-border/70 bg-muted/15 px-4 py-4">
+                    <section className="rounded-2xl border border-border/70 bg-muted/15 px-4 py-4">
                       <div className="space-y-1">
                         <h2 className="text-sm font-semibold text-foreground">
                           {t('workspaceTools.quickStart.title')}
@@ -991,7 +1049,7 @@ export default function SettingsPage(): React.JSX.Element {
                         </p>
                       </div>
                       <div className="mt-4">
-                        <Button type="button" variant="outline" onClick={openQuickStartDialog}>
+                        <Button type="button" variant="outline" onClick={openQuickStartDialog} className="w-full sm:w-auto">
                           <Sparkles className="h-4 w-4" />
                           {t('workspaceTools.quickStart.open')}
                         </Button>

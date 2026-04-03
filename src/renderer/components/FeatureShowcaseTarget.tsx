@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, type CSSProperties } from 'react'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useFeatureShowcaseStore } from '../store/featureShowcaseStore'
 import type { FeatureShowcaseTargetId } from '../showcase/types'
@@ -7,12 +7,14 @@ import { cn } from '../lib/utils'
 interface FeatureShowcaseTargetProps {
   id: FeatureShowcaseTargetId
   className?: string
+  style?: CSSProperties
   children: React.ReactNode
 }
 
 export default function FeatureShowcaseTarget({
   id,
   className,
+  style,
   children
 }: FeatureShowcaseTargetProps): React.JSX.Element {
   const ref = useRef<HTMLDivElement | null>(null)
@@ -76,6 +78,7 @@ export default function FeatureShowcaseTarget({
     <div
       ref={ref}
       data-feature-showcase-target={id}
+      style={style}
       className={cn(
         reducedMotion
           ? 'transition-[box-shadow,filter,border-radius] duration-200 ease-out will-change-auto'

@@ -63,6 +63,9 @@
   "onboarding": {
     "badge": "快速上手",
     "progress": "第 {{current}} / {{total}} 步",
+    "preview": "介面預覽",
+    "highlights": "這一步會告訴你",
+    "actionReady": "想直接開始的話",
     "skip": "略過",
     "back": "上一步",
     "next": "下一步",
@@ -72,6 +75,12 @@
       "openCreator": "前往 Creator",
       "openConsumer": "前往 Consumer",
       "openSettings": "前往 Settings"
+    },
+    "actionHints": {
+      "welcome": "如果你已經想直接動手，可以先改走快速開始任務，跳過摸索入口的時間。",
+      "creator": "適合先進入空白 Creator，從第一步開始理解欄位、步驟與提交節奏。",
+      "consumer": "如果你想先看查詢工作台，可以直接帶入一組範例查詢，再決定要不要微調條件。",
+      "settings": "若你想先把閱讀和操作手感調順，先進 Accessibility 會最有效率。"
     },
     "steps": {
       "welcome": {
@@ -117,6 +126,8 @@
     "description": "快速搜尋頁面與常用操作，不用先記住所有快捷鍵。",
     "placeholder": "搜尋 Creator、Consumer、切換主題、快速鍵說明…",
     "empty": "目前找不到符合的命令。",
+    "resultsCount": "共 {{count}} 項",
+    "enterHint": "Enter 執行目前項目",
     "groups": {
       "navigation": "導覽",
       "actions": "全域動作",
@@ -164,11 +175,11 @@
         "description": "結束目前的逐步教學示範。"
       },
       "toggleInspector": {
-        "label": "切換右側面板",
+        "label": "切換資訊面板",
         "description": "開啟或關閉 Creator 的 JSON / Request 檢視面板。"
       },
       "toggleInspectorMode": {
-        "label": "切換面板模式",
+        "label": "切換資訊面板模式",
         "description": "在 JSON 與 FHIR Request 檢視之間切換。"
       },
       "focusSearch": {
@@ -203,11 +214,17 @@
     "openWithCount": "開啟活動中心，目前有 {{count}} 則未讀通知",
     "title": "活動中心",
     "description": "集中查看最近的操作回饋與通知訊息。",
+    "overview": "概況與篩選",
     "empty": "目前還沒有任何通知紀錄。",
     "emptyFiltered": "目前沒有符合「{{filter}}」的通知。",
     "clear": "清除全部",
     "markRead": "標記已讀",
     "markAllRead": "全部標記已讀",
+    "summary": {
+      "total": "全部通知",
+      "unread": "未讀通知",
+      "filter": "目前篩選"
+    },
     "filters": {
       "all": "全部",
       "unread": "未讀",
@@ -229,17 +246,20 @@
   },
   "quickStart": {
     "title": "快速開始任務",
+    "badge": "可直接執行",
     "description": "直接啟動一個可執行的示範任務，不必先自己摸索從哪一頁開始。",
     "highlights": "這個任務會幫你",
     "scenarios": {
-      "creator-primary-template": {
-        "title": "完成第一張示範處方",
-        "description": "把 Creator 切到可立即操作的示範情境，適合先理解整條建立流程。",
-        "action": "載入示範處方",
+      "creator-overview": {
+        "badge": "空白起點",
+        "title": "認識 Creator 建立流程",
+        "description": "直接帶你回到 Creator 第一步，不自動載入範本資料，先理解欄位與步驟安排。",
+        "note": "這個入口不會預填任何欄位，適合先辨識 placeholder、必填欄位與提交流程。",
+        "action": "進入空白 Creator",
         "bullets": {
-          "1": "若 Creator 目前是空的，會直接載入 primary demo 範本。",
-          "2": "若 Creator 已經有草稿，會改為打開範本面板，避免直接覆蓋。",
-          "3": "之後可逐步提交各步驟，再組成 Document Bundle。"
+          "1": "會切到 Creator 第一個資源步驟，不直接套用任何示範範本。",
+          "2": "若你目前已有草稿，系統會保留現有內容，不會覆蓋。",
+          "3": "想看示範資料時，可再自行開啟「範本處方」。"
         }
       },
       "consumer-example-query": {

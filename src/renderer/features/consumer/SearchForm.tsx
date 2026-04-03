@@ -337,15 +337,28 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
       )}
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList aria-label={t('search.tabListLabel')} className="w-full">
-          <TabsTrigger value="basic" className="flex-1">{t('search.tabs.basic')}</TabsTrigger>
-          <TabsTrigger value="date" className="flex-1">{t('search.tabs.date')}</TabsTrigger>
-          <TabsTrigger value="complex" className="flex-1">{t('search.tabs.complex')}</TabsTrigger>
+        <TabsList
+          aria-label={t('search.tabListLabel')}
+          className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl bg-muted/45 p-1.5"
+        >
+          <TabsTrigger value="basic" className="rounded-xl px-3 py-2 text-xs sm:text-sm">
+            {t('search.tabs.basic')}
+          </TabsTrigger>
+          <TabsTrigger value="date" className="rounded-xl px-3 py-2 text-xs sm:text-sm">
+            {t('search.tabs.date')}
+          </TabsTrigger>
+          <TabsTrigger value="complex" className="rounded-xl px-3 py-2 text-xs sm:text-sm">
+            {t('search.tabs.complex')}
+          </TabsTrigger>
         </TabsList>
 
         {/* Tab 1: Basic search */}
-        <TabsContent value="basic">
-          <form noValidate onSubmit={basicForm.handleSubmit(handleBasicSubmit)} className="space-y-3">
+        <TabsContent value="basic" className="mt-4">
+          <form
+            noValidate
+            onSubmit={basicForm.handleSubmit(handleBasicSubmit)}
+            className="space-y-4 rounded-[22px] border border-border/70 bg-background/90 p-4 shadow-sm"
+          >
             <div className="space-y-2">
               <Label id="basic-search-by-label">{t('search.basic.searchByLabel')}</Label>
               <Select
@@ -382,7 +395,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
                 </p>
               )}
             </div>
-            <Button type="submit" disabled={isBusy} className="w-full">
+            <Button type="submit" disabled={isBusy} className="h-11 w-full gap-2 rounded-xl">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               {tc('buttons.search')}
             </Button>
@@ -390,8 +403,12 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
         </TabsContent>
 
         {/* Tab 2: Date search */}
-        <TabsContent value="date">
-          <form noValidate onSubmit={dateForm.handleSubmit(handleDateSubmit)} className="space-y-3">
+        <TabsContent value="date" className="mt-4">
+          <form
+            noValidate
+            onSubmit={dateForm.handleSubmit(handleDateSubmit)}
+            className="space-y-4 rounded-[22px] border border-border/70 bg-background/90 p-4 shadow-sm"
+          >
             <div className="space-y-2">
               <Label htmlFor="date-id">{t('search.date.identifierLabel')}</Label>
               <Input
@@ -422,7 +439,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
                 </p>
               )}
             </div>
-            <Button type="submit" disabled={isBusy} className="w-full">
+            <Button type="submit" disabled={isBusy} className="h-11 w-full gap-2 rounded-xl">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               {t('search.date.submitButton')}
             </Button>
@@ -430,8 +447,12 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
         </TabsContent>
 
         {/* Tab 3: Complex search */}
-        <TabsContent value="complex">
-          <form noValidate onSubmit={complexForm.handleSubmit(handleComplexSubmit)} className="space-y-3">
+        <TabsContent value="complex" className="mt-4">
+          <form
+            noValidate
+            onSubmit={complexForm.handleSubmit(handleComplexSubmit)}
+            className="space-y-4 rounded-[22px] border border-border/70 bg-background/90 p-4 shadow-sm"
+          >
             <div className="space-y-2">
               <Label htmlFor="complex-id">{t('search.complex.identifierLabel')}</Label>
               <Input
@@ -486,7 +507,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
                 />
               </div>
             )}
-            <Button type="submit" disabled={isBusy} className="w-full">
+            <Button type="submit" disabled={isBusy} className="h-11 w-full gap-2 rounded-xl">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               {complexBy === 'organization' ? t('search.complex.submitButtonOrg') : t('search.complex.submitButtonAuthor')}
             </Button>
@@ -495,18 +516,22 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
       </Tabs>
 
       {lastUrl && (
-        <div className="p-2 rounded bg-muted">
-          <p className="text-[10px] text-muted-foreground mb-1">{t('search.queryUrlLabel')}</p>
+        <div className="rounded-[20px] border border-border/70 bg-background/80 p-3 shadow-sm">
+          <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            {t('search.queryUrlLabel')}
+          </p>
           <ExternalUrlLink url={lastUrl} />
         </div>
       )}
 
       {localizedQuerySteps.length > 0 && (
-        <div className="p-2 rounded bg-muted space-y-2">
-          <p className="text-[10px] text-muted-foreground">{t('search.queryStepsLabel')}</p>
+        <div className="space-y-2 rounded-[20px] border border-border/70 bg-background/80 p-3 shadow-sm">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            {t('search.queryStepsLabel')}
+          </p>
           {localizedQuerySteps.map((s) => (
-            <div key={s.step} className="space-y-0.5">
-              <p className="text-[10px] font-medium text-foreground">{s.displayLabel}</p>
+            <div key={s.step} className="space-y-1 rounded-2xl border border-border/60 bg-muted/[0.2] px-3 py-2">
+              <p className="text-[11px] font-medium text-foreground">{s.displayLabel}</p>
               <ExternalUrlLink url={s.url} compact />
               {s.displayNote && <p className="text-[10px] text-muted-foreground/70 italic">{s.displayNote}</p>}
             </div>

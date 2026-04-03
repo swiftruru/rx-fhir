@@ -200,7 +200,7 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
   ] as const
 
   return (
-    <form id="composition-form" noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form id="composition-form" data-live-demo-form="composition" noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="flex items-center justify-end gap-2">
           <Button
             type="button"

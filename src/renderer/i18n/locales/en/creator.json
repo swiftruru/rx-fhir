@@ -15,8 +15,17 @@
     "bundleToastTitle": "Document Bundle Created",
     "bundleToastDescription": "Bundle ID: {{bundleId}}",
     "quickStart": {
-      "templateApplied": "Loaded the \"{{template}}\" demo prescription. You can start from step 1 right away.",
-      "templatePanelOpened": "Creator already has work, so the template panel was opened instead of applying \"{{template}}\" immediately."
+      "creatorOpened": "Moved back to Creator step 1 without auto-loading demo data. Open Templates later if you want a sample case.",
+      "creatorOpenedWithDraft": "Moved back to Creator step 1 and kept your current draft in place. Open Templates later if you want a sample case."
+    },
+    "headerMetrics": {
+      "progress": "Build Progress",
+      "progressValue": "{{completed}} / {{total}} steps",
+      "draft": "Draft Status",
+      "draftEmpty": "No draft yet",
+      "bundle": "Bundle Status",
+      "bundleReady": "Ready to inspect",
+      "bundlePending": "Not submitted yet"
     },
     "compare": {
       "title": "Changes Since the Last Bundle Submission",
@@ -125,8 +134,10 @@
     "stepButtonAriaLabel": "Step {{step}} / {{total}}: {{label}}",
     "currentStepAnnouncement": "Now on step {{current}} of {{total}}: {{label}}.",
     "currentStepAnnouncementWithSummary": "Now on step {{current}} of {{total}}: {{label}}. Current content: {{summary}}.",
-    "showPanel": "Show Right Panel",
-    "hidePanel": "Hide Right Panel",
+    "showPanel": "Show Info Panel",
+    "hidePanel": "Hide Info Panel",
+    "resizePanel": "Resize panel width",
+    "resizeBottomPanel": "Resize panel height",
     "jsonPanelTitle": "Resources JSON",
     "panelModeJson": "Resources JSON",
     "panelModeRequest": "FHIR Request",

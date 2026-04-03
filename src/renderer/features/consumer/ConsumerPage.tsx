@@ -583,7 +583,7 @@ export default function ConsumerPage(): React.JSX.Element {
 
   return (
     <div
-      className="relative flex h-full flex-col xl:flex-row"
+      className="relative flex h-full min-h-0 flex-col lg:flex-row"
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -611,16 +611,16 @@ export default function ConsumerPage(): React.JSX.Element {
       )}
 
       {/* Left panel: Search form */}
-      <FeatureShowcaseTarget id="consumer.searchPanel" className="flex shrink-0 flex-col border-b xl:w-72 xl:border-b-0 xl:border-r">
+      <FeatureShowcaseTarget id="consumer.searchPanel" className="flex shrink-0 flex-col border-b lg:w-[22rem] lg:border-b-0 lg:border-r 2xl:w-[23rem]">
         <div className="flex h-full min-h-0 flex-col">
-          <div className="px-4 py-4 border-b bg-background shrink-0">
-            <h1 data-page-heading="true" tabIndex={-1} className="text-base font-bold outline-none">
+          <div className="border-b bg-background px-4 py-4 shrink-0">
+            <h1 data-page-heading="true" tabIndex={-1} className="text-lg font-bold tracking-tight outline-none">
               {t('page.title')}
             </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">{t('page.description')}</p>
+            <p className="mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">{t('page.description')}</p>
           </div>
-          <div className="flex-1 overflow-auto bg-muted/10 px-4 py-4">
-            <div className="rounded-xl border border-border/70 bg-background/95 p-3 shadow-sm">
+          <div className="flex-1 overflow-auto bg-muted/[0.08] px-4 py-4">
+            <div className="rounded-[24px] border border-border/70 bg-background/95 p-3 shadow-sm sm:p-4">
               {dropFeedback && (
                 <Alert variant={dropFeedback.variant}>
                   <AlertDescription>{dropFeedback.message}</AlertDescription>
@@ -645,13 +645,26 @@ export default function ConsumerPage(): React.JSX.Element {
       </FeatureShowcaseTarget>
 
       {/* Middle panel: Result list */}
-      <div className="flex min-w-0 flex-1 shrink-0 flex-col xl:border-r">
+      <div className="flex min-w-0 flex-1 shrink-0 flex-col lg:border-r">
         <div className="border-b bg-background px-4 py-3 shrink-0">
           <Tabs value={middleTab} onValueChange={(value) => setMiddleTab(value as 'results' | 'quickstart')}>
-            <TabsList className="grid w-full max-w-xs grid-cols-2">
-              <TabsTrigger value="results">{t('page.middleTabs.results')}</TabsTrigger>
-              <TabsTrigger value="quickstart">{t('page.middleTabs.quickStart')}</TabsTrigger>
-            </TabsList>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <TabsList className="grid w-full grid-cols-2 rounded-xl bg-muted/45 p-1 sm:max-w-xs">
+                <TabsTrigger value="results" className="rounded-lg">{t('page.middleTabs.results')}</TabsTrigger>
+                <TabsTrigger value="quickstart" className="rounded-lg">{t('page.middleTabs.quickStart')}</TabsTrigger>
+              </TabsList>
+              <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                <span className="rounded-full border border-border/70 bg-background/70 px-2.5 py-1">
+                  {t('page.metrics.records', { count: historyCount })}
+                </span>
+                <span className="rounded-full border border-border/70 bg-background/70 px-2.5 py-1">
+                  {t('page.metrics.saved', { count: savedSearchCount })}
+                </span>
+                <span className="rounded-full border border-border/70 bg-background/70 px-2.5 py-1">
+                  {t('page.metrics.files', { count: recentFiles.length })}
+                </span>
+              </div>
+            </div>
           </Tabs>
         </div>
 
@@ -666,25 +679,26 @@ export default function ConsumerPage(): React.JSX.Element {
                 onSelect={setSelected}
               />
             ) : (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                <div className="text-center space-y-2">
+              <div className="flex h-full items-center justify-center bg-muted/[0.08] px-6 text-muted-foreground">
+                <div className="w-full max-w-md rounded-[24px] border border-dashed border-border/70 bg-background/80 px-6 py-10 text-center shadow-sm">
                   <div className="text-4xl opacity-20">🔍</div>
-                  <p className="text-sm">{t('page.emptyPrompt')}</p>
+                  <p className="mt-3 text-sm font-medium text-foreground">{t('page.middleTabs.results')}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t('page.emptyPrompt')}</p>
                 </div>
               </div>
             )}
           </FeatureShowcaseTarget>
         ) : (
           <FeatureShowcaseTarget id="consumer.quickStartPane" className="flex-1 min-h-0">
-            <div className="h-full overflow-auto bg-muted/10 p-5">
+            <div className="h-full overflow-auto bg-muted/[0.08] p-4 sm:p-5">
               <div className="mx-auto max-w-5xl space-y-4">
-                <div className="rounded-2xl border border-dashed border-border/70 bg-background/80 px-5 py-4">
+                <div className="rounded-[24px] border border-dashed border-border/70 bg-background/80 px-5 py-4 shadow-sm">
                   <p className="text-sm font-semibold text-foreground">{t('page.quickStartTitle')}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{t('page.quickStartDescription')}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t('page.quickStartDescription')}</p>
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-2">
-                  <div className="rounded-xl border border-border bg-background px-4 py-4 shadow-sm">
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="rounded-[22px] border border-border/70 bg-background px-4 py-4 shadow-sm">
                     <span className="inline-flex items-center gap-1 rounded-full border border-primary/15 bg-primary/5 px-2 py-0.5 text-[10px] font-medium tracking-wide text-primary">
                       <Upload className="h-3 w-3" />
                       {t('page.shortcuts.sourceLabel')}
@@ -698,7 +712,7 @@ export default function ConsumerPage(): React.JSX.Element {
                     </Button>
                   </div>
 
-                  <div className="rounded-xl border border-border bg-background px-4 py-4 shadow-sm">
+                  <div className="rounded-[22px] border border-border/70 bg-background px-4 py-4 shadow-sm">
                     <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium tracking-wide text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
                       <Wand2 className="h-3 w-3" />
                       {t('page.shortcuts.examplesLabel')}
@@ -713,7 +727,7 @@ export default function ConsumerPage(): React.JSX.Element {
                 </div>
 
                 {historyCount > 0 || savedSearchCount > 0 || recentFiles.length > 0 ? (
-                  <div className="grid gap-4 xl:grid-cols-2">
+                  <div className="grid gap-4 lg:grid-cols-2">
                     <RecentRecords
                       onFill={handleFill}
                       open={dashboardRecentOpen}
@@ -726,7 +740,9 @@ export default function ConsumerPage(): React.JSX.Element {
                       onToggle={() => setDashboardSavedOpen((value) => !value)}
                       variant="dashboard"
                     />
-                    <RecentBundleFiles files={recentFiles} onOpen={(filePath) => void handleOpenRecentFile(filePath)} />
+                    <div className="lg:col-span-2">
+                      <RecentBundleFiles files={recentFiles} onOpen={(filePath) => void handleOpenRecentFile(filePath)} />
+                    </div>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/70 px-6 py-10 text-muted-foreground">
@@ -744,7 +760,7 @@ export default function ConsumerPage(): React.JSX.Element {
 
       {/* Right panel: Detail */}
       {showDetail && selected && (
-        <FeatureShowcaseTarget id="consumer.detailPane" className="flex shrink-0 flex-col border-t xl:w-[clamp(26rem,42vw,44rem)] xl:min-w-[26rem] xl:max-w-[44rem] xl:border-t-0">
+        <FeatureShowcaseTarget id="consumer.detailPane" className="flex shrink-0 flex-col border-t xl:w-[clamp(24rem,40vw,42rem)] xl:min-w-[24rem] xl:max-w-[42rem] xl:border-t-0">
           <div className="flex h-full min-h-0 flex-col">
             <PrescriptionDetail
               summary={selected}

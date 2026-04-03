@@ -78,7 +78,10 @@ export async function runElectronUxSmoke({
 
       function findDropTarget() {
         return Array.from(document.querySelectorAll('div')).find(
-          (element) => element.className === 'relative flex h-full flex-col xl:flex-row'
+          (element) =>
+            typeof element.className === 'string' &&
+            element.className.includes('relative flex h-full min-h-0 flex-col') &&
+            element.className.includes('lg:flex-row')
         )
       }
 

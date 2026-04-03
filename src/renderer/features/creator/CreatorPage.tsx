@@ -15,14 +15,11 @@ import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
 import { useShortcutActionStore } from '../../store/shortcutActionStore'
 import { useToastStore } from '../../store/toastStore'
 import { useAccessibilityStore } from '../../store/accessibilityStore'
-import { useAppStore } from '../../store/appStore'
 import type { ConsumerLaunchState } from '../consumer/searchState'
 import { diffCreatorSubmissionSnapshot } from '../../lib/creatorSubmissionDiff'
-import { buildTemplateDraftsFromScenario } from '../../mocks/templateDrafts'
-import { getPrimaryDemoScenarioId, getScenarioById } from '../../mocks/selectors'
 
 interface CreatorLaunchState {
-  quickStartScenario?: 'primary-template'
+  quickStartScenario?: 'overview'
 }
 
 export default function CreatorPage(): React.JSX.Element {
@@ -37,10 +34,8 @@ export default function CreatorPage(): React.JSX.Element {
     draftStatus,
     drafts,
     lastSubmittedSnapshot,
-    setStep,
-    applyTemplateDrafts
+    setStep
   } = useCreatorStore()
-  const activateScenario = useMockStore((s) => s.activateScenario)
   const resetMockScenario = useMockStore((s) => s.reset)
   const liveDemoStatus = useLiveDemoStore((s) => s.status)
   const startLiveDemo = useLiveDemoStore((s) => s.start)
@@ -51,7 +46,6 @@ export default function CreatorPage(): React.JSX.Element {
   const { t: tc } = useTranslation('common')
   const pushToast = useToastStore((state) => state.pushToast)
   const announcePolite = useAccessibilityStore((state) => state.announcePolite)
-  const locale = useAppStore((state) => state.locale)
   const location = useLocation()
   const navigate = useNavigate()
   const [confirming, setConfirming] = useState(false)
@@ -76,7 +70,6 @@ export default function CreatorPage(): React.JSX.Element {
     if (Number.isNaN(parsed.getTime())) return undefined
     return parsed.toLocaleString()
   }, [lastSubmittedSnapshot?.submittedAt])
-
   function handleResetClick(): void {
     setConfirming(true)
   }
@@ -136,32 +129,22 @@ export default function CreatorPage(): React.JSX.Element {
 
     navigate('/creator', { replace: true, state: null })
 
-    if (launchState.quickStartScenario !== 'primary-template') return
+    if (launchState.quickStartScenario !== 'overview') return
 
-    const primaryScenarioId = getPrimaryDemoScenarioId()
-    const scenario = getScenarioById(primaryScenarioId, locale)
-    if (!scenario) return
+    setTemplatePanelOpen(false)
+    setStep(0)
 
-    if (bundleId || hasCreatorPersistableWork(resources, drafts)) {
-      setTemplatePanelOpen(true)
-      const message = t('page.quickStart.templatePanelOpened', { template: scenario.label })
-      announcePolite(message)
-      pushToast({
-        variant: 'info',
-        description: message
-      })
-      return
-    }
+    const hasExistingWork = Boolean(bundleId || hasCreatorPersistableWork(resources, drafts))
+    const message = hasExistingWork
+      ? t('page.quickStart.creatorOpenedWithDraft')
+      : t('page.quickStart.creatorOpened')
 
-    applyTemplateDrafts(buildTemplateDraftsFromScenario(scenario))
-    activateScenario(scenario.id)
-    const message = t('page.quickStart.templateApplied', { template: scenario.label })
     announcePolite(message)
     pushToast({
-      variant: 'success',
+      variant: 'info',
       description: message
     })
-  }, [activateScenario, announcePolite, applyTemplateDrafts, bundleId, drafts, locale, location.state, navigate, pushToast, resources, t])
+  }, [announcePolite, bundleId, drafts, location.state, navigate, pushToast, resources, setStep, t])
 
   useEffect(() => {
     if (!bundleId || bundleId === lastAnnouncedBundleId) return
@@ -207,56 +190,72 @@ export default function CreatorPage(): React.JSX.Element {
   return (
     <div className="flex flex-col h-full">
       {/* Page header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-background shrink-0">
-        <div>
-          <h1 data-page-heading="true" tabIndex={-1} className="text-xl font-bold outline-none">
-            {t('page.title')}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{t('page.description')}</p>
-          <p className="text-xs text-muted-foreground/80 mt-1">{t('page.draftHint')}</p>
+      <div className="shrink-0 border-b bg-background px-4 py-4 sm:px-6">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0">
+            <h1 data-page-heading="true" tabIndex={-1} className="text-xl font-bold tracking-tight outline-none">
+              {t('page.title')}
+            </h1>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{t('page.description')}</p>
+            <p className="mt-1 text-xs text-muted-foreground/80">{t('page.draftHint')}</p>
+          </div>
+
+          {!confirming && (
+            <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 rounded-xl px-4"
+                onClick={handleStartLiveDemo}
+                disabled={liveDemoActive || featureShowcaseActive}
+              >
+                <GraduationCap className="h-4 w-4" />
+                {liveDemoActive ? t('liveDemo.runningButton') : t('liveDemo.startButton')}
+              </Button>
+              <PrescriptionTemplatePanel
+                disabled={liveDemoActive || featureShowcaseActive}
+                open={templatePanelOpen}
+                onOpenChange={setTemplatePanelOpen}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 rounded-xl px-4"
+                onClick={handleResetClick}
+                disabled={liveDemoActive || featureShowcaseActive}
+              >
+                <RotateCcw className="h-4 w-4" />
+                {tc('buttons.reset')}
+              </Button>
+            </div>
+          )}
         </div>
 
-        {confirming ? (
-          <div className="flex items-center gap-3 bg-destructive/8 border border-destructive/30 rounded-lg px-4 py-2">
-            <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
-            <div className="text-sm">
+        {confirming && (
+          <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-destructive/30 bg-destructive/8 px-4 py-3 sm:flex-row sm:items-center">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
+            <div className="min-w-0 flex-1 text-sm">
               <p className="font-medium text-destructive">{t('page.resetConfirmTitle')}</p>
-              <p className="text-xs text-muted-foreground">{t('page.resetConfirmDesc')}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t('page.resetConfirmDesc')}</p>
             </div>
-            <div className="flex gap-2 ml-2">
-              <Button size="sm" variant="destructive" onClick={handleConfirm}>
+            <div className="flex flex-wrap gap-2 sm:ml-2">
+              <Button size="sm" variant="destructive" className="rounded-xl px-4" onClick={handleConfirm}>
                 {t('page.resetConfirmOk')}
               </Button>
-              <Button size="sm" variant="outline" onClick={handleCancel}>
+              <Button size="sm" variant="outline" className="rounded-xl px-4" onClick={handleCancel}>
                 {t('page.resetConfirmCancel')}
               </Button>
             </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleStartLiveDemo} disabled={liveDemoActive || featureShowcaseActive}>
-              <GraduationCap className="h-4 w-4" />
-              {liveDemoActive ? t('liveDemo.runningButton') : t('liveDemo.startButton')}
-            </Button>
-            <PrescriptionTemplatePanel
-              disabled={liveDemoActive || featureShowcaseActive}
-              open={templatePanelOpen}
-              onOpenChange={setTemplatePanelOpen}
-            />
-            <Button variant="outline" size="sm" onClick={handleResetClick} disabled={liveDemoActive || featureShowcaseActive}>
-              <RotateCcw className="h-4 w-4" />
-              {tc('buttons.reset')}
-            </Button>
           </div>
         )}
       </div>
 
       {!bundleId && hasDraftWork && (
-        <div className={`px-6 py-2 border-b shrink-0 ${draftStatusUi.className}`}>
+        <div className={`border-b px-4 py-2 shrink-0 sm:px-6 ${draftStatusUi.className}`}>
           <div
             role={draftStatus === 'error' ? 'alert' : 'status'}
             aria-live={draftStatus === 'error' ? 'assertive' : 'polite'}
-            className="flex items-center gap-2 text-xs"
+            className="flex flex-wrap items-center gap-2 text-xs"
           >
             <draftStatusUi.icon className={draftStatus === 'saving' ? 'h-3.5 w-3.5 shrink-0 animate-spin' : 'h-3.5 w-3.5 shrink-0'} />
             <span className="font-medium">{draftStatusUi.title}</span>
@@ -266,11 +265,11 @@ export default function CreatorPage(): React.JSX.Element {
       )}
 
       {draftHydrated && draftRestored && (
-        <div className="px-6 py-3 border-b bg-muted/30 shrink-0">
+        <div className="px-4 py-3 border-b bg-muted/30 shrink-0 sm:px-6">
           <Alert>
             <Save className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between gap-3">
-              <div>
+            <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <p className="font-medium">{t('page.draftRestoredTitle')}</p>
                 <p className="text-xs text-muted-foreground">
                   {formattedDraftTime
@@ -288,11 +287,11 @@ export default function CreatorPage(): React.JSX.Element {
 
       {/* Success banner */}
       {bundleId && (
-        <div className="px-6 py-3 bg-emerald-50 border-b border-emerald-200 shrink-0">
+        <div className="px-4 py-3 bg-emerald-50 border-b border-emerald-200 shrink-0 sm:px-6">
           <Alert variant="success">
             <CheckCircle2 className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between gap-3">
-              <div>
+            <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 {t('page.successMessage')}{' '}
                 <code className="font-mono font-bold text-sm">{bundleId}</code>
                 <span className="ml-2 text-xs text-muted-foreground">
@@ -308,7 +307,7 @@ export default function CreatorPage(): React.JSX.Element {
       )}
 
       {bundleId && draftDiff.changedSteps.length > 0 && (
-        <div className="px-6 py-3 border-b bg-amber-50/70 border-amber-200/80 shrink-0">
+        <div className="px-4 py-3 border-b bg-amber-50/70 border-amber-200/80 shrink-0 sm:px-6">
           <div className="rounded-xl border border-amber-200/80 bg-background/85 p-4 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="space-y-1">

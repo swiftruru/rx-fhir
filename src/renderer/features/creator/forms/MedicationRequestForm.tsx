@@ -232,7 +232,7 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
   useLiveDemoFormController('medicationRequest', fillMock, handleSubmit, onSubmit, fillDemo)
 
   return (
-    <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form data-live-demo-form="medicationRequest" noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex justify-end">
         <Button type="button" variant="ghost" size="sm" onClick={fillMock} className="h-7 px-2 text-xs text-muted-foreground">
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
@@ -275,7 +275,7 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
       <div className="space-y-2">
         <Label>{f('frequency.label')} *</Label>
         <Select value={selectedFreq} onValueChange={(v) => setValue('frequency', v)}>
-          <SelectTrigger id="medreq-frequency">
+          <SelectTrigger id="medreq-frequency" data-live-demo-field="frequency">
             <SelectValue placeholder={f('frequency.placeholder')} />
           </SelectTrigger>
           <SelectContent>
@@ -291,7 +291,7 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
       <div className="space-y-2">
         <Label>{f('route.label')} *</Label>
         <Select value={selectedRoute} onValueChange={(v) => setValue('route', v)}>
-          <SelectTrigger id="medreq-route">
+          <SelectTrigger id="medreq-route" data-live-demo-field="route">
             <SelectValue placeholder={f('route.placeholder')} />
           </SelectTrigger>
           <SelectContent>
@@ -331,7 +331,7 @@ export default function MedicationRequestForm({ onSuccess }: Props): React.JSX.E
       {feedback && status !== 'loading' && <CreatorFeedbackAlert feedback={feedback} resourceType="MedicationRequest" />}
       {status === 'error' && <FhirErrorAlert error={errorMsg} />}
 
-      <Button type="submit" disabled={status === 'loading' || !resources.medication} className="w-full">
+      <Button data-live-demo-submit="medicationRequest" type="submit" disabled={status === 'loading' || !resources.medication} className="w-full">
         {status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}
         {status === 'success' ? tc('buttons.resubmit') : tc('buttons.submit')}
       </Button>

@@ -145,7 +145,7 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
   useLiveDemoFormController('organization', fillMock, handleSubmit, onSubmit, fillDemo)
 
   return (
-    <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form data-live-demo-form="organization" noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex justify-end">
         <Button type="button" variant="ghost" size="sm" onClick={fillMock} className="h-7 px-2 text-xs text-muted-foreground">
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
@@ -188,7 +188,7 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
       <div className="space-y-2">
         <Label>{f('type.label')} *</Label>
         <Select value={selectedType} onValueChange={(v) => setValue('type', v as FormData['type'])}>
-          <SelectTrigger id="org-type">
+          <SelectTrigger id="org-type" data-live-demo-field="type">
             <SelectValue placeholder={f('type.placeholder')} />
           </SelectTrigger>
           <SelectContent>
@@ -206,7 +206,7 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
       )}
       {status === 'error' && <FhirErrorAlert error={errorMsg} />}
 
-      <Button type="submit" disabled={status === 'loading'} variant={status === 'success' ? 'outline' : 'default'} className="w-full">
+      <Button data-live-demo-submit="organization" type="submit" disabled={status === 'loading'} variant={status === 'success' ? 'outline' : 'default'} className="w-full">
         {status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}
         {status === 'success' ? tc('buttons.resubmit') : tc('buttons.submit')}
       </Button>

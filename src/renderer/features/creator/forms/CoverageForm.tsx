@@ -165,7 +165,7 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
   useLiveDemoFormController('coverage', fillMock, handleSubmit, onSubmit, fillDemo)
 
   return (
-    <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form data-live-demo-form="coverage" noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex justify-end">
         <Button type="button" variant="ghost" size="sm" onClick={fillMock} className="h-7 px-2 text-xs text-muted-foreground">
           <Wand2 className="h-3 w-3 mr-1" />{tc('buttons.fillMock')}
@@ -194,7 +194,7 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
       <div className="space-y-2">
         <Label>{f('type.label')} *</Label>
         <Select value={selectedType} onValueChange={(v) => setValue('type', v)}>
-          <SelectTrigger id="coverage-type">
+          <SelectTrigger id="coverage-type" data-live-demo-field="type">
             <SelectValue placeholder={f('type.placeholder')} />
           </SelectTrigger>
           <SelectContent>
@@ -231,7 +231,7 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
       {feedback && status !== 'loading' && <CreatorFeedbackAlert feedback={feedback} resourceType="Coverage" />}
       {status === 'error' && <FhirErrorAlert error={errorMsg} />}
 
-      <Button type="submit" disabled={status === 'loading'} variant={status === 'success' ? 'outline' : 'default'} className="w-full">
+      <Button data-live-demo-submit="coverage" type="submit" disabled={status === 'loading'} variant={status === 'success' ? 'outline' : 'default'} className="w-full">
         {status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}
         {status === 'success' ? tc('buttons.resubmit') : tc('buttons.submit')}
       </Button>

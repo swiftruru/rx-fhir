@@ -38,7 +38,7 @@ const liveDemoNarratives: Record<SupportedLocale, Record<LiveDemoStepId, LiveDem
       action: '這一步建立開立處方的 Practitioner，記錄醫師姓名、證號與專科資訊。',
       concept: 'Practitioner 用來表示實際開立處方的人員，是醫囑來源的重要角色。',
       practical: '實務上需要醫師身分與資格，才能追蹤醫囑來源並支援醫師姓名等複合查詢。',
-      relation: '後續 MedicationRequest.author 與 Composition.author 都會利用這筆醫師資料。'
+      relation: '後續 MedicationRequest.requester 與 Composition.author 都會利用這筆醫師資料。'
     },
     encounter: {
       title: '建立就診資訊',
@@ -131,7 +131,7 @@ const liveDemoNarratives: Record<SupportedLocale, Record<LiveDemoStepId, LiveDem
       action: 'This step creates the prescribing Practitioner with name, license number, and specialty information.',
       concept: 'Practitioner represents the clinician who issued the prescription and serves as an important source-of-order record.',
       practical: 'Provider identity and qualification matter for accountability and also support author-based search flows.',
-      relation: 'MedicationRequest and Composition later reference this practitioner as the author of the prescription.'
+      relation: 'MedicationRequest.requester and Composition.author later reference this practitioner.'
     },
     encounter: {
       title: 'Create Encounter',

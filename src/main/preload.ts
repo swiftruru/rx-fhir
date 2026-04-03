@@ -1,5 +1,5 @@
-import { contextBridge, ipcRenderer } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
+import electron from 'electron'
+const { contextBridge, ipcRenderer } = electron
 
 const bundleJsonBridge = {
   saveBundleJson: (payload: { content: string; defaultFileName?: string }) =>
@@ -15,6 +15,34 @@ const bundleJsonBridge = {
       fileName?: string
       content?: string
     }>,
+  openRecentBundleJson: (filePath: string) =>
+    ipcRenderer.invoke('bundle-json:recent-open', filePath) as Promise<{
+      canceled: boolean
+      filePath?: string
+      fileName?: string
+      content?: string
+    }>,
+  listRecentBundleJsonFiles: () =>
+    ipcRenderer.invoke('bundle-json:recent-list') as Promise<Array<{
+      filePath: string
+      fileName: string
+      lastOpenedAt: string
+    }>>,
+  rememberRecentBundleJson: (filePath: string) =>
+    ipcRenderer.invoke('bundle-json:recent-track', filePath) as Promise<void>,
+  savePreferencesJson: (payload: { content: string; defaultFileName?: string }) =>
+    ipcRenderer.invoke('preferences-json:save', payload) as Promise<{
+      canceled: boolean
+      filePath?: string
+      fileName?: string
+    }>,
+  openPreferencesJson: () =>
+    ipcRenderer.invoke('preferences-json:open') as Promise<{
+      canceled: boolean
+      filePath?: string
+      fileName?: string
+      content?: string
+    }>,
   openExternalUrl: (url: string) =>
     ipcRenderer.invoke('external-url:open', url) as Promise<{ opened: boolean }>,
   setAppZoomFactor: (zoomFactor: number) =>
@@ -23,14 +51,11 @@ const bundleJsonBridge = {
 
 if (process.contextIsolated) {
   try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('rxfhir', bundleJsonBridge)
   } catch (error) {
     console.error(error)
   }
 } else {
-  // @ts-ignore (define in dts)
-  window.electron = electronAPI
   // @ts-ignore (define in dts)
   window.rxfhir = bundleJsonBridge
 }

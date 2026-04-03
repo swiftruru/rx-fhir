@@ -12,6 +12,7 @@
   },
   "actions": {
     "global": {
+      "openCommandPalette": { "label": "開啟命令面板", "description": "搜尋頁面與常用動作，直接執行。" },
       "openHelp": { "label": "開啟快速鍵說明", "description": "查看所有快速鍵與目前設定。" },
       "goCreator": { "label": "前往 Creator", "description": "切換到處方建立頁。" },
       "goConsumer": { "label": "前往 Consumer", "description": "切換到處方查詢頁。" },

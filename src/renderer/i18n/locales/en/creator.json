@@ -12,6 +12,41 @@
     "draftRestoredTitle": "Previous draft restored",
     "draftRestoredDesc": "An unfinished Creator workflow was restored from local storage.",
     "draftRestoredDescWithTime": "An unfinished Creator workflow was restored from local storage. Last saved: {{time}}",
+    "bundleToastTitle": "Document Bundle Created",
+    "bundleToastDescription": "Bundle ID: {{bundleId}}",
+    "quickStart": {
+      "templateApplied": "Loaded the \"{{template}}\" demo prescription. You can start from step 1 right away.",
+      "templatePanelOpened": "Creator already has work, so the template panel was opened instead of applying \"{{template}}\" immediately."
+    },
+    "compare": {
+      "title": "Changes Since the Last Bundle Submission",
+      "description": "{{count}} step(s) and {{fields}} field change(s) differ from the last submitted Bundle.",
+      "descriptionWithTime": "Last submitted at {{time}}. {{count}} step(s) and {{fields}} field change(s) now differ from that Bundle.",
+      "changedBadge": "{{count}} step(s) changed",
+      "changedFields": "{{count}} field change(s)",
+      "previousLabel": "Last submitted",
+      "currentLabel": "Current draft",
+      "noSummary": "No summary available"
+    },
+    "draftStatus": {
+      "savingTitle": "Saving draft",
+      "savingDescription": "Updating the local draft on this device.",
+      "savedTitle": "Draft auto-saved",
+      "savedDescription": "You can continue editing next time.",
+      "savedDescriptionWithTime": "Last saved: {{time}}",
+      "errorTitle": "Draft save failed",
+      "errorDescription": "The local draft could not be updated. Stay on this page before leaving."
+    },
+    "leaveGuard": {
+      "badge": "Incomplete workflow",
+      "title": "Leave Creator now?",
+      "description": "There is still an unfinished prescription workflow in Creator. Your local draft will be kept, but it has not been assembled and submitted as a Document Bundle yet.",
+      "savingDescription": "The draft is still being saved. Leaving now may lose your most recent changes.",
+      "errorDescription": "Draft saving failed. Leaving now may lose content that was not written locally.",
+      "targetDescription": "You are about to open {{page}}.",
+      "confirm": "Leave anyway",
+      "cancel": "Stay in Creator"
+    },
     "resetConfirmTitle": "Start over?",
     "resetConfirmDesc": "All created Resources will be cleared. This cannot be undone.",
     "resetConfirmOk": "Clear All",

@@ -15,6 +15,7 @@ import { searchBundles, buildSearchUrl, type QueryStep } from '../../services/fh
 import { extractSearchResults } from '../../services/searchService'
 import { useAppStore } from '../../store/appStore'
 import { useAccessibilityStore } from '../../store/accessibilityStore'
+import { useToastStore } from '../../store/toastStore'
 import type { BundleSummary, SearchParams } from '../../types/fhir.d'
 import type { ConsumerSearchExecution, SearchPrefill, SearchTab } from './searchState'
 import { getConsumerBasicMocks, getConsumerDateMocks, getConsumerComplexMocks } from '../../mocks/mockPools'
@@ -77,6 +78,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   const { t: tc } = useTranslation('common')
   const locale = useAppStore((s) => s.locale)
   const announcePolite = useAccessibilityStore((state) => state.announcePolite)
+  const pushToast = useToastStore((state) => state.pushToast)
   const [loading, setLoading] = useState(false)
   const [importing, setImporting] = useState(false)
   const [lastUrl, setLastUrl] = useState<string>()
@@ -263,8 +265,17 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
       const message = t('search.importSuccess', { fileName: imported.fileName })
       setImportMessage(message)
       announcePolite(message)
+      pushToast({
+        variant: 'success',
+        description: message
+      })
     } catch (e) {
-      setError(getBundleFileErrorMessage(e, tc))
+      const message = getBundleFileErrorMessage(e, tc)
+      setError(message)
+      pushToast({
+        variant: 'error',
+        description: message
+      })
     } finally {
       setImporting(false)
     }

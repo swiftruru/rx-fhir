@@ -2,7 +2,7 @@ import type { SearchParams } from '../types/fhir.d'
 import { useFhirInspectorStore } from '../store/fhirInspectorStore'
 import i18n from '../i18n'
 
-const DEFAULT_SERVER_URL = 'https://hapi.fhir.org/baseR4'
+export const DEFAULT_SERVER_URL = 'https://hapi.fhir.org/baseR4'
 
 function trimTrailingSlash(url: string): string {
   return url.replace(/\/+$/, '')

@@ -1,12 +1,18 @@
 import { useEffect, useRef } from 'react'
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { Sun, Moon, Monitor, Sparkles } from 'lucide-react'
+import { Bell, Sun, Moon, Monitor, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import i18n from './i18n'
 import { TooltipProvider } from './components/ui/tooltip'
 import Sidebar from './components/Sidebar'
 import StatusBar from './components/StatusBar'
 import ScreenReaderAnnouncer from './components/ScreenReaderAnnouncer'
+import CommandPaletteDialog from './components/CommandPaletteDialog'
+import ActivityCenterDialog from './components/ActivityCenterDialog'
+import CreatorLeaveGuardDialog from './components/CreatorLeaveGuardDialog'
+import FirstRunOnboardingDialog from './components/FirstRunOnboardingDialog'
+import QuickStartScenarioDialog from './components/QuickStartScenarioDialog'
+import ToastViewport from './components/ToastViewport'
 import CreatorPage from './features/creator/CreatorPage'
 import ConsumerPage from './features/consumer/ConsumerPage'
 import SettingsPage from './features/settings/SettingsPage'
@@ -22,9 +28,13 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useReducedMotion } from './hooks/useReducedMotion'
 import { TEXT_SCALE_VALUES, UI_ZOOM_VALUES, useAppStore, type ThemeMode } from './store/appStore'
 import { useAccessibilityStore } from './store/accessibilityStore'
+import { useActivityCenterStore } from './store/activityCenterStore'
 import { useLiveDemoStore } from './store/liveDemoStore'
 import { useFeatureShowcaseStore } from './store/featureShowcaseStore'
+import { useToastStore } from './store/toastStore'
 import { getRouteNavKey } from './lib/routeMeta'
+import { cn } from './lib/utils'
+import { hasCreatorPersistableWork, useCreatorStore } from './store/creatorStore'
 import { FEATURE_SHOWCASE_STEPS } from './showcase/featureShowcaseScript'
 
 const THEME_CYCLE: ThemeMode[] = ['light', 'dark', 'system']
@@ -46,11 +56,11 @@ function ThemeToggle({ disabled = false }: { disabled?: boolean }): React.JSX.El
       onClick={cycleTheme}
       title={label}
       disabled={disabled}
-      className="flex items-center gap-1.5 px-2 h-full text-foreground/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
+      className="flex h-full min-w-[52px] items-center justify-center gap-1.5 px-2.5 text-[11px] font-medium text-foreground/50 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
       style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
     >
       <Icon className="h-3.5 w-3.5" />
-      <span className="text-[11px]">{label}</span>
+      <span>{label}</span>
     </button>
   )
 }
@@ -70,7 +80,7 @@ function LanguageToggle({ disabled = false }: { disabled?: boolean }): React.JSX
       onClick={toggle}
       title={t('lang.current')}
       disabled={disabled}
-      className="flex items-center px-2 h-full text-foreground/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 transition-colors text-[11px] font-medium"
+      className="flex h-full min-w-9 items-center justify-center px-2.5 text-[11px] font-medium text-foreground/50 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
       style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
     >
       {t('lang.toggle')}
@@ -84,6 +94,7 @@ function AppShellContent(): React.JSX.Element {
   const textScale = useAppStore((s) => s.textScale)
   const uiZoom = useAppStore((s) => s.uiZoom)
   const focusPreference = useAppStore((s) => s.focusPreference)
+  const creatorHasIncompleteWorkflow = useCreatorStore((state) => !state.bundleId && hasCreatorPersistableWork(state.resources, state.drafts))
   const location = useLocation()
   const announcePolite = useAccessibilityStore((state) => state.announcePolite)
   const { t } = useTranslation('showcase')
@@ -92,6 +103,8 @@ function AppShellContent(): React.JSX.Element {
   const liveDemoStatus = useLiveDemoStore((state) => state.status)
   const featureShowcaseStatus = useFeatureShowcaseStore((state) => state.status)
   const startFeatureShowcase = useFeatureShowcaseStore((state) => state.start)
+  const toggleActivityCenter = useActivityCenterStore((state) => state.toggleCenter)
+  const unreadActivityCount = useToastStore((state) => state.history.filter((item) => !item.read).length)
   const featureShowcaseActive = featureShowcaseStatus === 'running' || featureShowcaseStatus === 'paused'
   const liveDemoActive = liveDemoStatus === 'running' || liveDemoStatus === 'paused'
   const reducedMotion = useReducedMotion()
@@ -177,6 +190,18 @@ function AppShellContent(): React.JSX.Element {
     previousPathRef.current = location.pathname
   }, [announcePolite, location.pathname, routeKey, routeLabel, tc])
 
+  useEffect(() => {
+    if (location.pathname !== '/creator' || !creatorHasIncompleteWorkflow) return
+
+    function handleBeforeUnload(event: BeforeUnloadEvent): void {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [creatorHasIncompleteWorkflow, location.pathname])
+
   return (
     <TooltipProvider>
       <div className="flex h-screen overflow-hidden bg-background text-foreground">
@@ -189,6 +214,7 @@ function AppShellContent(): React.JSX.Element {
         </button>
 
         <ScreenReaderAnnouncer />
+        <ToastViewport />
 
         {/* Sidebar (includes macOS traffic-light drag zone at top) */}
         <Sidebar />
@@ -198,21 +224,48 @@ function AppShellContent(): React.JSX.Element {
           {/* macOS titlebar spacer — draggable, with controls pinned right */}
           <div className="titlebar-spacer flex items-center justify-end pr-1">
             <FeatureShowcaseTarget id="app.utilityControls">
-              <div className="flex h-full items-center">
+              <div className="flex h-full items-center gap-0.5 pr-1">
+                <button
+                  type="button"
+                  onClick={() => toggleActivityCenter()}
+                  title={tc('activityCenter.open')}
+                  disabled={featureShowcaseActive}
+                  className={cn(
+                    'relative flex h-full min-w-[58px] items-center justify-center rounded-md text-[11px] font-medium text-foreground/50 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40',
+                    unreadActivityCount > 0 ? 'pl-2.5 pr-[30px]' : 'px-2.5'
+                  )}
+                  style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                  aria-label={
+                    unreadActivityCount > 0
+                      ? tc('activityCenter.openWithCount', { count: unreadActivityCount })
+                      : tc('activityCenter.open')
+                  }
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Bell className="h-3.5 w-3.5" />
+                    <span>{tc('activityCenter.button')}</span>
+                  </span>
+                  {unreadActivityCount > 0 && (
+                    <span className="pointer-events-none absolute right-1.5 top-1/2 flex h-[15px] min-w-[15px] -translate-y-1/2 items-center justify-center rounded-full border border-background/80 bg-primary px-1 text-[9px] font-semibold leading-none tabular-nums text-primary-foreground shadow-sm">
+                      {unreadActivityCount > 9 ? '9+' : unreadActivityCount}
+                    </span>
+                  )}
+                </button>
+                <div className="h-3.5 w-px bg-foreground/12" />
                 <button
                   type="button"
                   onClick={() => startFeatureShowcase(FEATURE_SHOWCASE_STEPS.length)}
                   title={t('startButton')}
                   disabled={liveDemoActive || featureShowcaseActive}
-                  className="flex items-center gap-1.5 px-2 h-full text-foreground/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 transition-colors text-[11px] font-medium"
+                  className="flex h-full min-w-[74px] items-center justify-center gap-1.5 rounded-md px-2.5 text-[11px] font-medium text-foreground/50 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
                   style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                 >
                   <Sparkles className="h-3.5 w-3.5" />
                   <span>{featureShowcaseActive ? t('runningButton') : t('startButton')}</span>
                 </button>
-                <div className="w-px h-3 bg-foreground/20 mx-1" />
+                <div className="h-3.5 w-px bg-foreground/12" />
                 <ThemeToggle disabled={featureShowcaseActive} />
-                <div className="w-px h-3 bg-foreground/20 mx-1" />
+                <div className="h-3.5 w-px bg-foreground/12" />
                 <LanguageToggle disabled={featureShowcaseActive} />
               </div>
             </FeatureShowcaseTarget>
@@ -240,6 +293,11 @@ function AppShellContent(): React.JSX.Element {
           <FeatureShowcaseOverlay />
           <FeatureShowcaseCoach />
           <ShortcutHelpDialog />
+          <CommandPaletteDialog />
+          <ActivityCenterDialog />
+          <CreatorLeaveGuardDialog />
+          <QuickStartScenarioDialog />
+          <FirstRunOnboardingDialog />
 
           {/* Status bar at bottom */}
           <StatusBar />

@@ -12,6 +12,7 @@
   },
   "actions": {
     "global": {
+      "openCommandPalette": { "label": "Open command palette", "description": "Search pages and common actions, then run them directly." },
       "openHelp": { "label": "Open shortcut help", "description": "Show the shortcut reference dialog." },
       "goCreator": { "label": "Go to Creator", "description": "Navigate to the prescription creation page." },
       "goConsumer": { "label": "Go to Consumer", "description": "Navigate to the prescription query page." },

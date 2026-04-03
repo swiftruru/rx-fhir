@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import i18n from '../i18n'
 import { FEATURE_SHOWCASE_STEPS } from '../showcase/featureShowcaseScript'
 import { useAppStore, type ThemeMode } from '../store/appStore'
@@ -8,11 +8,13 @@ import { useFeatureShowcaseStore } from '../store/featureShowcaseStore'
 import { useLiveDemoStore } from '../store/liveDemoStore'
 import { useShortcutActionStore } from '../store/shortcutActionStore'
 import { useShortcutStore } from '../store/shortcutStore'
+import { useCommandPaletteStore } from '../store/commandPaletteStore'
 import { RESOURCE_STEPS } from '../types/fhir.d'
 import { LIVE_DEMO_STEPS } from '../demo/liveDemoScript'
 import { bindingMatchesEvent } from '../shortcuts/normalize'
 import { getResolvedShortcutMap, getShortcutScopeFromPathname } from '../shortcuts/resolver'
 import type { ShortcutActionId, ShortcutScope } from '../shortcuts/types'
+import { useGuardedNavigate } from './useGuardedNavigate'
 
 const THEME_CYCLE: ThemeMode[] = ['light', 'dark', 'system']
 
@@ -37,7 +39,7 @@ function toggleLocale(locale: ReturnType<typeof useAppStore.getState>['locale'])
 
 export function useKeyboardShortcuts(): void {
   const location = useLocation()
-  const navigate = useNavigate()
+  const navigate = useGuardedNavigate()
   const overrides = useShortcutStore((state) => state.overrides)
 
   useEffect(() => {
@@ -50,6 +52,9 @@ export function useKeyboardShortcuts(): void {
       const actionStore = useShortcutActionStore.getState()
 
       switch (actionId) {
+        case 'global.openCommandPalette':
+          useCommandPaletteStore.getState().togglePalette()
+          return
         case 'global.openHelp':
           shortcutStore.toggleHelp()
           return

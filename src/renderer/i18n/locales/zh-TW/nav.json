@@ -6,6 +6,10 @@
     "settings": { "label": "Settings", "sublabel": "系統設定" },
     "about":    { "label": "About",    "sublabel": "關於" }
   },
+  "sidebarControls": {
+    "collapse": "收合側邊欄",
+    "expand": "展開側邊欄"
+  },
   "modeLabels": {
     "creator": "Creator 模式",
     "consumer": "Consumer 模式",

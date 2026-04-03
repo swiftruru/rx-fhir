@@ -8,6 +8,59 @@
     "accessibility": "Accessibility",
     "shortcuts": "Keyboard Shortcuts"
   },
+  "actions": {
+    "resetSection": "Reset This Section"
+  },
+  "preferences": {
+    "errors": {
+      "unavailable": "Preference file import/export is not available in the current environment.",
+      "invalidJson": "Import failed: the selected file is not valid JSON.",
+      "invalidPreferences": "Import failed: the selected file is not a valid RxFHIR preferences file.",
+      "unsupportedVersion": "Import failed: this preferences file version is not supported by the current app."
+    }
+  },
+  "search": {
+    "label": "Search Settings",
+    "placeholder": "Search server, zoom, shortcuts, focus visibility…",
+    "hint": "Searches the current Settings tabs and major section titles.",
+    "noResults": "No settings match this keyword right now."
+  },
+  "badges": {
+    "default": "Default",
+    "unsaved": "Unsaved",
+    "customized": "Customized",
+    "customizedCount": "{{count}} items"
+  },
+  "workspaceTools": {
+    "title": "Workspace Tools",
+    "description": "Export current preferences, import them from another machine, or reopen the quick-start tour.",
+    "preferences": {
+      "title": "Preference Files",
+      "description": "Export your current server, locale, zoom, sidebar, and shortcut overrides to JSON for backup or migration.",
+      "export": "Export Preferences",
+      "import": "Import Preferences",
+      "exportSuccess": "Preferences exported: {{fileName}}",
+      "importSuccess": "Preferences imported: {{fileName}}"
+    },
+    "onboarding": {
+      "title": "Quick-Start Tour",
+      "description": "Replay the product guide and jump directly into the main Creator, Consumer, or Settings entry points.",
+      "replay": "Replay Quick Start",
+      "openedAnnouncement": "Quick-start tour opened."
+    },
+    "quickStart": {
+      "title": "Quick Start Tasks",
+      "description": "Launch runnable demo scenarios that move you directly into Creator, Consumer, or Accessibility.",
+      "open": "Open Quick Start Tasks"
+    }
+  },
+  "quickStartOpened": "Switched to Accessibility settings so you can tune readability and interaction comfort first.",
+  "sectionReset": {
+    "serverDone": "FHIR Server settings were reset to the default value.",
+    "serverAlreadyDefault": "FHIR Server settings are already using the default value.",
+    "accessibilityDone": "Accessibility settings were reset to defaults.",
+    "accessibilityAlreadyDefault": "Accessibility settings are already using defaults."
+  },
   "server": {
     "title":       "FHIR Server URL",
     "description": "Set the base URL of the target HAPI FHIR Server (baseR4)",
@@ -135,7 +188,7 @@
     "tagline":     "℞ + FHIR = RxFHIR",
     "description": "Desktop application for Taiwan Core electronic prescription profiles",
     "spec":        "Based on MOHW EMR-IG Electronic Prescription 2.5 specification",
-    "version":     "Version 1.0.14 · Electron + React + FHIR R4",
+    "version":     "Version 1.0.15 · Electron + React + FHIR R4",
     "advisorsNote": "Listed alphabetically by English name; no ranking implied.",
     "fields": {
       "author":      "Author",

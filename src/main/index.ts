@@ -1,10 +1,29 @@
-import { app, shell, BrowserWindow, nativeImage, Menu, nativeTheme, dialog, ipcMain } from 'electron'
-import { readFile, writeFile } from 'node:fs/promises'
+import electron from 'electron'
+import { access, readFile, writeFile } from 'node:fs/promises'
 import { basename, join } from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { fileURLToPath } from 'node:url'
+const { app, shell, BrowserWindow, nativeImage, Menu, nativeTheme, dialog, ipcMain, screen } = electron
+type ElectronBrowserWindow = InstanceType<typeof BrowserWindow>
 
 // Must be set before app.ready so the macOS menu bar picks it up
 app.name = 'RxFHIR'
+
+const isDev = !app.isPackaged
+
+function resolveMainPath(relativePath: string): string {
+  return fileURLToPath(new URL(relativePath, import.meta.url))
+}
+
+function watchWindowShortcuts(window: ElectronBrowserWindow): void {
+  window.webContents.on('before-input-event', (event, input) => {
+    const isReload = (input.key === 'r' || input.key === 'R') && input.meta
+    const isDevTools = input.key === 'F12'
+
+    if (!isDev && (isReload || isDevTools)) {
+      event.preventDefault()
+    }
+  })
+}
 
 function clampZoomFactor(value: number): number {
   if (!Number.isFinite(value)) return 1
@@ -12,10 +31,153 @@ function clampZoomFactor(value: number): number {
 }
 
 function getIconPath(): string {
-  if (is.dev) {
-    return join(__dirname, '../../build/icon.png')
+  if (isDev) {
+    return resolveMainPath('../../build/icon.png')
   }
-  return join(__dirname, '../../resources/icon.png')
+  return resolveMainPath('../../resources/icon.png')
+}
+
+interface WindowState {
+  width: number
+  height: number
+  x?: number
+  y?: number
+  isMaximized?: boolean
+}
+
+const DEFAULT_WINDOW_STATE: WindowState = {
+  width: 1280,
+  height: 800,
+  isMaximized: false
+}
+
+const MIN_WINDOW_WIDTH = 900
+const MIN_WINDOW_HEIGHT = 600
+const WINDOW_STATE_PATH = join(app.getPath('userData'), 'window-state.json')
+const RECENT_BUNDLES_PATH = join(app.getPath('userData'), 'recent-bundles.json')
+const MAX_RECENT_BUNDLES = 8
+
+interface RecentBundleFileEntry {
+  filePath: string
+  fileName: string
+  lastOpenedAt: string
+}
+
+function isVisibleWithinDisplays(state: WindowState): boolean {
+  if (state.x === undefined || state.y === undefined) return true
+  const x = state.x
+  const y = state.y
+
+  return screen.getAllDisplays().some((display) => {
+    const { x: areaX, y: areaY, width, height } = display.workArea
+    return x >= areaX
+      && y >= areaY
+      && x < areaX + width
+      && y < areaY + height
+  })
+}
+
+async function readWindowState(): Promise<WindowState> {
+  try {
+    const raw = await readFile(WINDOW_STATE_PATH, 'utf8')
+    const parsed = JSON.parse(raw) as Partial<WindowState>
+
+    const nextState: WindowState = {
+      width: Math.max(MIN_WINDOW_WIDTH, Math.round(parsed.width ?? DEFAULT_WINDOW_STATE.width)),
+      height: Math.max(MIN_WINDOW_HEIGHT, Math.round(parsed.height ?? DEFAULT_WINDOW_STATE.height)),
+      x: typeof parsed.x === 'number' ? Math.round(parsed.x) : undefined,
+      y: typeof parsed.y === 'number' ? Math.round(parsed.y) : undefined,
+      isMaximized: Boolean(parsed.isMaximized)
+    }
+
+    if (!isVisibleWithinDisplays(nextState)) {
+      return {
+        ...DEFAULT_WINDOW_STATE,
+        width: nextState.width,
+        height: nextState.height
+      }
+    }
+
+    return nextState
+  } catch {
+    return DEFAULT_WINDOW_STATE
+  }
+}
+
+async function writeWindowState(windowState: WindowState): Promise<void> {
+  await writeFile(WINDOW_STATE_PATH, JSON.stringify(windowState, null, 2), 'utf8')
+}
+
+async function readRecentBundleFiles(): Promise<RecentBundleFileEntry[]> {
+  try {
+    const raw = await readFile(RECENT_BUNDLES_PATH, 'utf8')
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return []
+
+    return parsed.filter((entry): entry is RecentBundleFileEntry => (
+      !!entry
+      && typeof entry === 'object'
+      && typeof (entry as RecentBundleFileEntry).filePath === 'string'
+      && typeof (entry as RecentBundleFileEntry).fileName === 'string'
+      && typeof (entry as RecentBundleFileEntry).lastOpenedAt === 'string'
+    ))
+  } catch {
+    return []
+  }
+}
+
+async function writeRecentBundleFiles(entries: RecentBundleFileEntry[]): Promise<void> {
+  await writeFile(RECENT_BUNDLES_PATH, JSON.stringify(entries, null, 2), 'utf8')
+}
+
+async function getExistingRecentBundleFiles(): Promise<RecentBundleFileEntry[]> {
+  const entries = await readRecentBundleFiles()
+  const existingEntries: RecentBundleFileEntry[] = []
+
+  for (const entry of entries) {
+    try {
+      await access(entry.filePath)
+      existingEntries.push(entry)
+    } catch {
+      continue
+    }
+  }
+
+  if (existingEntries.length !== entries.length) {
+    await writeRecentBundleFiles(existingEntries)
+  }
+
+  return existingEntries
+}
+
+async function rememberRecentBundleFile(filePath: string): Promise<void> {
+  if (!filePath.trim()) return
+
+  const nextEntry: RecentBundleFileEntry = {
+    filePath,
+    fileName: basename(filePath),
+    lastOpenedAt: new Date().toISOString()
+  }
+
+  const currentEntries = await getExistingRecentBundleFiles()
+  const nextEntries = [
+    nextEntry,
+    ...currentEntries.filter((entry) => entry.filePath !== filePath)
+  ].slice(0, MAX_RECENT_BUNDLES)
+
+  await writeRecentBundleFiles(nextEntries)
+  app.addRecentDocument(filePath)
+}
+
+function getWindowState(mainWindow: ElectronBrowserWindow): WindowState {
+  const bounds = mainWindow.isMaximized() ? mainWindow.getNormalBounds() : mainWindow.getBounds()
+  return {
+    width: Math.max(MIN_WINDOW_WIDTH, Math.round(bounds.width)),
+    height: Math.max(MIN_WINDOW_HEIGHT, Math.round(bounds.height)),
+    x: Math.round(bounds.x),
+    y: Math.round(bounds.y),
+    isMaximized: mainWindow.isMaximized()
+  }
 }
 
 // Custom About window — replaces the system About panel so we can show our icon
@@ -80,7 +242,7 @@ async function createAboutWindow(): Promise<void> {
 <body>
   ${iconDataUrl ? `<img src="${iconDataUrl}" alt="RxFHIR" />` : ''}
   <h1>RxFHIR</h1>
-  <p class="version">版本 1.0.14</p>
+  <p class="version">版本 1.0.15</p>
   <p class="desc">℞ + FHIR = RxFHIR<br>基於 TW Core 電子處方箋 Profile 的桌面應用程式</p>
 </body>
 </html>`)
@@ -140,20 +302,23 @@ function setupMacMenu(): void {
   Menu.setApplicationMenu(menu)
 }
 
-function createWindow(): void {
+async function createWindow(): Promise<void> {
   const icon = nativeImage.createFromPath(getIconPath())
+  const savedWindowState = await readWindowState()
 
   const mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 800,
-    minWidth: 900,
-    minHeight: 600,
+    width: savedWindowState.width,
+    height: savedWindowState.height,
+    x: savedWindowState.x,
+    y: savedWindowState.y,
+    minWidth: MIN_WINDOW_WIDTH,
+    minHeight: MIN_WINDOW_HEIGHT,
     show: false,
     autoHideMenuBar: true,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     icon,
     webPreferences: {
-      preload: join(__dirname, '../preload/index.mjs'),
+      preload: resolveMainPath('../preload/index.cjs'),
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false
@@ -162,6 +327,26 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
+    if (savedWindowState.isMaximized) {
+      mainWindow.maximize()
+    }
+  })
+
+  let windowStateSaveTimer: ReturnType<typeof setTimeout> | undefined
+  const scheduleWindowStateSave = (): void => {
+    if (windowStateSaveTimer) clearTimeout(windowStateSaveTimer)
+    windowStateSaveTimer = setTimeout(() => {
+      void writeWindowState(getWindowState(mainWindow))
+    }, 250)
+  }
+
+  mainWindow.on('resize', scheduleWindowStateSave)
+  mainWindow.on('move', scheduleWindowStateSave)
+  mainWindow.on('maximize', scheduleWindowStateSave)
+  mainWindow.on('unmaximize', scheduleWindowStateSave)
+  mainWindow.on('close', () => {
+    if (windowStateSaveTimer) clearTimeout(windowStateSaveTimer)
+    void writeWindowState(getWindowState(mainWindow))
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -169,10 +354,10 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+  if (isDev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    mainWindow.loadFile(resolveMainPath('../renderer/index.html'))
   }
 }
 
@@ -191,6 +376,7 @@ ipcMain.handle(
     }
 
     await writeFile(filePath, payload.content, 'utf8')
+    await rememberRecentBundleFile(filePath)
 
     return {
       canceled: false,
@@ -206,6 +392,78 @@ ipcMain.handle('bundle-json:open', async () => {
     title: 'Import FHIR Bundle JSON',
     properties: ['openFile'],
     filters: [{ name: 'FHIR Bundle JSON', extensions: ['json'] }]
+  })
+
+  const filePath = filePaths[0]
+  if (canceled || !filePath) {
+    return { canceled: true }
+  }
+
+  const content = await readFile(filePath, 'utf8')
+  await rememberRecentBundleFile(filePath)
+
+  return {
+    canceled: false,
+    filePath,
+    fileName: basename(filePath),
+    content
+  }
+})
+
+ipcMain.handle('bundle-json:recent-list', async () => {
+  return getExistingRecentBundleFiles()
+})
+
+ipcMain.handle('bundle-json:recent-open', async (_event, filePath: string) => {
+  if (!filePath.trim()) {
+    return { canceled: true }
+  }
+
+  const content = await readFile(filePath, 'utf8')
+  await rememberRecentBundleFile(filePath)
+
+  return {
+    canceled: false,
+    filePath,
+    fileName: basename(filePath),
+    content
+  }
+})
+
+ipcMain.handle('bundle-json:recent-track', async (_event, filePath: string) => {
+  await rememberRecentBundleFile(filePath)
+})
+
+ipcMain.handle(
+  'preferences-json:save',
+  async (_event, payload: { content: string; defaultFileName?: string }) => {
+    const targetWindow = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    const { canceled, filePath } = await dialog.showSaveDialog(targetWindow, {
+      title: 'Export RxFHIR Preferences',
+      defaultPath: payload.defaultFileName ?? `rxfhir-preferences-${new Date().toISOString().slice(0, 10)}.json`,
+      filters: [{ name: 'RxFHIR Preferences JSON', extensions: ['json'] }]
+    })
+
+    if (canceled || !filePath) {
+      return { canceled: true }
+    }
+
+    await writeFile(filePath, payload.content, 'utf8')
+
+    return {
+      canceled: false,
+      filePath,
+      fileName: basename(filePath)
+    }
+  }
+)
+
+ipcMain.handle('preferences-json:open', async () => {
+  const targetWindow = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+  const { canceled, filePaths } = await dialog.showOpenDialog(targetWindow, {
+    title: 'Import RxFHIR Preferences',
+    properties: ['openFile'],
+    filters: [{ name: 'RxFHIR Preferences JSON', extensions: ['json'] }]
   })
 
   const filePath = filePaths[0]
@@ -246,7 +504,9 @@ ipcMain.handle('app-zoom:set', async (event, zoomFactor: number) => {
 })
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.rxfhir.app')
+  if (process.platform === 'win32') {
+    app.setAppUserModelId('com.rxfhir.app')
+  }
 
   if (process.platform === 'darwin') {
     // Set dock icon
@@ -259,13 +519,13 @@ app.whenReady().then(() => {
   }
 
   app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
+    watchWindowShortcuts(window)
   })
 
-  createWindow()
+  void createWindow()
 
   app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) void createWindow()
   })
 })
 

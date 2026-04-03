@@ -18,6 +18,8 @@ export interface ConsumerLaunchState {
   prefill?: SearchPrefill
   autoSearch?: SearchParams
   targetBundleId?: string
+  recentBundleFilePath?: string
+  quickStartScenario?: 'example-query'
 }
 
 export interface ConsumerSearchExecution {

@@ -1,4 +1,4 @@
-import type { BundleJsonSaveResult, RxFhirDesktopBridge } from '../types/electron'
+import type { BundleJsonOpenResult, BundleJsonSaveResult, RecentBundleFileEntry, RxFhirDesktopBridge } from '../types/electron'
 import type { BundleSummary } from '../types/fhir.d'
 import { extractBundleSummary } from './searchService'
 
@@ -99,6 +99,35 @@ export async function importBundleJson(): Promise<ImportedBundleResult | null> {
   }
 
   return parseImportedBundleJson(result.content, result.fileName)
+}
+
+export async function importBundleJsonFile(file: File): Promise<ImportedBundleResult> {
+  const content = await file.text()
+  return parseImportedBundleJson(content, file.name)
+}
+
+function parseBridgeOpenResult(result: BundleJsonOpenResult): ImportedBundleResult | null {
+  if (result.canceled || !result.content || !result.fileName) {
+    return null
+  }
+
+  return parseImportedBundleJson(result.content, result.fileName)
+}
+
+export async function openRecentBundleJson(filePath: string): Promise<ImportedBundleResult | null> {
+  const bridge = requireDesktopBridge()
+  const result = await bridge.openRecentBundleJson(filePath)
+  return parseBridgeOpenResult(result)
+}
+
+export async function listRecentBundleJsonFiles(): Promise<RecentBundleFileEntry[]> {
+  const bridge = requireDesktopBridge()
+  return bridge.listRecentBundleJsonFiles()
+}
+
+export async function rememberRecentBundleJson(filePath: string): Promise<void> {
+  const bridge = requireDesktopBridge()
+  await bridge.rememberRecentBundleJson(filePath)
 }
 
 export function parseImportedBundleJson(content: string, fileName: string): ImportedBundleResult {

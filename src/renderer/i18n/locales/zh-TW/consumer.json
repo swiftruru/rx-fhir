@@ -6,14 +6,23 @@
     "quickStartTitle": "近期提交與常用查詢",
     "quickStartDescription": "可直接帶入近期提交或常用查詢，再回到左側調整條件。",
     "quickStartEmpty": "目前還沒有可用的查詢輔助項目。",
+    "quickStartScenario": {
+      "exampleLoaded": "已為你帶入一組基本查詢範例，接下來可以直接查詢或先調整條件。"
+    },
     "shortcuts": {
       "sourceLabel": "資料來源",
       "importTitle": "匯入本機 Bundle",
       "importDescription": "從本機選取一份 FHIR Bundle JSON，直接在 Consumer 端查看內容，不必先回到 Creator 或重新送到 FHIR Server。",
+      "importDropHint": "也可以直接把 `.json` 檔拖進 Consumer 視窗匯入。",
       "examplesLabel": "查詢範例",
       "examplesTitle": "套用查詢範例",
       "examplesDescription": "依目前選擇的基本 / 日期 / 複合查詢頁籤，帶入一組示範條件，方便上課展示與功能驗證。",
       "examplesButton": "套用查詢範例"
+    },
+    "dropzone": {
+      "title": "放開即可匯入 Bundle JSON",
+      "description": "RxFHIR 會直接在 Consumer 中解析這份 FHIR Bundle，讓你立即查看結果與詳情。",
+      "hint": "支援拖入單一 `.json` 檔。"
     },
     "middleTabs": {
       "results": "搜尋結果",
@@ -130,6 +139,15 @@
       "organization": "識別碼 {{identifier}} / 機構 {{organizationId}}",
       "author": "識別碼 {{identifier}} / 醫師 {{authorName}}"
     }
+  },
+  "recentFiles": {
+    "sourceLabel": "最近檔案",
+    "title": "Open Recent",
+    "description": "快速重新打開最近匯入或匯出的 Bundle JSON，不必重新找檔案位置。",
+    "count": "最近 {{count}} 份",
+    "lastOpened": "最近開啟：{{time}}",
+    "open": "重新開啟",
+    "opened": "已開啟最近檔案：{{fileName}}"
   },
   "results": {
     "empty":        "尚無查詢結果",

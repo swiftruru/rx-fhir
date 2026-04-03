@@ -2,6 +2,16 @@ import type { ShortcutDefinition } from './types'
 
 export const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
   {
+    id: 'global.openCommandPalette',
+    category: 'global',
+    scope: 'global',
+    defaultBinding: 'Mod+K',
+    customizable: true,
+    allowInInput: true,
+    labelKey: 'actions.global.openCommandPalette.label',
+    descriptionKey: 'actions.global.openCommandPalette.description'
+  },
+  {
     id: 'global.openHelp',
     category: 'global',
     scope: 'global',

@@ -60,6 +60,210 @@
     "toggle": "繁中",
     "current": "EN"
   },
+  "onboarding": {
+    "badge": "Quick Start",
+    "progress": "Step {{current}} / {{total}}",
+    "skip": "Skip",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Start Exploring",
+    "actions": {
+      "openQuickStart": "View Quick Start Tasks",
+      "openCreator": "Go to Creator",
+      "openConsumer": "Go to Consumer",
+      "openSettings": "Go to Settings"
+    },
+    "steps": {
+      "welcome": {
+        "title": "Welcome to RxFHIR",
+        "description": "RxFHIR is a desktop app for building, querying, and teaching FHIR-based prescription workflows.",
+        "bullets": {
+          "creator": "Creator: build prescription-related Resources step by step and assemble the final Document Bundle.",
+          "consumer": "Consumer: query, import, and inspect Bundle results and prescription summaries.",
+          "settings": "Settings: adjust the FHIR Server, shortcuts, and accessibility preferences."
+        }
+      },
+      "creator": {
+        "title": "Start with Creator first",
+        "description": "For most first-time sessions, the Creator flow is the fastest way to understand how the whole prescription workflow fits together.",
+        "bullets": {
+          "stepper": "The 11-step flow connects organization, patient, practitioner, prescription, and final document assembly.",
+          "templates": "Use Prescription Templates, Fill Mock, or Live Demo to see a complete result faster.",
+          "draft": "Unfinished work is auto-saved locally so you can continue later."
+        }
+      },
+      "consumer": {
+        "title": "Consumer is for query and verification",
+        "description": "After submitting a Bundle, switch to Consumer to search results, inspect JSON, or open a local Bundle file.",
+        "bullets": {
+          "search": "Basic, Date, and Complex search modes are all available.",
+          "helpers": "Query Helpers keeps recent submissions, saved searches, and example queries close at hand.",
+          "detail": "The detail pane can switch between Structured and JSON views for learning and debugging."
+        }
+      },
+      "settings": {
+        "title": "Settings makes daily use smoother",
+        "description": "Server selection, shortcuts, zoom, and motion preferences can all be adjusted to match your workflow.",
+        "bullets": {
+          "server": "Start by checking that the FHIR Server URL and connection status are correct.",
+          "shortcuts": "The shortcut page shows active bindings and lets you customize common actions.",
+          "accessibility": "Text scale, interface zoom, focus style, and reduced motion can all be tuned here."
+        }
+      }
+    }
+  },
+  "commandPalette": {
+    "title": "Command Palette",
+    "description": "Search pages and common actions without memorizing every shortcut first.",
+    "placeholder": "Search Creator, Consumer, toggle theme, shortcut help…",
+    "empty": "No matching command is available right now.",
+    "groups": {
+      "navigation": "Navigation",
+      "actions": "Global Actions",
+      "currentPage": "Current Page",
+      "recent": "Recently Opened"
+    },
+    "actions": {
+      "activityCenter": {
+        "label": "Open Activity Center",
+        "description": "Review recent success, warning, and error notifications."
+      },
+      "onboarding": {
+        "label": "Open Quick Start",
+        "description": "Reopen the product tour and main workflow entry points."
+      },
+      "quickStart": {
+        "label": "Open Quick Start Tasks",
+        "description": "Launch guided demo tasks for prescription creation, query, and settings."
+      },
+      "openRecentBundle": {
+        "description": "Open a recently used local Bundle: {{fileName}}"
+      },
+      "shortcutHelp": {
+        "label": "Open shortcut help",
+        "description": "Review all currently available keyboard shortcuts."
+      },
+      "toggleTheme": {
+        "label": "Toggle theme",
+        "description": "Cycle between light, dark, and system themes."
+      },
+      "toggleLocale": {
+        "label": "Toggle locale",
+        "description": "Switch between Traditional Chinese and English."
+      },
+      "openTemplates": {
+        "label": "Open prescription templates",
+        "description": "Quickly apply common prescription scenarios or teaching presets."
+      },
+      "startLiveDemo": {
+        "label": "Start Live Demo",
+        "description": "Run the guided walkthrough for the full prescription flow."
+      },
+      "stopLiveDemo": {
+        "label": "Stop Live Demo",
+        "description": "Stop the current guided walkthrough."
+      },
+      "toggleInspector": {
+        "label": "Toggle right panel",
+        "description": "Open or close the Creator JSON / Request inspector panel."
+      },
+      "toggleInspectorMode": {
+        "label": "Switch panel mode",
+        "description": "Switch between JSON and FHIR Request views."
+      },
+      "focusSearch": {
+        "label": "Focus search field",
+        "description": "Move focus to the main Consumer search input."
+      },
+      "importBundle": {
+        "label": "Import Bundle JSON",
+        "description": "Import a local FHIR Bundle JSON file."
+      },
+      "testConnection": {
+        "label": "Test FHIR connection",
+        "description": "Check whether the current FHIR Server in Settings is reachable."
+      },
+      "saveSettings": {
+        "label": "Save settings",
+        "description": "Save the current changes on the Settings page."
+      },
+      "openShortcutSettings": {
+        "label": "Open shortcut settings",
+        "description": "Switch to the Shortcuts tab in Settings."
+      },
+      "openAccessibilitySettings": {
+        "label": "Open accessibility settings",
+        "description": "Switch to the Accessibility tab in Settings."
+      }
+    }
+  },
+  "activityCenter": {
+    "button": "Activity",
+    "open": "Open Activity Center",
+    "openWithCount": "Open Activity Center, {{count}} unread notifications",
+    "title": "Activity Center",
+    "description": "Review recent operation feedback and notification history in one place.",
+    "empty": "No notifications have been recorded yet.",
+    "emptyFiltered": "No notifications match the {{filter}} filter right now.",
+    "clear": "Clear All",
+    "markRead": "Mark Read",
+    "markAllRead": "Mark All Read",
+    "filters": {
+      "all": "All",
+      "unread": "Unread",
+      "success": "Success",
+      "info": "Info",
+      "warning": "Warning",
+      "error": "Error"
+    },
+    "status": {
+      "read": "Read",
+      "unread": "Unread"
+    },
+    "variants": {
+      "success": "Success",
+      "info": "Info",
+      "warning": "Warning",
+      "error": "Error"
+    }
+  },
+  "quickStart": {
+    "title": "Quick Start Tasks",
+    "description": "Launch a runnable demo task directly instead of figuring out where to begin on your own.",
+    "highlights": "This task will help you",
+    "scenarios": {
+      "creator-primary-template": {
+        "title": "Build your first demo prescription",
+        "description": "Move Creator into a ready-to-use demo scenario so you can understand the full creation flow faster.",
+        "action": "Load Demo Prescription",
+        "bullets": {
+          "1": "If Creator is empty, the primary demo template will be loaded right away.",
+          "2": "If Creator already has work, the template panel will open instead of overwriting it directly.",
+          "3": "You can then submit each step and assemble the final Document Bundle."
+        }
+      },
+      "consumer-example-query": {
+        "title": "Load your first example query",
+        "description": "Move Consumer into a ready-made example query so the search workspace is easier to understand.",
+        "action": "Load Example Query",
+        "bullets": {
+          "1": "This opens Consumer and fills a basic query example.",
+          "2": "You can review the conditions on the left before searching or refining them.",
+          "3": "It is a good way to understand the search flow after a Bundle has been created."
+        }
+      },
+      "settings-accessibility": {
+        "title": "Tune readability and interaction comfort",
+        "description": "Open Settings directly in the accessibility section and adjust zoom, motion, and focus to a comfortable baseline.",
+        "action": "Open Accessibility Settings",
+        "bullets": {
+          "1": "This switches Settings directly to the Accessibility tab.",
+          "2": "You can quickly adjust text scale, interface zoom, focus style, and motion behavior.",
+          "3": "It is useful before your first session so the desktop experience feels right."
+        }
+      }
+    }
+  },
   "accessibility": {
     "appName": "RxFHIR",
     "skipToMain": "Skip to main content",

@@ -3,9 +3,14 @@ import { persist } from 'zustand/middleware'
 import type { CreatedResources } from '../types/fhir.d'
 import type { ResourceKey } from '../types/fhir.d'
 import { RESOURCE_STEPS } from '../types/fhir.d'
+import {
+  buildCreatorSubmissionSnapshot,
+  type CreatorSubmissionSnapshot
+} from '../lib/creatorSubmissionDiff'
 
 export type CreatorDraftValues = Partial<Record<ResourceKey, Record<string, unknown>>>
 export type CreatorSaveOutcome = 'created' | 'updated' | 'reused'
+export type DraftStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 export type CreatorRequestMethod = 'GET' | 'POST' | 'PUT'
 
@@ -26,7 +31,7 @@ interface PersistedCreatorState {
   draftSavedAt?: string
 }
 
-function hasPersistableWork(resources: CreatedResources, drafts: CreatorDraftValues): boolean {
+export function hasCreatorPersistableWork(resources: CreatedResources, drafts: CreatorDraftValues): boolean {
   return Object.values(resources).some(Boolean) || Object.values(drafts).some((draft) => draft && Object.keys(draft).length > 0)
 }
 
@@ -49,12 +54,14 @@ interface CreatorState {
   feedbacks: CreatorResourceFeedbacks
   lastUpdatedResourceKey?: ResourceKey
   draftSavedAt?: string
+  draftStatus: DraftStatus
   draftHydrated: boolean
   draftRestored: boolean
   draftRevision: number
   bundleId?: string
   bundleError?: string
   submittingBundle: boolean
+  lastSubmittedSnapshot?: CreatorSubmissionSnapshot
 
   setStep: (step: number) => void
   nextStep: () => void
@@ -66,7 +73,9 @@ interface CreatorState {
   clearDraft: (key: ResourceKey) => void
   applyTemplateDrafts: (drafts: CreatorDraftValues) => void
   dismissDraftRestored: () => void
+  setDraftStatus: (status: DraftStatus) => void
   setBundleId: (id: string) => void
+  markBundleSubmitted: (id: string, baselineDrafts?: CreatorDraftValues) => void
   setBundleError: (error: string | undefined) => void
   setSubmittingBundle: (value: boolean) => void
   reset: () => void
@@ -83,34 +92,37 @@ export const useCreatorStore = create<CreatorState>()(
       feedbacks: {},
       lastUpdatedResourceKey: undefined,
       draftSavedAt: undefined,
+      draftStatus: 'idle',
       draftHydrated: false,
       draftRestored: false,
       draftRevision: 0,
       bundleId: undefined,
       bundleError: undefined,
       submittingBundle: false,
+      lastSubmittedSnapshot: undefined,
 
       setStep: (step) =>
         set((state) => ({
           currentStep: Math.max(0, Math.min(step, TOTAL_STEPS - 1)),
-          draftSavedAt: hasPersistableWork(state.resources, state.drafts) ? new Date().toISOString() : state.draftSavedAt
+          draftSavedAt: hasCreatorPersistableWork(state.resources, state.drafts) ? new Date().toISOString() : state.draftSavedAt
         })),
       nextStep: () =>
         set((state) => ({
           currentStep: Math.min(get().currentStep + 1, TOTAL_STEPS - 1),
-          draftSavedAt: hasPersistableWork(state.resources, state.drafts) ? new Date().toISOString() : state.draftSavedAt
+          draftSavedAt: hasCreatorPersistableWork(state.resources, state.drafts) ? new Date().toISOString() : state.draftSavedAt
         })),
       prevStep: () =>
         set((state) => ({
           currentStep: Math.max(get().currentStep - 1, 0),
-          draftSavedAt: hasPersistableWork(state.resources, state.drafts) ? new Date().toISOString() : state.draftSavedAt
+          draftSavedAt: hasCreatorPersistableWork(state.resources, state.drafts) ? new Date().toISOString() : state.draftSavedAt
         })),
 
       setResource: (key, resource) =>
         set((state) => ({
           resources: { ...state.resources, [key]: resource },
           lastUpdatedResourceKey: key,
-          draftSavedAt: new Date().toISOString()
+          draftSavedAt: new Date().toISOString(),
+          draftStatus: 'saved'
         })),
 
       setFeedback: (key, feedback) =>
@@ -131,9 +143,11 @@ export const useCreatorStore = create<CreatorState>()(
           if (values && Object.keys(values).length > 0) drafts[key] = values
           else delete drafts[key]
 
+          const hasWork = hasCreatorPersistableWork(state.resources, drafts)
           return {
             drafts,
-            draftSavedAt: hasPersistableWork(state.resources, drafts) ? new Date().toISOString() : undefined
+            draftSavedAt: hasWork ? new Date().toISOString() : undefined,
+            draftStatus: hasWork ? 'saved' : 'idle'
           }
         }),
 
@@ -141,9 +155,11 @@ export const useCreatorStore = create<CreatorState>()(
         set((state) => {
           const drafts = { ...state.drafts }
           delete drafts[key]
+          const hasWork = hasCreatorPersistableWork(state.resources, drafts)
           return {
             drafts,
-            draftSavedAt: hasPersistableWork(state.resources, drafts) ? new Date().toISOString() : undefined
+            draftSavedAt: hasWork ? new Date().toISOString() : undefined,
+            draftStatus: hasWork ? 'saved' : 'idle'
           }
         }),
 
@@ -154,17 +170,28 @@ export const useCreatorStore = create<CreatorState>()(
           drafts,
           feedbacks: {},
           lastUpdatedResourceKey: undefined,
-          draftSavedAt: hasPersistableWork({}, drafts) ? new Date().toISOString() : undefined,
+          draftSavedAt: hasCreatorPersistableWork({}, drafts) ? new Date().toISOString() : undefined,
+          draftStatus: hasCreatorPersistableWork({}, drafts) ? 'saved' : 'idle',
           draftRestored: false,
           draftRevision: state.draftRevision + 1,
           bundleId: undefined,
           bundleError: undefined,
-          submittingBundle: false
+          submittingBundle: false,
+          lastSubmittedSnapshot: undefined
         })),
 
       dismissDraftRestored: () => set({ draftRestored: false }),
 
+      setDraftStatus: (draftStatus) => set({ draftStatus }),
+
       setBundleId: (id) => set({ bundleId: id, bundleError: undefined, draftRestored: false }),
+      markBundleSubmitted: (id, baselineDrafts) =>
+        set((state) => ({
+          bundleId: id,
+          bundleError: undefined,
+          draftRestored: false,
+          lastSubmittedSnapshot: buildCreatorSubmissionSnapshot(id, baselineDrafts ?? state.drafts)
+        })),
       setBundleError: (error) => set({ bundleError: error }),
       setSubmittingBundle: (value) => set({ submittingBundle: value }),
 
@@ -176,17 +203,19 @@ export const useCreatorStore = create<CreatorState>()(
           feedbacks: {},
           lastUpdatedResourceKey: undefined,
           draftSavedAt: undefined,
+          draftStatus: 'idle',
           draftRestored: false,
           draftRevision: state.draftRevision + 1,
           bundleId: undefined,
           bundleError: undefined,
-          submittingBundle: false
+          submittingBundle: false,
+          lastSubmittedSnapshot: undefined
         }))
     }),
     {
       name: 'rxfhir-creator-draft',
       partialize: (state): PersistedCreatorState => {
-        if (state.bundleId || !hasPersistableWork(state.resources, state.drafts)) {
+        if (state.bundleId || !hasCreatorPersistableWork(state.resources, state.drafts)) {
           return {
             currentStep: 0,
             resources: {},
@@ -209,7 +238,8 @@ export const useCreatorStore = create<CreatorState>()(
       onRehydrateStorage: () => (state, error) => {
         useCreatorStore.setState((current) => ({
           draftHydrated: true,
-          draftRestored: !error && !!state && hasPersistableWork(state.resources, state.drafts),
+          draftRestored: !error && !!state && hasCreatorPersistableWork(state.resources, state.drafts),
+          draftStatus: !error && !!state && hasCreatorPersistableWork(state.resources, state.drafts) ? 'saved' : 'idle',
           lastUpdatedResourceKey:
             state?.lastUpdatedResourceKey
             ?? inferLastUpdatedResourceKey(state?.resources ?? {}, state?.currentStep ?? current.currentStep),

@@ -35,14 +35,20 @@ export function useCreatorDraftAutosave<TFormValues extends FieldValues>(
   watch: UseFormWatch<TFormValues>
 ): void {
   const setDraft = useCreatorStore((state) => state.setDraft)
+  const setDraftStatus = useCreatorStore((state) => state.setDraftStatus)
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined
 
     const subscription = watch((values) => {
       if (timer) clearTimeout(timer)
+      setDraftStatus('saving')
       timer = setTimeout(() => {
-        setDraft(key, sanitizeDraftValues(values as Record<string, unknown>))
+        try {
+          setDraft(key, sanitizeDraftValues(values as Record<string, unknown>))
+        } catch {
+          setDraftStatus('error')
+        }
       }, 400)
     })
 
@@ -50,5 +56,5 @@ export function useCreatorDraftAutosave<TFormValues extends FieldValues>(
       if (timer) clearTimeout(timer)
       subscription.unsubscribe()
     }
-  }, [key, setDraft, watch])
+  }, [key, setDraft, setDraftStatus, watch])
 }

@@ -6,14 +6,23 @@
     "quickStartTitle": "Recent Submissions & Saved Searches",
     "quickStartDescription": "Reuse recent submissions or saved searches here, then refine the query on the left.",
     "quickStartEmpty": "No search helpers are available yet.",
+    "quickStartScenario": {
+      "exampleLoaded": "A basic query example was loaded for you. Search now or refine the criteria first."
+    },
     "shortcuts": {
       "sourceLabel": "Data Source",
       "importTitle": "Import a Local Bundle",
       "importDescription": "Open a local FHIR Bundle JSON file and inspect it directly in Consumer without going back to Creator or resubmitting it to the FHIR Server.",
+      "importDropHint": "You can also drag a `.json` file directly into the Consumer window.",
       "examplesLabel": "Query Examples",
       "examplesTitle": "Apply a Query Example",
       "examplesDescription": "Fill the current Basic / Date / Complex tab with a sample query so demos and feature checks can start faster.",
       "examplesButton": "Apply Query Example"
+    },
+    "dropzone": {
+      "title": "Drop to Import a Bundle JSON",
+      "description": "RxFHIR will parse the FHIR Bundle directly inside Consumer so you can inspect the result and detail views immediately.",
+      "hint": "Single `.json` files are supported."
     },
     "middleTabs": {
       "results": "Results",
@@ -130,6 +139,15 @@
       "organization": "Identifier {{identifier}} / Organization {{organizationId}}",
       "author": "Identifier {{identifier}} / Author {{authorName}}"
     }
+  },
+  "recentFiles": {
+    "sourceLabel": "Recent Files",
+    "title": "Open Recent",
+    "description": "Quickly reopen recently imported or exported Bundle JSON files without browsing for them again.",
+    "count": "{{count}} recent file(s)",
+    "lastOpened": "Last opened: {{time}}",
+    "open": "Open Again",
+    "opened": "Opened recent file: {{fileName}}"
   },
   "results": {
     "empty":          "No results found",

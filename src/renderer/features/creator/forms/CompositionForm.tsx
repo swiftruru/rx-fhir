@@ -21,6 +21,7 @@ import { exportBundleJson, getBundleFileErrorMessage } from '../../../services/b
 import { postResource, resetLoggedRequests } from '../../../services/fhirClient'
 import { buildComposition, assembleDocumentBundle } from '../../../services/bundleService'
 import { useCreatorStore } from '../../../store/creatorStore'
+import { useToastStore } from '../../../store/toastStore'
 import PrescriptionSummaryCard from '../components/PrescriptionSummaryCard'
 
 type FormData = {
@@ -45,10 +46,11 @@ interface Props {
 }
 
 export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.Element {
-  const { resources, setResource, setBundleId, setBundleError, setSubmittingBundle, clearDraft } = useCreatorStore()
+  const { resources, drafts, setResource, markBundleSubmitted, setBundleError, setSubmittingBundle, setDraft } = useCreatorStore()
   const draftValues = useCreatorStore((s) => s.drafts.composition as Partial<FormData> | undefined)
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
+  const pushToast = useToastStore((state) => state.pushToast)
   const f = (k: string) => t(`forms.composition.${k}`)
   const addRecord = useHistoryStore((s) => s.addRecord)
   const serverUrl = useAppStore((s) => s.serverUrl)
@@ -110,9 +112,19 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
     try {
       const result = await exportBundleJson(preview)
       if (result.canceled || !result.fileName) return
-      setFileMessage(t('forms.composition.export.success', { fileName: result.fileName }))
+      const message = t('forms.composition.export.success', { fileName: result.fileName })
+      setFileMessage(message)
+      pushToast({
+        variant: 'success',
+        description: message
+      })
     } catch (error) {
-      setErrorMsg(getBundleFileErrorMessage(error, tc))
+      const message = getBundleFileErrorMessage(error, tc)
+      setErrorMsg(message)
+      pushToast({
+        variant: 'error',
+        description: message
+      })
     } finally {
       setExporting(false)
     }
@@ -127,7 +139,7 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
       const composition = buildComposition(resources, data.title, fhirDate)
       const createdComp = await postResource<fhir4.Composition>('Composition', composition)
       setResource('composition', createdComp)
-      clearDraft('composition')
+      setDraft('composition', { title: data.title, date: data.date })
       setCompId(createdComp.id)
       setCompStatus('success')
 
@@ -137,7 +149,13 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
 
       const createdBundle = await postResource<fhir4.Bundle>('Bundle', bundle)
       setBundleResultId(createdBundle.id!)
-      setBundleId(createdBundle.id!)
+      markBundleSubmitted(createdBundle.id!, {
+        ...drafts,
+        composition: {
+          title: data.title,
+          date: data.date
+        }
+      })
       setBundleStatus('success')
       onBundleSuccess(createdBundle.id!)
 
@@ -164,6 +182,10 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
       if (compStatus !== 'success') setCompStatus('error')
       else setBundleStatus('error')
       setBundleError(msg)
+      pushToast({
+        variant: 'error',
+        description: msg
+      })
     } finally {
       setSubmittingBundle(false)
     }

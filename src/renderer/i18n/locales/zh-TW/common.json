@@ -60,6 +60,210 @@
     "toggle": "EN",
     "current": "繁中"
   },
+  "onboarding": {
+    "badge": "快速上手",
+    "progress": "第 {{current}} / {{total}} 步",
+    "skip": "略過",
+    "back": "上一步",
+    "next": "下一步",
+    "finish": "開始使用",
+    "actions": {
+      "openQuickStart": "查看任務情境",
+      "openCreator": "前往 Creator",
+      "openConsumer": "前往 Consumer",
+      "openSettings": "前往 Settings"
+    },
+    "steps": {
+      "welcome": {
+        "title": "歡迎使用 RxFHIR",
+        "description": "RxFHIR 是一個用來建立、查詢與教學展示 FHIR 電子處方流程的桌面應用程式。",
+        "bullets": {
+          "creator": "Creator：逐步建立處方相關 Resource，最後組成 Document Bundle。",
+          "consumer": "Consumer：查詢、匯入並檢視已建立的 Bundle 與處方摘要。",
+          "settings": "Settings：調整 FHIR Server、快捷鍵與無障礙偏好。"
+        }
+      },
+      "creator": {
+        "title": "從 Creator 開始最直覺",
+        "description": "大多數第一次使用時，都可以先從 Creator 依序建立完整處方流程。",
+        "bullets": {
+          "stepper": "11 個步驟會把機構、病人、醫師、處方與文件組裝串成一條完整工作流。",
+          "templates": "你可以用範本處方、Fill Mock 或 Live Demo 更快看到完整結果。",
+          "draft": "未完成內容會自動儲存為本機草稿，下次可繼續編輯。"
+        }
+      },
+      "consumer": {
+        "title": "Consumer 負責查詢與驗證",
+        "description": "當你提交 Bundle 後，可以切到 Consumer 查詢結果、檢視 JSON 或匯入本機 Bundle。",
+        "bullets": {
+          "search": "支援 Basic、Date、Complex 三種查詢模式。",
+          "helpers": "Query Helpers 會保留最近提交、已儲存搜尋與查詢範例。",
+          "detail": "詳情面板可切 Structured / JSON，方便教學與除錯。"
+        }
+      },
+      "settings": {
+        "title": "先熟悉 Settings 會更順手",
+        "description": "Server、快捷鍵、縮放與動態效果都可以在 Settings 裡調整成你習慣的工作方式。",
+        "bullets": {
+          "server": "可以先確認 FHIR Server 位址與連線狀態是否正常。",
+          "shortcuts": "快捷鍵頁面可查看目前綁定並自訂常用操作。",
+          "accessibility": "字級縮放、介面縮放、焦點樣式與減少動態效果都能依偏好調整。"
+        }
+      }
+    }
+  },
+  "commandPalette": {
+    "title": "命令面板",
+    "description": "快速搜尋頁面與常用操作，不用先記住所有快捷鍵。",
+    "placeholder": "搜尋 Creator、Consumer、切換主題、快速鍵說明…",
+    "empty": "目前找不到符合的命令。",
+    "groups": {
+      "navigation": "導覽",
+      "actions": "全域動作",
+      "currentPage": "目前頁面",
+      "recent": "最近開啟"
+    },
+    "actions": {
+      "activityCenter": {
+        "label": "開啟活動中心",
+        "description": "查看最近的成功、警告與錯誤通知。"
+      },
+      "onboarding": {
+        "label": "開啟快速上手",
+        "description": "重新查看產品導覽與主要工作流入口。"
+      },
+      "quickStart": {
+        "label": "開啟快速開始任務",
+        "description": "直接啟動示範處方、範例查詢與常用設定任務。"
+      },
+      "openRecentBundle": {
+        "description": "開啟最近使用的本機 Bundle：{{fileName}}"
+      },
+      "shortcutHelp": {
+        "label": "開啟快速鍵說明",
+        "description": "查看目前所有可用的快捷鍵。"
+      },
+      "toggleTheme": {
+        "label": "切換主題",
+        "description": "在亮色、暗色與系統主題之間切換。"
+      },
+      "toggleLocale": {
+        "label": "切換語系",
+        "description": "在繁中與英文介面之間切換。"
+      },
+      "openTemplates": {
+        "label": "開啟範本處方",
+        "description": "快速套用常見處方情境或教學範本。"
+      },
+      "startLiveDemo": {
+        "label": "開始 Live Demo",
+        "description": "用逐步教學方式示範完整處方流程。"
+      },
+      "stopLiveDemo": {
+        "label": "停止 Live Demo",
+        "description": "結束目前的逐步教學示範。"
+      },
+      "toggleInspector": {
+        "label": "切換右側面板",
+        "description": "開啟或關閉 Creator 的 JSON / Request 檢視面板。"
+      },
+      "toggleInspectorMode": {
+        "label": "切換面板模式",
+        "description": "在 JSON 與 FHIR Request 檢視之間切換。"
+      },
+      "focusSearch": {
+        "label": "聚焦查詢欄位",
+        "description": "把焦點移到 Consumer 目前的主要查詢輸入欄位。"
+      },
+      "importBundle": {
+        "label": "匯入 Bundle JSON",
+        "description": "從本機匯入一份 FHIR Bundle JSON。"
+      },
+      "testConnection": {
+        "label": "測試 FHIR 連線",
+        "description": "重新檢查目前 Settings 中的 FHIR Server 是否可連線。"
+      },
+      "saveSettings": {
+        "label": "儲存設定",
+        "description": "儲存目前 Settings 頁面的設定變更。"
+      },
+      "openShortcutSettings": {
+        "label": "開啟快捷鍵設定",
+        "description": "切到 Settings 的快捷鍵分頁。"
+      },
+      "openAccessibilitySettings": {
+        "label": "開啟 Accessibility 設定",
+        "description": "切到 Settings 的 accessibility 分頁。"
+      }
+    }
+  },
+  "activityCenter": {
+    "button": "活動",
+    "open": "開啟活動中心",
+    "openWithCount": "開啟活動中心，目前有 {{count}} 則未讀通知",
+    "title": "活動中心",
+    "description": "集中查看最近的操作回饋與通知訊息。",
+    "empty": "目前還沒有任何通知紀錄。",
+    "emptyFiltered": "目前沒有符合「{{filter}}」的通知。",
+    "clear": "清除全部",
+    "markRead": "標記已讀",
+    "markAllRead": "全部標記已讀",
+    "filters": {
+      "all": "全部",
+      "unread": "未讀",
+      "success": "成功",
+      "info": "資訊",
+      "warning": "警告",
+      "error": "錯誤"
+    },
+    "status": {
+      "read": "已讀",
+      "unread": "未讀"
+    },
+    "variants": {
+      "success": "成功",
+      "info": "資訊",
+      "warning": "警告",
+      "error": "錯誤"
+    }
+  },
+  "quickStart": {
+    "title": "快速開始任務",
+    "description": "直接啟動一個可執行的示範任務，不必先自己摸索從哪一頁開始。",
+    "highlights": "這個任務會幫你",
+    "scenarios": {
+      "creator-primary-template": {
+        "title": "完成第一張示範處方",
+        "description": "把 Creator 切到可立即操作的示範情境，適合先理解整條建立流程。",
+        "action": "載入示範處方",
+        "bullets": {
+          "1": "若 Creator 目前是空的，會直接載入 primary demo 範本。",
+          "2": "若 Creator 已經有草稿，會改為打開範本面板，避免直接覆蓋。",
+          "3": "之後可逐步提交各步驟，再組成 Document Bundle。"
+        }
+      },
+      "consumer-example-query": {
+        "title": "帶入第一組範例查詢",
+        "description": "把 Consumer 切到可直接開始的示範查詢，適合快速理解查詢工作台。",
+        "action": "帶入範例查詢",
+        "bullets": {
+          "1": "會切到 Consumer，並帶入一組基本查詢示範條件。",
+          "2": "你可以先看左側條件，再決定是否直接查詢或微調。",
+          "3": "適合在建立完 Bundle 後，用來理解查詢流程與結果區。"
+        }
+      },
+      "settings-accessibility": {
+        "title": "檢查可用性與閱讀體驗",
+        "description": "直接打開 Settings 的 accessibility 區塊，先把縮放、動態與焦點調成舒服的狀態。",
+        "action": "前往 Accessibility 設定",
+        "bullets": {
+          "1": "會直接切到 Settings 的 Accessibility 分頁。",
+          "2": "可快速調整字級、介面縮放、焦點樣式與動態效果。",
+          "3": "適合第一次使用前先把桌面體驗調到順手。"
+        }
+      }
+    }
+  },
   "accessibility": {
     "appName": "RxFHIR",
     "skipToMain": "跳到主要內容",

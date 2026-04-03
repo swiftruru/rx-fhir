@@ -1,22 +1,28 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Upload, Wand2 } from 'lucide-react'
+import { FileUp, Upload, Wand2 } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs'
 import { Button } from '../../components/ui/button'
+import { Alert, AlertDescription } from '../../components/ui/alert'
 import FeatureShowcaseTarget from '../../components/FeatureShowcaseTarget'
 import SearchForm, { type SearchFormHandle } from './SearchForm'
 import ResultList from './ResultList'
 import PrescriptionDetail from './PrescriptionDetail'
 import RecentRecords from './RecentRecords'
 import SavedSearches from './SavedSearches'
+import RecentBundleFiles from './RecentBundleFiles'
 import type { BundleSummary, SearchParams } from '../../types/fhir.d'
+import type { RecentBundleFileEntry } from '../../types/electron'
 import { useHistoryStore, type SubmissionRecord } from '../../store/historyStore'
 import { useSearchHistoryStore } from '../../store/searchHistoryStore'
 import { useLiveDemoStore } from '../../store/liveDemoStore'
 import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
 import { useShortcutActionStore } from '../../store/shortcutActionStore'
 import { useAccessibilityStore } from '../../store/accessibilityStore'
+import { useToastStore } from '../../store/toastStore'
+import { useAppStore } from '../../store/appStore'
+import { getBundleFileErrorMessage, importBundleJsonFile, listRecentBundleJsonFiles, openRecentBundleJson, rememberRecentBundleJson } from '../../services/bundleFileService'
 import { fetchBundleById } from '../../services/fhirClient'
 import { extractBundleHistoryMetadata } from '../../services/searchService'
 import {
@@ -27,6 +33,7 @@ import {
   type SearchPrefill,
   type SearchTab
 } from './searchState'
+import { getConsumerBasicMocks } from '../../mocks/mockPools'
 
 interface ConsumerPageBackup {
   results: BundleSummary[]
@@ -47,9 +54,12 @@ interface ConsumerPageBackup {
 
 export default function ConsumerPage(): React.JSX.Element {
   const { t } = useTranslation('consumer')
+  const { t: tc } = useTranslation('common')
+  const locale = useAppStore((state) => state.locale)
   const location = useLocation()
   const navigate = useNavigate()
   const announcePolite = useAccessibilityStore((state) => state.announcePolite)
+  const pushToast = useToastStore((state) => state.pushToast)
   const records = useHistoryStore((state) => state.records)
   const updateRecord = useHistoryStore((state) => state.updateRecord)
   const historyCount = records.filter((record) => record.type === 'bundle').length
@@ -75,13 +85,19 @@ export default function ConsumerPage(): React.JSX.Element {
   const [middleTab, setMiddleTab] = useState<'results' | 'quickstart'>('quickstart')
   const [activeComplexBy, setActiveComplexBy] = useState<'organization' | 'author'>('organization')
   const [prefillNotice, setPrefillNotice] = useState<{ message: string; variant?: 'info' | 'warning' } | null>(null)
+  const [dragDepth, setDragDepth] = useState(0)
+  const [dropFeedback, setDropFeedback] = useState<{ message: string; variant: 'success' | 'destructive' } | null>(null)
+  const [recentFiles, setRecentFiles] = useState<RecentBundleFileEntry[]>([])
   const showcaseBackupRef = useRef<ConsumerPageBackup>()
   const searchFormRef = useRef<SearchFormHandle>(null)
   const showcaseActive = showcaseStatus === 'running' || showcaseStatus === 'paused'
+  const dragActive = dragDepth > 0
 
   useEffect(() => {
     const launchState = location.state as ConsumerLaunchState | null
     if (!launchState) return
+    const recentBundleFilePath = launchState.recentBundleFilePath ?? null
+    const quickStartScenario = launchState.quickStartScenario ?? null
 
     if (launchState.prefill) {
       setActiveTab(launchState.prefill.tab)
@@ -91,7 +107,27 @@ export default function ConsumerPage(): React.JSX.Element {
     if (launchState.targetBundleId) setTargetBundleId(launchState.targetBundleId)
 
     navigate('/consumer', { replace: true, state: null })
-  }, [location.state, navigate])
+
+    if (recentBundleFilePath) {
+      void handleOpenRecentFile(recentBundleFilePath)
+    }
+
+    if (quickStartScenario === 'example-query') {
+      const example = getConsumerBasicMocks(locale)[0]
+      setMiddleTab('quickstart')
+      setActiveTab('basic')
+      if (example) {
+        setPrefill({ tab: 'basic', searchBy: example.searchBy, value: example.value })
+      }
+      const message = t('page.quickStartScenario.exampleLoaded')
+      setPrefillNotice({ variant: 'info', message })
+      announcePolite(message)
+      pushToast({
+        variant: 'info',
+        description: message
+      })
+    }
+  }, [announcePolite, locale, location.state, navigate, pushToast, t])
 
   useEffect(() => {
     setDashboardRecentOpen(historyCount > 0)
@@ -100,6 +136,10 @@ export default function ConsumerPage(): React.JSX.Element {
   useEffect(() => {
     setDashboardSavedOpen(savedSearchCount > 0)
   }, [savedSearchCount])
+
+  useEffect(() => {
+    void refreshRecentFiles()
+  }, [])
 
   useEffect(() => {
     setConsumerActions({
@@ -260,6 +300,73 @@ export default function ConsumerPage(): React.JSX.Element {
         patient: summary.patientName || t('results.unknownPatient')
       })
     )
+    void refreshRecentFiles()
+  }
+
+  async function refreshRecentFiles(): Promise<void> {
+    try {
+      const files = await listRecentBundleJsonFiles()
+      setRecentFiles(files)
+    } catch {
+      setRecentFiles([])
+    }
+  }
+
+  async function handleDropImport(files: FileList | File[]): Promise<void> {
+    const firstFile = Array.from(files)[0]
+    if (!firstFile) return
+
+    setDropFeedback(null)
+
+    try {
+      const imported = await importBundleJsonFile(firstFile)
+      const filePath = (firstFile as File & { path?: string }).path
+      if (filePath) {
+        await rememberRecentBundleJson(filePath)
+      }
+      handleImportedBundle(imported.summary)
+      const message = t('search.importSuccess', { fileName: imported.fileName })
+      setDropFeedback({ message, variant: 'success' })
+      announcePolite(message)
+      pushToast({
+        variant: 'success',
+        description: message
+      })
+      await refreshRecentFiles()
+    } catch (error) {
+      const message = getBundleFileErrorMessage(error, tc)
+      setDropFeedback({ message, variant: 'destructive' })
+      announcePolite(message)
+      pushToast({
+        variant: 'error',
+        description: message
+      })
+    }
+  }
+
+  async function handleOpenRecentFile(filePath: string): Promise<void> {
+    try {
+      const imported = await openRecentBundleJson(filePath)
+      if (!imported) return
+      handleImportedBundle(imported.summary)
+      const message = t('recentFiles.opened', { fileName: imported.fileName })
+      setDropFeedback({ message, variant: 'success' })
+      announcePolite(message)
+      pushToast({
+        variant: 'success',
+        description: message
+      })
+      await refreshRecentFiles()
+    } catch (error) {
+      const message = getBundleFileErrorMessage(error, tc)
+      setDropFeedback({ message, variant: 'destructive' })
+      announcePolite(message)
+      pushToast({
+        variant: 'error',
+        description: message
+      })
+      await refreshRecentFiles()
+    }
   }
 
   function getSearchIdentifier(rec: SubmissionRecord): string {
@@ -443,10 +550,66 @@ export default function ConsumerPage(): React.JSX.Element {
     })
   }
 
+  function handleDragEnter(event: React.DragEvent<HTMLDivElement>): void {
+    if (!event.dataTransfer.types.includes('Files')) return
+    event.preventDefault()
+    event.stopPropagation()
+    setDragDepth((current) => current + 1)
+  }
+
+  function handleDragOver(event: React.DragEvent<HTMLDivElement>): void {
+    if (!event.dataTransfer.types.includes('Files')) return
+    event.preventDefault()
+    event.stopPropagation()
+    event.dataTransfer.dropEffect = 'copy'
+  }
+
+  function handleDragLeave(event: React.DragEvent<HTMLDivElement>): void {
+    if (!event.dataTransfer.types.includes('Files')) return
+    event.preventDefault()
+    event.stopPropagation()
+    setDragDepth((current) => Math.max(0, current - 1))
+  }
+
+  function handleDrop(event: React.DragEvent<HTMLDivElement>): void {
+    if (!event.dataTransfer.files.length) return
+    event.preventDefault()
+    event.stopPropagation()
+    setDragDepth(0)
+    void handleDropImport(event.dataTransfer.files)
+  }
+
   const showDetail = middleTab === 'results' && Boolean(selected)
 
   return (
-    <div className="flex h-full flex-col xl:flex-row">
+    <div
+      className="relative flex h-full flex-col xl:flex-row"
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {dragActive && (
+        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-background/65 px-6 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl border border-primary/30 bg-card/95 p-6 shadow-2xl">
+            <div className="flex items-start gap-4">
+              <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3 text-primary">
+                <FileUp className="h-6 w-6" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-base font-semibold text-foreground">{t('page.dropzone.title')}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {t('page.dropzone.description')}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t('page.dropzone.hint')}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Left panel: Search form */}
       <FeatureShowcaseTarget id="consumer.searchPanel" className="flex shrink-0 flex-col border-b xl:w-72 xl:border-b-0 xl:border-r">
         <div className="flex h-full min-h-0 flex-col">
@@ -458,6 +621,11 @@ export default function ConsumerPage(): React.JSX.Element {
           </div>
           <div className="flex-1 overflow-auto bg-muted/10 px-4 py-4">
             <div className="rounded-xl border border-border/70 bg-background/95 p-3 shadow-sm">
+              {dropFeedback && (
+                <Alert variant={dropFeedback.variant}>
+                  <AlertDescription>{dropFeedback.message}</AlertDescription>
+                </Alert>
+              )}
               <SearchForm
                 ref={searchFormRef}
                 activeTab={activeTab}
@@ -523,6 +691,7 @@ export default function ConsumerPage(): React.JSX.Element {
                     </span>
                     <p className="mt-3 text-sm font-semibold text-foreground">{t('page.shortcuts.importTitle')}</p>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('page.shortcuts.importDescription')}</p>
+                    <p className="mt-2 text-[11px] leading-5 text-muted-foreground">{t('page.shortcuts.importDropHint')}</p>
                     <Button type="button" variant="outline" className="mt-4 w-full justify-start" onClick={handleImportBundleFromShortcuts}>
                       <Upload className="h-4 w-4" />
                       {t('search.importButton')}
@@ -543,7 +712,7 @@ export default function ConsumerPage(): React.JSX.Element {
                   </div>
                 </div>
 
-                {historyCount > 0 || savedSearchCount > 0 ? (
+                {historyCount > 0 || savedSearchCount > 0 || recentFiles.length > 0 ? (
                   <div className="grid gap-4 xl:grid-cols-2">
                     <RecentRecords
                       onFill={handleFill}
@@ -557,6 +726,7 @@ export default function ConsumerPage(): React.JSX.Element {
                       onToggle={() => setDashboardSavedOpen((value) => !value)}
                       variant="dashboard"
                     />
+                    <RecentBundleFiles files={recentFiles} onOpen={(filePath) => void handleOpenRecentFile(filePath)} />
                   </div>
                 ) : (
                   <div className="flex items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/70 px-6 py-10 text-muted-foreground">

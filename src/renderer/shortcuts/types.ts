@@ -3,6 +3,7 @@ export type ShortcutScope = 'global' | 'creator' | 'consumer' | 'settings'
 export type ShortcutCategory = 'global' | 'creator' | 'consumer' | 'settings'
 
 export type ShortcutActionId =
+  | 'global.openCommandPalette'
   | 'global.openHelp'
   | 'global.goCreator'
   | 'global.goConsumer'

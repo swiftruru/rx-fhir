@@ -12,6 +12,41 @@
     "draftRestoredTitle": "已恢復上次草稿",
     "draftRestoredDesc": "已從本機回復未完成的建立流程。",
     "draftRestoredDescWithTime": "已從本機回復未完成的建立流程。最近儲存：{{time}}",
+    "bundleToastTitle": "Document Bundle 已建立",
+    "bundleToastDescription": "Bundle ID：{{bundleId}}",
+    "quickStart": {
+      "templateApplied": "已載入「{{template}}」示範處方，可以直接從第一步開始操作。",
+      "templatePanelOpened": "Creator 目前已有內容，已為你打開範本面板，可選擇是否套用「{{template}}」。"
+    },
+    "compare": {
+      "title": "自上次提交後的變更",
+      "description": "目前有 {{count}} 個步驟、共 {{fields}} 個欄位和上次提交的 Bundle 不同。",
+      "descriptionWithTime": "上次提交時間：{{time}}。目前有 {{count}} 個步驟、共 {{fields}} 個欄位和上次提交的 Bundle 不同。",
+      "changedBadge": "{{count}} 個步驟已變更",
+      "changedFields": "{{count}} 個欄位變更",
+      "previousLabel": "上次提交",
+      "currentLabel": "目前草稿",
+      "noSummary": "尚無摘要"
+    },
+    "draftStatus": {
+      "savingTitle": "草稿儲存中",
+      "savingDescription": "正在將本機草稿更新到目前裝置。",
+      "savedTitle": "草稿已自動儲存",
+      "savedDescription": "可於下次開啟時繼續編輯。",
+      "savedDescriptionWithTime": "最近儲存：{{time}}",
+      "errorTitle": "草稿儲存失敗",
+      "errorDescription": "本機草稿目前無法更新，請先不要離開此頁。"
+    },
+    "leaveGuard": {
+      "badge": "未完成流程",
+      "title": "要先離開 Creator 嗎？",
+      "description": "目前仍有未完成的處方建立流程。離開後本機草稿會保留，但尚未組裝並提交為 Document Bundle。",
+      "savingDescription": "草稿仍在儲存中。現在離開可能遺失剛剛的修改。",
+      "errorDescription": "草稿儲存失敗。現在離開可能遺失尚未寫入本機的內容。",
+      "targetDescription": "你正要前往 {{page}}。",
+      "confirm": "仍然離開",
+      "cancel": "留在 Creator"
+    },
     "resetConfirmTitle": "確定要重新開始？",
     "resetConfirmDesc": "所有已建立的 Resource 將被清除，此操作無法復原。",
     "resetConfirmOk": "確定清除",

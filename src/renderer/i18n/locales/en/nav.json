@@ -6,6 +6,10 @@
     "settings": { "label": "Settings", "sublabel": "System Settings" },
     "about":    { "label": "About",    "sublabel": "About RxFHIR" }
   },
+  "sidebarControls": {
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
+  },
   "modeLabels": {
     "creator": "Creator Mode",
     "consumer": "Consumer Mode",

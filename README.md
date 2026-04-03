@@ -3,7 +3,7 @@
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.14-d4779a?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.15-d4779a?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/github/license/swiftruru/rx-fhir?style=flat-square&color=d4779a" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-8e8e93?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
@@ -171,12 +171,28 @@ Search and inspect FHIR Bundles on the configured server:
 - Testing the currently active server now immediately syncs the global connection status shown in Settings and the status bar
 - A dedicated Keyboard Shortcuts settings tab lets users inspect active bindings, customize selected shortcuts, detect conflicts, and restore defaults
 - Accessibility preferences now include motion behavior, text scale, full-app zoom, and enhanced keyboard focus visibility
+- Preference import / export is now available from Settings, including app preferences and shortcut overrides
+- Settings now include search, dirty markers, and per-section reset actions for faster maintenance
+- Command Palette provides a searchable action layer for navigation, settings actions, quick-start entry points, and recent local bundle files
+- Activity Center now keeps a local notification history with unread state and filter tabs instead of relying on transient toasts only
+- First-run onboarding and task-based Quick Start scenarios now provide guided entry points into Creator, Consumer, and Accessibility settings
+- The macOS title-bar utility controls now use a more consistent spacing model, including a cleaner unread badge for Activity Center
+- Electron window size and position are now persisted locally between launches
 - App shell accessibility now includes a skip link, route-aware focus management, screen-reader announcements, and clearer status semantics
 - High-contrast, forced-colors, stronger disabled states, and clearer selected-state indicators are now supported across shared UI components
 - Light / Dark / System theme toggle
 - `zh-TW` / `en` language toggle
 - Embedded `Noto Sans TC` UI font for more consistent offline typography, especially on Windows
 - Custom macOS app naming, icon, and About window
+
+### UX Highlights
+
+- Creator now shows draft save state more explicitly and blocks accidental navigation away from unfinished work
+- Creator also keeps a post-submission diff summary so users can quickly see what changed since the last successful bundle submission
+- Consumer now supports both native file import and drag-and-drop Bundle inspection in the real Electron window
+- Consumer quick-start, recent files, recent submissions, and saved searches now work together as a more complete desktop query workspace
+- Toast feedback is now backed by a local Activity Center instead of disappearing without history
+- Command Palette, onboarding, and Quick Start scenarios provide a clearer path for both first-time users and power users
 
 ### Accessibility Highlights
 
@@ -187,6 +203,7 @@ Search and inspect FHIR Bundles on the configured server:
 - Text scale and Electron-level UI zoom preferences stored locally
 - JSON Viewer and FHIR Request Inspector now support readable summary mode in addition to raw JSON
 - Accessibility roadmap, checklist, component rules, and manual test docs are included under `docs/accessibility/`
+- UX planning, manual testing, and Electron debug tooling docs are included under `docs/ux/`
 
 ---
 
@@ -291,6 +308,30 @@ npm run typecheck
 npm run a11y:check
 ```
 
+### Electron UX Smoke Check
+
+Requires a running Electron debug instance:
+
+```bash
+npm run ux:electron:smoke
+```
+
+### Electron UX Verify
+
+Runs `build`, launches a clean Electron test instance, performs the repo's Electron UX smoke checks, then closes it:
+
+```bash
+npm run ux:electron:verify -- --skip-build
+```
+
+### Electron CDP Eval
+
+Evaluate a quick expression inside the live Electron renderer:
+
+```bash
+npm run cdp:eval -- "location.hash"
+```
+
 ### Build
 
 ```bash
@@ -332,6 +373,16 @@ src/
     ├── store/          # Zustand stores
     ├── styles/
     └── types/
+docs/
+├── accessibility/      # A11y roadmap, checklist, manual testing
+├── screenshots/        # Product screenshots used in docs
+└── ux/                 # UX planning, manual testing, Electron debug notes
+scripts/
+├── a11y-smoke-check.mjs
+├── electron-cdp-eval.mjs
+├── electron-ux-smoke.mjs
+├── electron-ux-verify.mjs
+└── run-electron-vite.mjs
 ```
 
 ---
@@ -342,6 +393,7 @@ Current repository quality signals:
 
 - TypeScript typecheck is available and passes
 - Accessibility smoke check is available and passes
+- Electron UX smoke and end-to-end verify scripts are available and pass locally
 - Production build is available and passes locally
 - No automated test suite is currently included
 
@@ -372,6 +424,12 @@ This repository now follows a version-scoped release process:
 5. GitHub Release notes will prepend a platform download guide, then include only that version's changelog file from the tagged commit.
 
 If you already have release notes in another file, use `npm run release -- patch --notes-file ./path/to/notes.md`.
+
+For Electron-specific regression coverage before pushing a release tag, it is also recommended to run:
+
+```bash
+npm run ux:electron:verify -- --skip-build
+```
 
 ---
 

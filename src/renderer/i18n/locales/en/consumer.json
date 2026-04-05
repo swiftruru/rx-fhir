@@ -77,6 +77,10 @@
     },
     "queryUrlLabel": "Query URL",
     "queryStepsLabel": "Query Steps",
+    "idealQueryLabel": "Ideal FHIR Standard Query",
+    "idealQueryNote": "According to the FHIR R4 standard, this query should work directly. However, HAPI FHIR's public server has incomplete support for Bundle chained search.",
+    "actualQueryLabel": "Actual Query (Workaround)",
+    "actualQueryNote": "Uses Bundle.identifier mapping and client-side filtering to achieve equivalent results.",
     "queryStepTexts": {
       "resolveOrganizationId": "Resolve Organization ID",
       "searchBundle": "Search Bundle",

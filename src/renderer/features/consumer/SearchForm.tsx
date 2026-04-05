@@ -62,6 +62,31 @@ function joinDescribedBy(...ids: Array<string | false | undefined>): string | un
   return resolved.length > 0 ? resolved.join(' ') : undefined
 }
 
+function buildIdealFhirUrl(params: SearchParams, baseUrl: string): string {
+  const base = baseUrl.replace(/\/$/, '')
+  const enc = encodeURIComponent
+  if (params.mode === 'basic') {
+    if (params.identifier) {
+      return `${base}/Bundle?composition.subject:Patient.identifier=${enc(params.identifier)}`
+    } else if (params.name) {
+      return `${base}/Bundle?composition.subject:Patient.name=${enc(params.name)}`
+    }
+  } else if (params.mode === 'date') {
+    const parts = [`composition.subject:Patient.identifier=${enc(params.identifier ?? '')}`]
+    if (params.date) parts.push(`composition.date=${enc(params.date)}`)
+    return `${base}/Bundle?${parts.join('&')}`
+  } else if (params.mode === 'complex') {
+    const parts = [`composition.subject:Patient.identifier=${enc(params.identifier ?? '')}`]
+    if (params.complexSearchBy === 'organization' && params.organizationId) {
+      parts.push(`composition.custodian:Organization.identifier=${enc(params.organizationId)}`)
+    } else if (params.complexSearchBy === 'author' && params.authorName) {
+      parts.push(`composition.author:Practitioner.name=${enc(params.authorName)}`)
+    }
+    return `${base}/Bundle?${parts.join('&')}`
+  }
+  return ''
+}
+
 const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   activeTab,
   onTabChange,
@@ -79,9 +104,11 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   const locale = useAppStore((s) => s.locale)
   const announcePolite = useAccessibilityStore((state) => state.announcePolite)
   const pushToast = useToastStore((state) => state.pushToast)
+  const fhirBaseUrl = useAppStore((s) => s.serverUrl)
   const [loading, setLoading] = useState(false)
   const [importing, setImporting] = useState(false)
   const [lastUrl, setLastUrl] = useState<string>()
+  const [idealUrl, setIdealUrl] = useState<string>()
   const [querySteps, setQuerySteps] = useState<QueryStep[]>([])
   const [error, setError] = useState<string>()
   const [importMessage, setImportMessage] = useState<string>()
@@ -212,6 +239,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
     setError(undefined)
     setImportMessage(undefined)
     setQuerySteps([])
+    setIdealUrl(buildIdealFhirUrl(params, fhirBaseUrl))
     const isClientFilteredComplex =
       params.mode === 'complex' &&
       (
@@ -255,6 +283,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
     setError(undefined)
     setImportMessage(undefined)
     setLastUrl(undefined)
+    setIdealUrl(undefined)
     setQuerySteps([])
 
     try {
@@ -515,27 +544,38 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
         </TabsContent>
       </Tabs>
 
-      {lastUrl && (
+      {idealUrl && (
         <div className="rounded-[20px] border border-border/70 bg-background/80 p-3 shadow-sm">
           <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            {t('search.queryUrlLabel')}
+            {t('search.idealQueryLabel')}
           </p>
-          <ExternalUrlLink url={lastUrl} />
+          <ExternalUrlLink url={idealUrl} compact />
+          <p className="mt-1.5 text-[10px] italic text-muted-foreground/70">
+            {t('search.idealQueryNote')}
+          </p>
         </div>
       )}
 
-      {localizedQuerySteps.length > 0 && (
+      {(lastUrl || localizedQuerySteps.length > 0) && (
         <div className="space-y-2 rounded-[20px] border border-border/70 bg-background/80 p-3 shadow-sm">
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            {t('search.queryStepsLabel')}
+            {t('search.actualQueryLabel')}
           </p>
-          {localizedQuerySteps.map((s) => (
-            <div key={s.step} className="space-y-1 rounded-2xl border border-border/60 bg-muted/[0.2] px-3 py-2">
-              <p className="text-[11px] font-medium text-foreground">{s.displayLabel}</p>
-              <ExternalUrlLink url={s.url} compact />
-              {s.displayNote && <p className="text-[10px] text-muted-foreground/70 italic">{s.displayNote}</p>}
+          {lastUrl && <ExternalUrlLink url={lastUrl} compact />}
+          {localizedQuerySteps.length > 0 && (
+            <div className="space-y-2">
+              {localizedQuerySteps.map((s) => (
+                <div key={s.step} className="space-y-1 rounded-2xl border border-border/60 bg-muted/[0.2] px-3 py-2">
+                  <p className="text-[11px] font-medium text-foreground">{s.displayLabel}</p>
+                  <ExternalUrlLink url={s.url} compact />
+                  {s.displayNote && <p className="text-[10px] text-muted-foreground/70 italic">{s.displayNote}</p>}
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+          <p className="text-[10px] italic text-muted-foreground/70">
+            {t('search.actualQueryNote')}
+          </p>
         </div>
       )}
 

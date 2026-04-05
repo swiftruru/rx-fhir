@@ -130,7 +130,7 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
   return (
     <section
       aria-labelledby="prescription-detail-heading"
-      className="flex h-full min-h-0 flex-col border-t bg-muted/[0.08] xl:border-l xl:border-t-0"
+      className="flex h-full min-h-0 flex-col overflow-hidden border-t bg-muted/[0.08] xl:border-l xl:border-t-0"
     >
       <div className="shrink-0 border-b bg-background/90 px-4 py-4 backdrop-blur">
         <div className="flex items-start justify-between gap-3">
@@ -228,13 +228,12 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
       )}
 
       {showJson ? (
-        <div className="flex-1 min-h-0 p-4 sm:p-5">
+        <div className="flex-1 min-h-0 min-w-0 overflow-auto p-4 sm:p-5">
           <JsonViewer
+            key={summary.id}
             data={bundle}
             title={t('detail.rawJsonTitle')}
             defaultCollapsed={false}
-            fillHeight
-            className="h-full"
           />
         </div>
       ) : (

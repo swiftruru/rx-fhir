@@ -583,7 +583,7 @@ export default function ConsumerPage(): React.JSX.Element {
 
   return (
     <div
-      className="relative flex h-full min-h-0 flex-col lg:flex-row"
+      className="relative flex h-full min-h-0 overflow-hidden flex-col lg:flex-row"
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -648,22 +648,24 @@ export default function ConsumerPage(): React.JSX.Element {
       <div className="flex min-w-0 flex-1 shrink-0 flex-col lg:border-r">
         <div className="border-b bg-background px-4 py-3 shrink-0">
           <Tabs value={middleTab} onValueChange={(value) => setMiddleTab(value as 'results' | 'quickstart')}>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <TabsList className="grid w-full grid-cols-2 rounded-xl bg-muted/45 p-1 sm:max-w-xs">
+            <div className="flex items-center justify-between gap-2">
+              <TabsList className="grid shrink-0 grid-cols-2 rounded-xl bg-muted/45 p-1">
                 <TabsTrigger value="results" className="rounded-lg">{t('page.middleTabs.results')}</TabsTrigger>
                 <TabsTrigger value="quickstart" className="rounded-lg">{t('page.middleTabs.quickStart')}</TabsTrigger>
               </TabsList>
-              <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                <span className="rounded-full border border-border/70 bg-background/70 px-2.5 py-1">
-                  {t('page.metrics.records', { count: historyCount })}
-                </span>
-                <span className="rounded-full border border-border/70 bg-background/70 px-2.5 py-1">
-                  {t('page.metrics.saved', { count: savedSearchCount })}
-                </span>
-                <span className="rounded-full border border-border/70 bg-background/70 px-2.5 py-1">
-                  {t('page.metrics.files', { count: recentFiles.length })}
-                </span>
-              </div>
+              {!showDetail && (
+                <div className="flex flex-nowrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <span className="rounded-full border border-border/70 bg-background/70 px-2 py-0.5">
+                    {t('page.metrics.records', { count: historyCount })}
+                  </span>
+                  <span className="rounded-full border border-border/70 bg-background/70 px-2 py-0.5">
+                    {t('page.metrics.saved', { count: savedSearchCount })}
+                  </span>
+                  <span className="rounded-full border border-border/70 bg-background/70 px-2 py-0.5">
+                    {t('page.metrics.files', { count: recentFiles.length })}
+                  </span>
+                </div>
+              )}
             </div>
           </Tabs>
         </div>
@@ -760,7 +762,7 @@ export default function ConsumerPage(): React.JSX.Element {
 
       {/* Right panel: Detail */}
       {showDetail && selected && (
-        <FeatureShowcaseTarget id="consumer.detailPane" className="flex shrink-0 flex-col border-t xl:w-[clamp(24rem,40vw,42rem)] xl:min-w-[24rem] xl:max-w-[42rem] xl:border-t-0">
+        <FeatureShowcaseTarget id="consumer.detailPane" className="flex w-full shrink-0 flex-col overflow-hidden border-t lg:w-[clamp(22rem,35vw,40rem)] lg:min-w-0 lg:max-w-[40rem] lg:border-t-0">
           <div className="flex h-full min-h-0 flex-col">
             <PrescriptionDetail
               summary={selected}

@@ -268,8 +268,8 @@ export default function ResultList({ results, total, searchExecution, selected, 
                 <Card
                   className={
                     isSelected
-                      ? 'overflow-hidden rounded-[22px] border-primary bg-background shadow-sm ring-2 ring-primary/20'
-                      : 'overflow-hidden rounded-[22px] border-border/70 bg-background/90 shadow-sm transition-colors hover:border-primary/25'
+                      ? 'overflow-hidden rounded-[22px] border-primary bg-primary/[0.04] shadow-sm'
+                      : 'overflow-hidden rounded-[22px] border-border/70 bg-background/90 shadow-sm transition-colors hover:border-primary/30 hover:bg-background'
                   }
                 >
                   <button
@@ -284,12 +284,10 @@ export default function ResultList({ results, total, searchExecution, selected, 
                     tabIndex={optionTabIndex}
                     onClick={() => onSelect(summary)}
                     onKeyDown={(event) => handleOptionKeyDown(event, index)}
-                    className="group w-full overflow-hidden rounded-[22px] text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
                     <CardContent className="p-0">
-                      <div className="flex">
-                        <div className={isSelected ? 'w-1.5 bg-primary/90' : 'w-1.5 bg-transparent transition-colors group-hover:bg-primary/20'} />
-                        <div className="min-w-0 flex-1 p-4">
+                      <div className="p-4">
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0 flex-1 space-y-3">
                               <div className="flex flex-wrap items-center gap-2">
@@ -360,7 +358,6 @@ export default function ResultList({ results, total, searchExecution, selected, 
                             </code>
                           </div>
                         </div>
-                      </div>
                     </CardContent>
                   </button>
                 </Card>

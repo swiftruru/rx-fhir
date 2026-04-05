@@ -62,7 +62,7 @@ export default function JsonViewer({
   const jsonTheme = useMemo(() => ({
     ...defaultStyles,
     container: cn(
-      'font-mono leading-6 !whitespace-pre-wrap !break-normal',
+      'font-mono leading-6 !whitespace-pre-wrap break-all',
       fontSize === 'sm' && 'text-[11px]',
       fontSize === 'md' && 'text-xs',
       fontSize === 'lg' && 'text-[13px]',
@@ -100,7 +100,7 @@ export default function JsonViewer({
   }
 
   return (
-    <div className={cn('flex flex-col rounded-lg border border-border bg-background overflow-hidden shadow-sm', className)}>
+    <div className={cn('flex w-full flex-col rounded-lg border border-border bg-background overflow-hidden shadow-sm', className)}>
       {/* Header bar */}
       <div className={cn('flex items-center justify-between px-3 py-2 border-b transition-colors', headerClasses)}>
         <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ export default function JsonViewer({
       {!collapsed && (
         <div
           className={cn(
-            'overflow-x-auto overflow-y-auto rounded-b-lg text-xs transition-colors',
+            'w-full min-w-0 overflow-x-auto overflow-y-auto rounded-b-lg text-xs transition-colors',
             fillHeight ? 'flex-1 min-h-0' : 'max-h-[500px]',
             contentClasses
           )}
@@ -237,7 +237,7 @@ export default function JsonViewer({
               )}
             </div>
           ) : (
-            <div className="w-fit min-w-full p-3 align-top">
+            <div className="max-w-full p-3">
               <JsonView
                 data={data as never}
                 shouldExpandNode={allExpanded}

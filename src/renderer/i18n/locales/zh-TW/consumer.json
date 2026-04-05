@@ -77,6 +77,10 @@
     },
     "queryUrlLabel": "查詢 URL",
     "queryStepsLabel": "查詢步驟",
+    "idealQueryLabel": "理想 FHIR 標準查詢",
+    "idealQueryNote": "依 FHIR R4 標準此查詢應可直接使用，但 HAPI FHIR 公開伺服器對 Bundle chained search 的支援尚不完整。",
+    "actualQueryLabel": "實際查詢方式（Workaround）",
+    "actualQueryNote": "改用 Bundle.identifier 映射及 client 端過濾，達成與標準查詢等效的結果。",
     "queryStepTexts": {
       "resolveOrganizationId": "解析機構 ID",
       "searchBundle": "查詢 Bundle",

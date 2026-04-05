@@ -159,10 +159,12 @@ Search and inspect FHIR Bundles on the configured server:
 - Recent submissions and saved searches are shown as separate helper sections with clearer visual hierarchy
 - Query URL display and multi-step trace for compatibility workarounds, with clickable links that open in the system browser
 - Query-step labels and workaround notes now follow the current UI language instead of staying fixed in Chinese after a locale switch
+- After each search, the UI shows both the **ideal FHIR R4 standard query** (e.g. `composition.subject:Patient.identifier`) and the **actual workaround query** used, with plain-language notes explaining why the standard form is not used on public HAPI servers
+- First query example in all three modes (basic / date / complex) always starts with the primary demo patient (`isPrimaryDemo`) for consistent demo flow
 - Result list with patient, organization, diagnosis, and medication summary
 - Empty-result states now explain likely causes and suggest next actions based on the actual search mode
 - Prescription detail view now uses a fixed-width detail pane with a clearer `Structured / JSON` toggle in the header
-- Structured detail view and raw JSON viewer
+- Structured detail view and raw JSON viewer — the JSON panel stays within the detail pane width and scrolls internally; switching results auto-expands the viewer
 - Bundle detail JSON can also be exported from Consumer
 - Supports Creator-to-Consumer handoff with automatic query prefill, auto-search, and newly created bundle focus
 
@@ -212,17 +214,29 @@ Search and inspect FHIR Bundles on the configured server:
 
 ## Search Behavior
 
-The current search implementation is optimized for public HAPI FHIR server compatibility.
+The current search implementation is optimized for public HAPI FHIR server compatibility. The UI displays both the **ideal FHIR R4 standard query** and the **actual workaround query** side by side after every search, so the gap between the spec and the implementation is always visible.
+
+### Ideal FHIR R4 Standard Queries
+
+| Mode | UI Input | FHIR R4 Standard Query |
+|------|----------|------------------------|
+| Basic | identifier | `GET /Bundle?composition.subject:Patient.identifier={value}` |
+| Basic | name | `GET /Bundle?composition.subject:Patient.name={value}` |
+| Date | identifier + date | `GET /Bundle?composition.subject:Patient.identifier={id}&composition.date={date}` |
+| Complex | identifier + author | `GET /Bundle?composition.subject:Patient.identifier={id}&composition.author:Practitioner.name={name}` |
+| Complex | identifier + organization | `GET /Bundle?composition.subject:Patient.identifier={id}&composition.custodian:Organization.identifier={orgId}` |
+
+### Actual Implementation (HAPI Workaround)
+
+Public HAPI FHIR servers do not fully support chained search on `Bundle`. The app falls back to equivalent queries:
 
 | Mode | UI Input | Implemented Query |
 |------|----------|-------------------|
-| Basic | identifier | `GET /Bundle?identifier={value}` |
+| Basic | identifier | `GET /Bundle?identifier={value}` (patient identifier mapped to `Bundle.identifier`) |
 | Basic | name | `GET /Bundle?composition.subject.name={value}` |
 | Date | identifier + date | `GET /Bundle?identifier={id}&timestamp={date}` |
-| Complex | identifier + author | fetch bundles by identifier, then filter `Composition.author` / `Practitioner` on the client |
-| Complex | identifier + organization | resolve organization first, then fetch bundles by identifier, then filter `Composition.custodian` on the client |
-
-Note: this is not a strict 1:1 copy of the original assignment query examples. The implementation intentionally uses HAPI-compatible parameters and client-side workarounds for organization and author filtering to improve operability on public demo servers.
+| Complex | identifier + author | fetch bundles by identifier → client-side filter on `Composition.author` / `Practitioner.name` |
+| Complex | identifier + organization | resolve organization by identifier → fetch bundles by identifier → client-side filter on `Composition.custodian` |
 
 ---
 

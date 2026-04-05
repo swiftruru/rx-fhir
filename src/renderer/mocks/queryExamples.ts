@@ -23,8 +23,16 @@ function practitionerFullName(scenario: MockScenarioPack, locale: MockLocale): s
   return locale === 'en' ? `${familyName} ${givenName}` : `${familyName}${givenName}`
 }
 
+function sortPrimaryDemoFirst(scenarios: MockScenarioPack[]): MockScenarioPack[] {
+  return [...scenarios].sort((a, b) => {
+    if (a.isPrimaryDemo && !b.isPrimaryDemo) return -1
+    if (!a.isPrimaryDemo && b.isPrimaryDemo) return 1
+    return 0
+  })
+}
+
 export function getConsumerBasicMocks(locale: MockLocale): ConsumerBasicMockInput[] {
-  const scenarios = getResolvedScenarioPacks(locale)
+  const scenarios = sortPrimaryDemoFirst(getResolvedScenarioPacks(locale))
 
   return uniqueBy(
     scenarios.map((scenario) => ({
@@ -37,7 +45,7 @@ export function getConsumerBasicMocks(locale: MockLocale): ConsumerBasicMockInpu
 
 export function getConsumerDateMocks(locale: MockLocale): ConsumerDateMockInput[] {
   return uniqueBy(
-    getResolvedScenarioPacks(locale).map((scenario) => ({
+    sortPrimaryDemoFirst(getResolvedScenarioPacks(locale)).map((scenario) => ({
       identifier: scenario.creator.patient.studentId,
       date: getScenarioEncounterDate(scenario)
     })),
@@ -47,7 +55,7 @@ export function getConsumerDateMocks(locale: MockLocale): ConsumerDateMockInput[
 
 export function getConsumerComplexMocks(locale: MockLocale): ConsumerComplexMockInput[] {
   return uniqueBy(
-    getResolvedScenarioPacks(locale).flatMap((scenario) => ([
+    sortPrimaryDemoFirst(getResolvedScenarioPacks(locale)).flatMap((scenario) => ([
       {
         identifier: scenario.creator.patient.studentId,
         complexBy: 'organization' as const,

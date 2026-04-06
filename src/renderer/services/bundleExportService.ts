@@ -259,14 +259,13 @@ async function resolveHttpMethod(
  * Builds Postman GET request items that mirror the Consumer page's three search modes
  * (Basic, Date, Complex), pre-filled with values extracted from the bundle.
  */
-function buildQueryItems(bundle: fhir4.Bundle, baseUrl: string, urlHost: string): PostmanItem[] {
+function buildQueryItems(bundle: fhir4.Bundle, _baseUrl: string, urlHost: string): PostmanItem[] {
   const patient = getResource<fhir4.Patient>(bundle, 'Patient')
   const composition = getResource<fhir4.Composition>(bundle, 'Composition')
   const organization = getResource<fhir4.Organization>(bundle, 'Organization')
   const practitioner = getResource<fhir4.Practitioner>(bundle, 'Practitioner')
 
   const identifier = patient?.identifier?.[0]?.value
-  const name = patient?.name?.[0]?.text
   const date = composition?.date?.slice(0, 10)
   const orgId = organization?.identifier?.[0]?.value
   const authorName = practitioner?.name?.[0]?.text

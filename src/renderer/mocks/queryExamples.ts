@@ -5,7 +5,6 @@ import type {
   MockLocale,
   MockScenarioPack
 } from './types'
-import { getScenarioEncounterDate } from './scenarioPacks'
 import { getResolvedScenarioPacks } from './selectors'
 
 function uniqueBy<T>(items: T[], getKey: (item: T) => string): T[] {

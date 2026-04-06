@@ -680,12 +680,14 @@ function field(label: string, value?: string | null, copyable = false): string {
 }
 
 function buildJsonDetail(resourceType: string, resource: object): string {
-  const json = escHtml(JSON.stringify(resource, null, 2))
+  const plain = JSON.stringify(resource, null, 2)
+  const highlighted = highlightJson(plain)
+  // data-plain stores the unescaped JSON for copy; highlighted HTML goes into <code>
   return `<details class="json-detail">
     <summary>JSON <span class="resource-type">${escHtml(resourceType)}</span></summary>
-    <div class="json-block">
+    <div class="json-block" data-plain="${escHtml(plain)}">
       <button class="copy-btn">複製</button>
-      <pre><code>${json}</code></pre>
+      <pre><code>${highlighted}</code></pre>
     </div>
   </details>`
 }
@@ -703,6 +705,27 @@ function escHtml(text: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+/** Syntax-highlight a JSON string into HTML spans. Runs at build time in TypeScript
+ *  to avoid regex backslash-escaping issues inside JS template literals.
+ *  Colors: key=blue, string=green, number=orange, bool=purple, null=pink. */
+function highlightJson(json: string): string {
+  const esc = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+  // Regex groups: (1) key-string + (2) colon | (3) value-string | (4) bool | (5) null | (6) number
+  return json.replace(
+    /("(?:\\.|[^"\\])*")(\s*:)|("(?:\\.|[^"\\])*")|(true|false)|(null)|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
+    (_m, key: string, colon: string, str: string, bool: string, nul: string, num: string) => {
+      if (key  !== undefined) return `<span class="jk">${esc(key)}</span>${esc(colon)}`
+      if (str  !== undefined) return `<span class="js">${esc(str)}</span>`
+      if (bool !== undefined) return `<span class="jb">${esc(bool)}</span>`
+      if (nul  !== undefined) return `<span class="jnl">${esc(nul)}</span>`
+      if (num  !== undefined) return `<span class="jn">${esc(num)}</span>`
+      return esc(_m)
+    }
+  )
 }
 
 export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): string {
@@ -812,7 +835,8 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     medicationSection,
   ].join('\n')
 
-  const bundleJson = escHtml(JSON.stringify(bundle, null, 2))
+  const bundlePlain = JSON.stringify(bundle, null, 2)
+  const bundleJsonHighlighted = highlightJson(bundlePlain)
   const generatedAt = new Date().toLocaleString(locale.startsWith('zh') ? 'zh-TW' : 'en-US')
 
   return `<!DOCTYPE html>
@@ -1058,9 +1082,9 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   <div class="bundle-json-section">
     <details class="json-detail">
       <summary>📦 ${escHtml(bundleJsonLabel)}</summary>
-      <div class="json-block">
+      <div class="json-block" data-plain="${escHtml(bundlePlain)}">
         <button class="copy-btn">${escHtml(copyFullLabel)}</button>
-        <pre><code>${bundleJson}</code></pre>
+        <pre><code>${bundleJsonHighlighted}</code></pre>
       </div>
     </details>
   </div>
@@ -1068,35 +1092,12 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
 </div>
 <script>
 (function () {
-  // JSON syntax highlighter — no external library needed
-  function escH(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-  }
-  function highlightJson(text) {
-    // Match: key strings (followed by :), value strings, booleans, null, numbers
-    return text.replace(
-      /("(?:\\.|[^"\\])*")(\s*:)|("(?:\\.|[^"\\])*")|(true|false)|(null)|(-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)/g,
-      function(m, key, colon, str, bool, nul, num) {
-        if (key  !== undefined) return '<span class="jk">' + escH(key)  + '</span>' + escH(colon)
-        if (str  !== undefined) return '<span class="js">' + escH(str)  + '</span>'
-        if (bool !== undefined) return '<span class="jb">' + escH(bool) + '</span>'
-        if (nul  !== undefined) return '<span class="jnl">'+ escH(nul)  + '</span>'
-        if (num  !== undefined) return '<span class="jn">' + escH(num)  + '</span>'
-        return escH(m)
-      }
-    )
-  }
-  // Apply highlighting — read textContent first (plain JSON), then write innerHTML
-  document.querySelectorAll('.json-block code').forEach(function (el) {
-    var raw = el.textContent || ''
-    el.innerHTML = highlightJson(raw)
-  })
-  // Copy buttons — textContent on a highlighted <code> still returns plain text
+  // Highlighting is done server-side (TypeScript). Only handle interactivity here.
+  // Copy buttons read data-plain on the parent .json-block (avoids HTML entity issues)
   document.querySelectorAll('.copy-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var block = btn.parentElement
-      var code = block ? block.querySelector('code') : null
-      var text = code ? (code.textContent || '') : ''
+      var text = (block && block.dataset.plain) ? block.dataset.plain : ''
       if (navigator.clipboard && text) {
         navigator.clipboard.writeText(text).then(function () {
           var orig = btn.textContent

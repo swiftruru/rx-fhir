@@ -1,4 +1,5 @@
 // Pure data-transformation helpers — no I/O, no React imports.
+import QRCode from 'qrcode'
 
 // ─── Postman Collection v2.1 ────────────────────────────────────────────────
 
@@ -728,6 +729,34 @@ function buildJsonTree(value: unknown, depth: number): string {
   return escHtml(String(value))
 }
 
+/** Generate a QR code SVG string synchronously for embedding in HTML.
+ *  Returns an empty string if the value is empty. */
+function generateQrSvg(value: string): string {
+  if (!value) return ''
+  try {
+    const qr = QRCode.create(value, { errorCorrectionLevel: 'M' })
+    const size = qr.modules.size
+    const data = qr.modules.data
+    const cellSize = 6
+    const margin = 16
+    const dim = size * cellSize + margin * 2
+    const rects: string[] = []
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (data[r * size + c]) {
+          rects.push(`<rect x="${margin + c * cellSize}" y="${margin + r * cellSize}" width="${cellSize}" height="${cellSize}"/>`)
+        }
+      }
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${dim} ${dim}" width="${dim}" height="${dim}" class="qr-svg">`
+      + `<rect width="${dim}" height="${dim}" fill="white"/>`
+      + `<g fill="black">${rects.join('')}</g>`
+      + `</svg>`
+  } catch {
+    return ''
+  }
+}
+
 function buildJsonDetail(resourceType: string, resource: object): string {
   const plain = JSON.stringify(resource, null, 2)
   const tree = buildJsonTree(resource, 0)
@@ -737,6 +766,8 @@ function buildJsonDetail(resourceType: string, resource: object): string {
       <div class="jb-toolbar">
         <button class="expand-btn"></button>
         <button class="collapse-btn"></button>
+        <input class="jb-search" type="search" placeholder="" />
+        <span class="jb-search-count"></span>
         <button class="copy-btn">複製</button>
       </div>
       <div class="jtree">${tree}</div>
@@ -837,11 +868,55 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     medCount > 0 ? `💊 ${medCount} ${isZh ? '種藥品' : 'medication(s)'}` : '',
   ].filter(Boolean)
 
+  // Bundle metadata bar (between header and hero)
+  const bundleVersion = bundle.meta?.versionId ?? ''
+  const bundleLastUpdated = fdate(bundle.meta?.lastUpdated)
+  const bundleProfile = (bundle.meta?.profile?.[0] ?? '').split('/').pop() ?? ''
+  const bundleType = bundle.type ?? ''
+  const metaItems = [
+    bundle.id ? { label: isZh ? 'Bundle ID' : 'Bundle ID', value: bundle.id, copyable: true } : null,
+    bundleVersion ? { label: isZh ? '版本' : 'Version', value: bundleVersion, copyable: false } : null,
+    bundleLastUpdated ? { label: isZh ? '提交時間' : 'Submitted', value: bundleLastUpdated, copyable: false } : null,
+    bundleProfile ? { label: isZh ? 'Profile' : 'Profile', value: bundleProfile, copyable: false } : null,
+    bundleType ? { label: isZh ? '類型' : 'Type', value: bundleType, copyable: false } : null,
+  ].filter((x): x is NonNullable<typeof x> => x !== null)
+
+  const metaBarHtml = metaItems.length > 0 ? `<div class="meta-bar">
+    ${metaItems.map((item) => {
+      const esc = escHtml(item.value)
+      const valHtml = item.copyable
+        ? `<span class="value copyable" data-copy="${esc}" title="${isZh ? '點擊複製' : 'Click to copy'}">${esc}<span class="copy-icon">⎘</span></span>`
+        : `<span class="meta-val">${esc}</span>`
+      return `<span class="meta-item"><span class="meta-label">${escHtml(item.label)}</span>${valHtml}</span>`
+    }).join('<span class="meta-sep">·</span>')}
+  </div>` : ''
+
+  // QR code — encodes patient identifier for mobile scanning
+  const qrValue = patient?.identifier?.[0]?.value ?? ''
+  const qrSvg = generateQrSvg(qrValue)
+  const qrHtml = qrSvg
+    ? `<div class="qr-wrap" title="${isZh ? '點擊放大' : 'Click to enlarge'}" onclick="document.getElementById('qr-modal').showModal()">
+        ${qrSvg}
+        <p class="qr-label">${escHtml(qrValue)}</p>
+      </div>
+      <dialog id="qr-modal" onclick="this.close()" style="border:none;background:transparent;padding:0">
+        <div style="background:white;border-radius:16px;padding:1.5rem;text-align:center;cursor:pointer">
+          ${generateQrSvg(qrValue).replace('class="qr-svg"', 'width="240" height="240"')}
+          <p style="margin-top:0.75rem;font-size:0.9rem;font-family:monospace;color:#2d1a1f">${escHtml(qrValue)}</p>
+        </div>
+      </dialog>`
+    : ''
+
   const heroHtml = `<div class="hero" id="sec-top">
-    <div class="hero-name">${escHtml(patientName || '—')}</div>
-    ${heroPatientMeta ? `<div class="hero-meta">${escHtml(heroPatientMeta)}</div>` : ''}
-    <div class="hero-pills">
-      ${heroPills.map((p) => `<span class="hero-pill">${escHtml(p)}</span>`).join('')}
+    <div class="hero-main">
+      <div class="hero-text">
+        <div class="hero-name">${escHtml(patientName || '—')}</div>
+        ${heroPatientMeta ? `<div class="hero-meta">${escHtml(heroPatientMeta)}</div>` : ''}
+        <div class="hero-pills">
+          ${heroPills.map((p) => `<span class="hero-pill">${escHtml(p)}</span>`).join('')}
+        </div>
+      </div>
+      ${qrHtml ? `<div class="hero-qr">${qrHtml}</div>` : ''}
     </div>
   </div>`
 
@@ -1053,22 +1128,43 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   }
   .sticky-header button:hover { background: rgba(255,255,255,0.32); }
 
+  /* Bundle metadata bar */
+  .meta-bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 0.55rem 1rem;
+    margin-bottom: 1rem; font-size: 0.78rem;
+  }
+  .meta-item { display: inline-flex; align-items: center; gap: 0.3rem; }
+  .meta-label { color: var(--muted); font-size: 0.7rem; }
+  .meta-val { font-weight: 500; color: var(--text); }
+  .meta-sep { color: var(--border); padding: 0 0.1rem; }
+
   /* Hero summary card */
   .hero {
-    background: var(--hero-bg);
-    color: white;
-    border-radius: var(--radius);
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 1.25rem;
+    background: var(--hero-bg); color: white;
+    border-radius: var(--radius); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem;
   }
+  .hero-main { display: flex; align-items: flex-start; gap: 1rem; }
+  .hero-text { flex: 1; min-width: 0; }
   .hero-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.3rem; }
   .hero-meta { font-size: 0.82rem; opacity: 0.85; margin-bottom: 0.85rem; letter-spacing: 0.01em; }
   .hero-pills { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .hero-pill {
     background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.25);
-    border-radius: 20px; padding: 0.2rem 0.7rem;
-    font-size: 0.78rem; white-space: nowrap;
+    border-radius: 20px; padding: 0.2rem 0.7rem; font-size: 0.78rem; white-space: nowrap;
   }
+  /* QR code */
+  .hero-qr { flex-shrink: 0; }
+  .qr-wrap {
+    cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+    background: rgba(255,255,255,0.12); border-radius: 10px; padding: 0.5rem;
+    transition: background 0.15s;
+  }
+  .qr-wrap:hover { background: rgba(255,255,255,0.22); }
+  .qr-svg { border-radius: 4px; display: block; }
+  .qr-label { font-size: 0.65rem; opacity: 0.8; font-family: monospace; }
+  dialog::backdrop { background: rgba(0,0,0,0.55); }
 
   header { padding-top: 1.25rem; margin-bottom: 1.5rem; }
   header h1 { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
@@ -1153,6 +1249,19 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   .jb-toolbar button:hover { background: rgba(255,255,255,0.22); }
   /* keep copy-btn name for JS selector; expand/collapse get accent tint on hover */
   .expand-btn:hover, .collapse-btn:hover { border-color: rgba(201,114,122,0.5) !important; }
+  .jb-search {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    color: #f5e0e3; border-radius: 5px; padding: 0.18rem 0.5rem;
+    font-size: 0.68rem; font-family: inherit; width: 120px; outline: none;
+    transition: border-color 0.15s, width 0.2s;
+  }
+  .jb-search:focus { border-color: rgba(201,114,122,0.7); width: 160px; }
+  .jb-search::placeholder { color: rgba(245,224,227,0.4); }
+  .jb-search-count { font-size: 0.65rem; color: rgba(245,224,227,0.55); white-space: nowrap; min-width: 2rem; text-align: right; }
+  /* Search highlight */
+  .jb-search-count.has-results { color: #a5d6a7; }
+  .jt-row.dim { opacity: 0.2; transition: opacity 0.1s; }
+  mark.sh { background: #ffcc80; color: #1e1214; border-radius: 2px; padding: 0 1px; }
 
   /* JSON tree */
   .jtree {
@@ -1259,9 +1368,11 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     .sticky-header { display: none; }
     body { padding: 0; background: white; color: black; }
     .hero { background: #c9727a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .hero-qr { display: none; }
     section { break-inside: avoid; }
     .json-detail { display: none; }
     .bundle-json-section { display: none; }
+    .jb-search, .jb-search-count { display: none; }
   }
 </style>
 </head>
@@ -1279,6 +1390,7 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     <h1>${escHtml(L.title)}</h1>
     <p class="meta">${escHtml(L.generatedAt)}: ${generatedAt}</p>
   </header>
+  ${metaBarHtml}
   ${heroHtml}
   ${sections}
   <div class="bundle-json-section">
@@ -1315,10 +1427,98 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
   applyTheme(saved ? saved === 'dark' : prefersDark)
 
-  // Expand / collapse all <details> within the same .json-block
   var isZhPage = document.documentElement.lang.startsWith('zh')
   var EXPAND_LABEL = isZhPage ? '全展開' : 'Expand all'
   var COLLAPSE_LABEL = isZhPage ? '全折疊' : 'Collapse all'
+  var SEARCH_PLACEHOLDER = isZhPage ? '搜尋 JSON…' : 'Search JSON…'
+  var SEARCH_RESULTS = isZhPage ? '{n} 筆' : '{n} found'
+
+  // Set search placeholder
+  document.querySelectorAll('.jb-search').forEach(function (inp) {
+    inp.setAttribute('placeholder', SEARCH_PLACEHOLDER)
+  })
+
+  // JSON search — highlight matching text nodes, dim non-matching rows, auto-expand parents
+  function clearSearch(block) {
+    block.querySelectorAll('mark.sh').forEach(function (m) {
+      var parent = m.parentNode
+      if (parent) { parent.replaceChild(document.createTextNode(m.textContent || ''), m) }
+    })
+    block.querySelectorAll('.jt-row').forEach(function (r) { r.classList.remove('dim') })
+    block.querySelectorAll('details.jt-node').forEach(function (d) { d.open = false })
+    // restore first-level open
+    block.querySelectorAll(':scope > .jtree > details.jt-node').forEach(function (d) { d.open = true })
+  }
+
+  function searchBlock(block, query) {
+    clearSearch(block)
+    if (!query) { var cnt = block.querySelector('.jb-search-count'); if (cnt) { cnt.textContent = ''; cnt.className = 'jb-search-count'; } return }
+    var re = new RegExp(query.replace(/[-.*+?^$|()[\]{}\\]/g, '\\$&'), 'gi')
+    var matchCount = 0
+    var matchedRows = new Set()
+    // Walk text nodes inside .jtree
+    var walker = document.createTreeWalker(block.querySelector('.jtree') || block, NodeFilter.SHOW_TEXT)
+    var nodesToWrap = []
+    var n
+    while ((n = walker.nextNode())) {
+      if (n.nodeValue && re.test(n.nodeValue)) { nodesToWrap.push(n); re.lastIndex = 0 }
+    }
+    nodesToWrap.forEach(function (textNode) {
+      var frag = document.createDocumentFragment()
+      var remaining = textNode.nodeValue || ''
+      var m
+      re.lastIndex = 0
+      var last = 0
+      while ((m = re.exec(remaining)) !== null) {
+        if (m.index > last) frag.appendChild(document.createTextNode(remaining.slice(last, m.index)))
+        var mark = document.createElement('mark')
+        mark.className = 'sh'
+        mark.textContent = m[0]
+        frag.appendChild(mark)
+        matchCount++
+        last = m.index + m[0].length
+      }
+      if (last < remaining.length) frag.appendChild(document.createTextNode(remaining.slice(last)))
+      var parent = textNode.parentNode
+      if (parent) {
+        parent.replaceChild(frag, textNode)
+        // bubble up — mark ancestor .jt-row as matched
+        var el = parent
+        while (el && el !== block) {
+          if (el.classList && el.classList.contains('jt-row')) { matchedRows.add(el); break }
+          el = el.parentElement
+        }
+        // open all ancestor <details>
+        el = parent
+        while (el && el !== block) {
+          if (el.tagName === 'DETAILS') el.open = true
+          el = el.parentElement
+        }
+      }
+    })
+    // dim non-matched rows
+    block.querySelectorAll('.jt-row').forEach(function (row) {
+      if (!matchedRows.has(row)) row.classList.add('dim')
+    })
+    var cnt = block.querySelector('.jb-search-count')
+    if (cnt) {
+      cnt.textContent = SEARCH_RESULTS.replace('{n}', String(matchCount))
+      cnt.className = 'jb-search-count' + (matchCount > 0 ? ' has-results' : '')
+    }
+  }
+
+  document.querySelectorAll('.jb-search').forEach(function (inp) {
+    var debounce
+    inp.addEventListener('input', function () {
+      clearTimeout(debounce)
+      debounce = setTimeout(function () {
+        var block = inp.closest('.json-block')
+        if (block) searchBlock(block, inp.value.trim())
+      }, 200)
+    })
+  })
+
+  // Expand / collapse all <details> within the same .json-block
   document.querySelectorAll('.expand-btn').forEach(function (btn) {
     btn.textContent = EXPAND_LABEL
     btn.addEventListener('click', function () {

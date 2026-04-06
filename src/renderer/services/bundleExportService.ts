@@ -679,15 +679,55 @@ function field(label: string, value?: string | null, copyable = false): string {
   return `<div class="field"><span class="label">${label}</span>${inner}</div>`
 }
 
+/** Recursively render a JSON value as a collapsible HTML tree (zero JS — uses native <details>).
+ *  depth controls how many levels are open by default (0 = first level open). */
+function buildJsonTree(value: unknown, depth: number): string {
+  if (value === null) return `<span class="jnl">null</span>`
+  if (typeof value === 'boolean') return `<span class="jb">${escHtml(String(value))}</span>`
+  if (typeof value === 'number') return `<span class="jn">${escHtml(String(value))}</span>`
+  if (typeof value === 'string') return `<span class="js">&quot;${escHtml(value)}&quot;</span>`
+
+  const openAttr = depth < 1 ? ' open' : ''
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return `<span class="jp">[ ]</span>`
+    const rows = value.map((item, i) => {
+      const idx = `<span class="ji">[${i}]</span>`
+      if (item === null || typeof item !== 'object') {
+        return `<div class="jt-row">${idx}: ${buildJsonTree(item, depth + 1)}</div>`
+      }
+      const hint = Array.isArray(item)
+        ? `<span class="jt-hint">[ ${(item as unknown[]).length} ]</span>`
+        : `<span class="jt-hint">{ ${Object.keys(item as object).length} }</span>`
+      return `<div class="jt-row"><details${openAttr} class="jt-node"><summary>${idx} ${hint}</summary><div class="jt-ch">${buildJsonTree(item, depth + 1)}</div></details></div>`
+    }).join('')
+    return rows
+  }
+
+  if (typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>).map(([k, v]) => {
+      const key = `<span class="jk">&quot;${escHtml(k)}&quot;</span>`
+      if (v === null || typeof v !== 'object') {
+        return `<div class="jt-row">${key}: ${buildJsonTree(v, depth + 1)}</div>`
+      }
+      const hint = Array.isArray(v)
+        ? `<span class="jt-hint">[ ${(v as unknown[]).length} ]</span>`
+        : `<span class="jt-hint">{ ${Object.keys(v as object).length} }</span>`
+      return `<div class="jt-row"><details${openAttr} class="jt-node"><summary>${key}: ${hint}</summary><div class="jt-ch">${buildJsonTree(v, depth + 1)}</div></details></div>`
+    }).join('')
+  }
+
+  return escHtml(String(value))
+}
+
 function buildJsonDetail(resourceType: string, resource: object): string {
   const plain = JSON.stringify(resource, null, 2)
-  const highlighted = highlightJson(plain)
-  // data-plain stores the unescaped JSON for copy; highlighted HTML goes into <code>
+  const tree = buildJsonTree(resource, 0)
   return `<details class="json-detail">
     <summary>JSON <span class="resource-type">${escHtml(resourceType)}</span></summary>
     <div class="json-block" data-plain="${escHtml(plain)}">
       <button class="copy-btn">複製</button>
-      <pre><code>${highlighted}</code></pre>
+      <div class="jtree">${tree}</div>
     </div>
   </details>`
 }
@@ -707,26 +747,6 @@ function escHtml(text: string): string {
     .replace(/"/g, '&quot;')
 }
 
-/** Syntax-highlight a JSON string into HTML spans. Runs at build time in TypeScript
- *  to avoid regex backslash-escaping issues inside JS template literals.
- *  Colors: key=blue, string=green, number=orange, bool=purple, null=pink. */
-function highlightJson(json: string): string {
-  const esc = (s: string) =>
-    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-
-  // Regex groups: (1) key-string + (2) colon | (3) value-string | (4) bool | (5) null | (6) number
-  return json.replace(
-    /("(?:\\.|[^"\\])*")(\s*:)|("(?:\\.|[^"\\])*")|(true|false)|(null)|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
-    (_m, key: string, colon: string, str: string, bool: string, nul: string, num: string) => {
-      if (key  !== undefined) return `<span class="jk">${esc(key)}</span>${esc(colon)}`
-      if (str  !== undefined) return `<span class="js">${esc(str)}</span>`
-      if (bool !== undefined) return `<span class="jb">${esc(bool)}</span>`
-      if (nul  !== undefined) return `<span class="jnl">${esc(nul)}</span>`
-      if (num  !== undefined) return `<span class="jn">${esc(num)}</span>`
-      return esc(_m)
-    }
-  )
-}
 
 export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): string {
   const L = getLabels(locale)
@@ -756,9 +776,38 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   const patientName = patient?.name?.[0]?.text ?? ''
   const prescriptionDate = composition?.date?.slice(0, 10) ?? ''
   const printLabel = locale.startsWith('zh') ? '列印' : 'Print'
-  const copyLabel = locale.startsWith('zh') ? '複製' : 'Copy'
   const bundleJsonLabel = locale.startsWith('zh') ? '原始 FHIR Bundle JSON' : 'Raw FHIR Bundle JSON'
   const copyFullLabel = locale.startsWith('zh') ? '複製完整 JSON' : 'Copy Full JSON'
+  const darkToggleLabel = locale.startsWith('zh') ? '深色' : 'Dark'
+  const lightToggleLabel = locale.startsWith('zh') ? '淺色' : 'Light'
+
+  // Hero summary card data
+  const isZh = locale.startsWith('zh')
+  const medCount = entries.filter((e) => e.resource?.resourceType === 'MedicationRequest').length
+  const conditionDisplay = condition?.code?.coding?.[0]?.display ?? condition?.code?.text ?? ''
+  const conditionCode = condition?.code?.coding?.[0]?.code ?? ''
+  const heroPatientMeta = [
+    patient?.identifier?.[0]?.value,
+    isZh
+      ? (patient?.gender === 'female' ? '女' : patient?.gender === 'male' ? '男' : patient?.gender)
+      : patient?.gender,
+    patient?.birthDate,
+  ].filter(Boolean).join('  ·  ')
+  const heroPills = [
+    practitioner?.name?.[0]?.text ? `🩺 ${practitioner.name[0].text}` : '',
+    organization?.name ? `🏥 ${organization.name}` : '',
+    prescriptionDate ? `📅 ${prescriptionDate}` : '',
+    conditionDisplay ? `🔍 ${conditionDisplay}${conditionCode ? ` (${conditionCode})` : ''}` : '',
+    medCount > 0 ? `💊 ${medCount} ${isZh ? '種藥品' : 'medication(s)'}` : '',
+  ].filter(Boolean)
+
+  const heroHtml = `<div class="hero">
+    <div class="hero-name">${escHtml(patientName || '—')}</div>
+    ${heroPatientMeta ? `<div class="hero-meta">${escHtml(heroPatientMeta)}</div>` : ''}
+    <div class="hero-pills">
+      ${heroPills.map((p) => `<span class="hero-pill">${escHtml(p)}</span>`).join('')}
+    </div>
+  </div>`
 
   // Medication section — card-in-card layout
   const medicationSection = medication ? (() => {
@@ -836,7 +885,7 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   ].join('\n')
 
   const bundlePlain = JSON.stringify(bundle, null, 2)
-  const bundleJsonHighlighted = highlightJson(bundlePlain)
+  const bundleTree = buildJsonTree(bundle, 0)
   const generatedAt = new Date().toLocaleString(locale.startsWith('zh') ? 'zh-TW' : 'en-US')
 
   return `<!DOCTYPE html>
@@ -855,118 +904,107 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     --accent: #c9727a;
     --badge-bg: #f5e6e8;
     --badge-text: #7d3a42;
+    --hero-bg: linear-gradient(135deg, #c9727a 0%, #a85060 100%);
     --radius: 14px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
+  [data-theme="dark"] {
+    --bg: #1a0e10;
+    --card: #261418;
+    --border: #3d2025;
+    --text: #f0dde0;
+    --muted: #a07880;
+    --badge-bg: #3a1c20;
+    --badge-text: #f0a0ac;
+    --hero-bg: linear-gradient(135deg, #7d3a42 0%, #5a2530 100%);
+  }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); padding: 0 0 2rem; }
+  body { background: var(--bg); color: var(--text); padding: 0 0 2rem; transition: background 0.2s, color 0.2s; }
   .container { max-width: 760px; margin: 0 auto; padding: 0 1rem; }
 
   /* Sticky header bar */
   .sticky-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: var(--accent);
-    color: white;
+    position: sticky; top: 0; z-index: 10;
+    background: var(--accent); color: white;
     padding: 0.55rem 1.25rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    display: flex; align-items: center; gap: 0.75rem;
     margin-bottom: 1.5rem;
-    box-shadow: 0 2px 8px rgba(201,114,122,0.25);
+    box-shadow: 0 2px 8px rgba(201,114,122,0.3);
   }
   .sticky-header .app-name { font-weight: 700; font-size: 0.9rem; margin-right: auto; opacity: 0.95; }
   .sticky-header .patient-chip {
-    font-size: 0.8rem;
-    background: rgba(255,255,255,0.2);
-    border-radius: 20px;
-    padding: 0.15rem 0.65rem;
-    white-space: nowrap;
+    font-size: 0.8rem; background: rgba(255,255,255,0.2);
+    border-radius: 20px; padding: 0.15rem 0.65rem; white-space: nowrap;
   }
-  .sticky-header .date-chip {
-    font-size: 0.8rem;
-    opacity: 0.85;
-    white-space: nowrap;
+  .sticky-header .date-chip { font-size: 0.8rem; opacity: 0.85; white-space: nowrap; }
+  .sticky-header button {
+    background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.35);
+    color: white; padding: 0.25rem 0.7rem; border-radius: 8px;
+    cursor: pointer; font-size: 0.78rem; white-space: nowrap;
   }
-  .sticky-header .print-btn {
-    background: rgba(255,255,255,0.2);
-    border: 1px solid rgba(255,255,255,0.35);
+  .sticky-header button:hover { background: rgba(255,255,255,0.32); }
+
+  /* Hero summary card */
+  .hero {
+    background: var(--hero-bg);
     color: white;
-    padding: 0.25rem 0.7rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.78rem;
-    white-space: nowrap;
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
   }
-  .sticky-header .print-btn:hover { background: rgba(255,255,255,0.32); }
+  .hero-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.3rem; }
+  .hero-meta { font-size: 0.82rem; opacity: 0.85; margin-bottom: 0.85rem; letter-spacing: 0.01em; }
+  .hero-pills { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .hero-pill {
+    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 20px; padding: 0.2rem 0.7rem;
+    font-size: 0.78rem; white-space: nowrap;
+  }
 
   header { padding-top: 1.25rem; margin-bottom: 1.5rem; }
   header h1 { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
   header .meta { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
 
   section {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem 1.25rem;
-    margin-bottom: 1rem;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem;
+    transition: background 0.2s, border-color 0.2s;
   }
   h2 {
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-    margin-bottom: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.75rem;
+    display: flex; align-items: center; gap: 0.35rem;
   }
   .section-icon { font-size: 0.95rem; line-height: 1; }
   .field {
-    display: grid;
-    grid-template-columns: 6rem 1fr;
-    gap: 0.25rem 0.75rem;
-    margin-bottom: 0.4rem;
-    font-size: 0.875rem;
+    display: grid; grid-template-columns: 6rem 1fr;
+    gap: 0.25rem 0.75rem; margin-bottom: 0.4rem; font-size: 0.875rem;
   }
   .label { color: var(--muted); }
   .value { font-weight: 500; word-break: break-word; }
 
   /* Copyable field values */
   .copyable {
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    border-radius: 4px;
-    padding: 0 0.2rem;
-    transition: background 0.15s;
+    cursor: pointer; display: inline-flex; align-items: center;
+    gap: 0.3rem; border-radius: 4px; padding: 0 0.2rem; transition: background 0.15s;
   }
   .copyable:hover { background: var(--badge-bg); color: var(--accent); }
   .copy-icon { opacity: 0; font-size: 0.78rem; transition: opacity 0.15s; }
   .copyable:hover .copy-icon { opacity: 0.7; }
-  .copyable.copied { color: #2d7a3a; }
+  .copyable.copied { color: #4caf50; }
   .copyable.copied .copy-icon { opacity: 0; }
   .copyable.copied::after { content: ' ✓'; font-size: 0.78rem; }
 
   .badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
   .badge {
-    background: var(--badge-bg);
-    color: var(--badge-text);
-    border-radius: 999px;
-    padding: 0.2rem 0.65rem;
-    font-size: 0.75rem;
-    font-weight: 500;
+    background: var(--badge-bg); color: var(--badge-text);
+    border-radius: 999px; padding: 0.2rem 0.65rem; font-size: 0.75rem; font-weight: 500;
   }
 
   /* Medication card */
   .med-card {
-    background: var(--badge-bg);
-    border-radius: 10px;
-    padding: 0.75rem 1rem;
-    margin-bottom: 0.25rem;
+    background: var(--badge-bg); border-radius: 10px;
+    padding: 0.75rem 1rem; margin-bottom: 0.25rem;
   }
   .med-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
   .med-name { font-size: 1.05rem; font-weight: 700; color: var(--text); }
@@ -977,89 +1015,77 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   /* JSON detail / collapse */
   .json-detail { margin-top: 0.85rem; border-top: 1px solid var(--border); padding-top: 0.6rem; }
   .json-detail summary {
-    cursor: pointer;
-    font-size: 0.73rem;
-    color: var(--muted);
-    user-select: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    list-style: none;
+    cursor: pointer; font-size: 0.73rem; color: var(--muted);
+    user-select: none; display: inline-flex; align-items: center; gap: 0.35rem; list-style: none;
   }
   .json-detail summary::-webkit-details-marker { display: none; }
   .json-detail summary::before { content: '▶'; font-size: 0.6rem; transition: transform 0.15s; }
   .json-detail[open] summary::before { transform: rotate(90deg); }
   .json-detail[open] summary { color: var(--accent); }
   .resource-type {
-    background: var(--badge-bg);
-    color: var(--badge-text);
-    border-radius: 4px;
-    padding: 0.1rem 0.4rem;
-    font-size: 0.68rem;
-    font-weight: 500;
+    background: var(--badge-bg); color: var(--badge-text);
+    border-radius: 4px; padding: 0.1rem 0.4rem; font-size: 0.68rem; font-weight: 500;
   }
   .json-block {
-    position: relative;
-    margin-top: 0.5rem;
-    background: #1e1214;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  .json-block pre {
-    padding: 1rem;
-    overflow-x: auto;
-    font-size: 0.72rem;
-    font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
-    color: #f5e0e3;
-    line-height: 1.55;
-    white-space: pre;
+    position: relative; margin-top: 0.5rem;
+    background: #120a0c; border-radius: 8px; overflow: hidden;
   }
   .copy-btn {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.15);
-    color: #f5e0e3;
-    padding: 0.22rem 0.6rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.7rem;
-    font-family: inherit;
-    transition: background 0.15s;
+    position: absolute; top: 0.5rem; right: 0.5rem;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+    color: #f5e0e3; padding: 0.22rem 0.6rem; border-radius: 6px;
+    cursor: pointer; font-size: 0.7rem; font-family: inherit; transition: background 0.15s;
   }
   .copy-btn:hover { background: rgba(255,255,255,0.2); }
 
-  /* JSON syntax highlighting */
-  .json-block .jk  { color: #79c0ff; }   /* key   — blue   */
-  .json-block .js  { color: #a5d6a7; }   /* string — green  */
-  .json-block .jn  { color: #ffcc80; }   /* number — orange */
-  .json-block .jb  { color: #ce93d8; }   /* bool  — purple  */
-  .json-block .jnl { color: #f48fb1; }   /* null  — pink    */
+  /* JSON tree */
+  .jtree {
+    padding: 0.9rem 1rem 0.9rem 1.2rem;
+    font-size: 0.72rem;
+    font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+    color: #f5e0e3;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+  .jt-row { white-space: nowrap; }
+  .jt-node { display: block; }
+  .jt-node > summary {
+    cursor: pointer; list-style: none; display: inline-flex; align-items: center;
+    gap: 0.2rem; user-select: none; color: #f5e0e3;
+  }
+  .jt-node > summary::-webkit-details-marker { display: none; }
+  .jt-node > summary::before { content: '▶'; font-size: 0.55rem; color: #a07880; transition: transform 0.12s; }
+  .jt-node[open] > summary::before { transform: rotate(90deg); }
+  .jt-ch { padding-left: 1.4rem; border-left: 1px solid #3d2025; margin-left: 0.2rem; }
+  .jt-hint { color: #a07880; font-size: 0.68rem; }
+  .ji { color: #a07880; }
+  /* JSON syntax colors */
+  .jk  { color: #79c0ff; }
+  .js  { color: #a5d6a7; }
+  .jn  { color: #ffcc80; }
+  .jb  { color: #ce93d8; }
+  .jnl { color: #f48fb1; }
+  .jp  { color: #a07880; }
 
   /* Full bundle JSON section */
   .bundle-json-section {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem 1.25rem;
-    margin-bottom: 1rem;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem;
+    transition: background 0.2s, border-color 0.2s;
   }
   .bundle-json-section > .json-detail { border-top: none; padding-top: 0; margin-top: 0; }
   .bundle-json-section > .json-detail > summary { font-size: 0.82rem; font-weight: 600; color: var(--text); }
   .bundle-json-section > .json-detail[open] > summary { color: var(--accent); }
 
   footer {
-    margin-top: 1.5rem;
-    font-size: 0.75rem;
-    color: var(--muted);
-    text-align: center;
-    padding-bottom: 1rem;
+    margin-top: 1.5rem; font-size: 0.75rem;
+    color: var(--muted); text-align: center; padding-bottom: 1rem;
   }
 
   @media print {
     .sticky-header { display: none; }
-    body { padding: 0; background: white; }
+    body { padding: 0; background: white; color: black; }
+    .hero { background: #c9727a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     section { break-inside: avoid; }
     .json-detail { display: none; }
     .bundle-json-section { display: none; }
@@ -1071,6 +1097,7 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   <span class="app-name">℞ RxFHIR</span>
   ${patientName ? `<span class="patient-chip">${escHtml(patientName)}</span>` : ''}
   ${prescriptionDate ? `<span class="date-chip">${escHtml(prescriptionDate)}</span>` : ''}
+  <button id="theme-btn" onclick="toggleTheme()">🌙 ${escHtml(darkToggleLabel)}</button>
   <button class="print-btn" onclick="window.print()">🖨 ${escHtml(printLabel)}</button>
 </div>
 <div class="container">
@@ -1078,22 +1105,39 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     <h1>${escHtml(L.title)}</h1>
     <p class="meta">${escHtml(L.generatedAt)}: ${generatedAt}</p>
   </header>
+  ${heroHtml}
   ${sections}
   <div class="bundle-json-section">
     <details class="json-detail">
       <summary>📦 ${escHtml(bundleJsonLabel)}</summary>
       <div class="json-block" data-plain="${escHtml(bundlePlain)}">
         <button class="copy-btn">${escHtml(copyFullLabel)}</button>
-        <pre><code>${bundleJsonHighlighted}</code></pre>
+        <div class="jtree">${bundleTree}</div>
       </div>
     </details>
   </div>
   <footer>${escHtml(L.footer)}</footer>
 </div>
 <script>
-(function () {
-  // Highlighting is done server-side (TypeScript). Only handle interactivity here.
-  // Copy buttons read data-plain on the parent .json-block (avoids HTML entity issues)
+  // Dark mode toggle — persisted via localStorage
+  var DARK_LABEL = '☀\uFE0F ${escHtml(lightToggleLabel)}'
+  var LIGHT_LABEL = '🌙 ${escHtml(darkToggleLabel)}'
+  function applyTheme(dark) {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : '')
+    var btn = document.getElementById('theme-btn')
+    if (btn) btn.textContent = dark ? DARK_LABEL : LIGHT_LABEL
+  }
+  function toggleTheme() {
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+    localStorage.setItem('rxfhir-theme', isDark ? 'light' : 'dark')
+    applyTheme(!isDark)
+  }
+  // Restore saved preference or use system preference
+  var saved = localStorage.getItem('rxfhir-theme')
+  var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+  applyTheme(saved ? saved === 'dark' : prefersDark)
+
+  // Copy buttons — read data-plain to get unescaped JSON
   document.querySelectorAll('.copy-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var block = btn.parentElement
@@ -1119,7 +1163,6 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
       }
     })
   })
-}())
 </script>
 </body>
 </html>`

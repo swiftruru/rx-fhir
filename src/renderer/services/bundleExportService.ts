@@ -734,7 +734,11 @@ function buildJsonDetail(resourceType: string, resource: object): string {
   return `<details class="json-detail">
     <summary>JSON <span class="resource-type">${escHtml(resourceType)}</span></summary>
     <div class="json-block" data-plain="${escHtml(plain)}">
-      <button class="copy-btn">複製</button>
+      <div class="jb-toolbar">
+        <button class="expand-btn"></button>
+        <button class="collapse-btn"></button>
+        <button class="copy-btn">複製</button>
+      </div>
       <div class="jtree">${tree}</div>
     </div>
   </details>`
@@ -1135,13 +1139,20 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     position: relative; margin-top: 0.5rem;
     background: #120a0c; border-radius: 8px; overflow: hidden;
   }
-  .copy-btn {
-    position: absolute; top: 0.5rem; right: 0.5rem;
-    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
-    color: #f5e0e3; padding: 0.22rem 0.6rem; border-radius: 6px;
-    cursor: pointer; font-size: 0.7rem; font-family: inherit; transition: background 0.15s;
+  /* JSON block toolbar */
+  .jb-toolbar {
+    display: flex; gap: 0.35rem; padding: 0.45rem 0.7rem;
+    background: rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.08);
+    justify-content: flex-end;
   }
-  .copy-btn:hover { background: rgba(255,255,255,0.2); }
+  .jb-toolbar button {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+    color: #f5e0e3; padding: 0.2rem 0.55rem; border-radius: 5px;
+    cursor: pointer; font-size: 0.68rem; font-family: inherit; transition: background 0.15s;
+  }
+  .jb-toolbar button:hover { background: rgba(255,255,255,0.22); }
+  /* keep copy-btn name for JS selector; expand/collapse get accent tint on hover */
+  .expand-btn:hover, .collapse-btn:hover { border-color: rgba(201,114,122,0.5) !important; }
 
   /* JSON tree */
   .jtree {
@@ -1274,7 +1285,11 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     <details class="json-detail">
       <summary>📦 ${escHtml(bundleJsonLabel)}</summary>
       <div class="json-block" data-plain="${escHtml(bundlePlain)}">
-        <button class="copy-btn">${escHtml(copyFullLabel)}</button>
+        <div class="jb-toolbar">
+          <button class="expand-btn"></button>
+          <button class="collapse-btn"></button>
+          <button class="copy-btn">${escHtml(copyFullLabel)}</button>
+        </div>
         <div class="jtree">${bundleTree}</div>
       </div>
     </details>
@@ -1300,10 +1315,29 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
   applyTheme(saved ? saved === 'dark' : prefersDark)
 
+  // Expand / collapse all <details> within the same .json-block
+  var isZhPage = document.documentElement.lang.startsWith('zh')
+  var EXPAND_LABEL = isZhPage ? '全展開' : 'Expand all'
+  var COLLAPSE_LABEL = isZhPage ? '全折疊' : 'Collapse all'
+  document.querySelectorAll('.expand-btn').forEach(function (btn) {
+    btn.textContent = EXPAND_LABEL
+    btn.addEventListener('click', function () {
+      var block = btn.closest('.json-block')
+      if (block) block.querySelectorAll('details').forEach(function (d) { d.open = true })
+    })
+  })
+  document.querySelectorAll('.collapse-btn').forEach(function (btn) {
+    btn.textContent = COLLAPSE_LABEL
+    btn.addEventListener('click', function () {
+      var block = btn.closest('.json-block')
+      if (block) block.querySelectorAll('details').forEach(function (d) { d.open = false })
+    })
+  })
+
   // Copy buttons — read data-plain to get unescaped JSON
   document.querySelectorAll('.copy-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      var block = btn.parentElement
+      var block = btn.closest('.json-block')
       var text = (block && block.dataset.plain) ? block.dataset.plain : ''
       if (navigator.clipboard && text) {
         navigator.clipboard.writeText(text).then(function () {

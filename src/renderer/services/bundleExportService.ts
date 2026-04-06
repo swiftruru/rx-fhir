@@ -729,6 +729,41 @@ function buildJsonTree(value: unknown, depth: number): string {
   return escHtml(String(value))
 }
 
+interface TimelineEvent {
+  isoDate: string
+  displayDate: string
+  icon: string
+  label: string
+  sub: string
+  anchor: string
+}
+
+/** Build a clinical timeline from bundle resources, sorted by date. */
+function buildTimeline(events: TimelineEvent[], isZh: boolean): string {
+  if (events.length === 0) return ''
+  const title = isZh ? '臨床時間軸' : 'Clinical Timeline'
+  const rows = events.map((ev, i) => {
+    const isLast = i === events.length - 1
+    return `<div class="tl-row">
+      <div class="tl-left">
+        <div class="tl-date">${escHtml(ev.displayDate)}</div>
+      </div>
+      <div class="tl-mid">
+        <div class="tl-dot">${ev.icon}</div>
+        ${isLast ? '' : '<div class="tl-line"></div>'}
+      </div>
+      <div class="tl-right">
+        <a class="tl-label" href="#${ev.anchor}">${escHtml(ev.label)}</a>
+        ${ev.sub ? `<div class="tl-sub">${escHtml(ev.sub)}</div>` : ''}
+      </div>
+    </div>`
+  }).join('')
+  return `<div class="tl-card">
+    <div class="tl-title">${escHtml(title)}</div>
+    <div class="tl-body">${rows}</div>
+  </div>`
+}
+
 /** Generate a QR code SVG string synchronously for embedding in HTML.
  *  Returns an empty string if the value is empty. */
 function generateQrSvg(value: string): string {
@@ -906,6 +941,46 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
         </div>
       </dialog>`
     : ''
+
+  // Clinical timeline
+  const tlEvents: TimelineEvent[] = []
+  const addTlEvent = (isoDate: string | undefined | null, icon: string, label: string, sub: string, anchor: string) => {
+    if (!isoDate) return
+    tlEvents.push({ isoDate, displayDate: fdate(isoDate) ?? isoDate, icon, label, sub, anchor })
+  }
+  addTlEvent(encounter?.period?.start, '📅', isZh ? '就診' : 'Encounter', encounter?.class?.display ?? '', 'sec-encounter')
+  addTlEvent(composition?.date, '📋', isZh ? '處方箋開立' : 'Prescription', composition?.title ?? '', 'sec-prescription')
+  conditions.forEach((c) => {
+    const display = c.code?.coding?.[0]?.display ?? c.code?.text ?? ''
+    const code = c.code?.coding?.[0]?.code ?? ''
+    addTlEvent(
+      c.recordedDate ?? encounter?.period?.start ?? composition?.date,
+      '🔍', isZh ? '診斷' : 'Diagnosis',
+      display + (code ? ` (${code})` : ''), 'sec-condition'
+    )
+  })
+  observations.forEach((o) => {
+    const item = o.code?.text ?? o.code?.coding?.[0]?.display ?? ''
+    const val = o.valueQuantity != null ? `${o.valueQuantity.value} ${o.valueQuantity.unit ?? ''}` : (o.valueString ?? '')
+    addTlEvent(o.effectiveDateTime ?? encounter?.period?.start ?? composition?.date, '🔬', isZh ? '檢驗' : 'Observation', `${item}${val ? '：' + val : ''}`, 'sec-observation')
+  })
+  if (medicationRequests.length > 0) {
+    addTlEvent(
+      medicationRequests[0].authoredOn ?? composition?.date,
+      '💊', isZh ? `藥品 ×${medicationRequests.length}` : `Medication ×${medicationRequests.length}`,
+      medications[0]?.code?.text ?? '', 'sec-medication'
+    )
+  }
+  // Sort by ISO date, deduplicate consecutive same-anchor entries
+  tlEvents.sort((a, b) => a.isoDate.localeCompare(b.isoDate))
+  const seen = new Set<string>()
+  const uniqueTlEvents = tlEvents.filter((e) => {
+    const key = `${e.isoDate}-${e.anchor}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+  const timelineHtml = buildTimeline(uniqueTlEvents, isZh)
 
   const heroHtml = `<div class="hero" id="sec-top">
     <div class="hero-main">
@@ -1128,6 +1203,25 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   }
   .sticky-header button:hover { background: rgba(255,255,255,0.32); }
 
+  /* Global search in sticky bar */
+  .gs-wrap { display: flex; align-items: center; gap: 0.25rem; }
+  .gs-input {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+    color: white; border-radius: 8px; padding: 0.22rem 0.6rem;
+    font-size: 0.78rem; font-family: inherit; outline: none; width: 110px;
+    transition: width 0.2s, border-color 0.15s;
+  }
+  .gs-input:focus { width: 150px; border-color: rgba(255,255,255,0.7); }
+  .gs-input::placeholder { color: rgba(255,255,255,0.5); }
+  .gs-count { font-size: 0.68rem; color: rgba(255,255,255,0.7); white-space: nowrap; min-width: 2.5rem; }
+  .gs-nav {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+    color: white; border-radius: 6px; padding: 0.18rem 0.45rem;
+    cursor: pointer; font-size: 0.75rem; line-height: 1;
+  }
+  .gs-nav:hover { background: rgba(255,255,255,0.3); }
+  .gs-nav:disabled { opacity: 0.3; cursor: default; }
+
   /* Bundle metadata bar */
   .meta-bar {
     display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem;
@@ -1333,6 +1427,41 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     font-size: 0.68rem; font-weight: 700;
   }
 
+  /* Clinical timeline */
+  .tl-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem;
+  }
+  .tl-title {
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.85rem;
+  }
+  .tl-body { display: flex; flex-direction: column; }
+  .tl-row { display: flex; align-items: flex-start; gap: 0; }
+  .tl-left {
+    width: 5.5rem; flex-shrink: 0; text-align: right;
+    padding-right: 0.75rem; padding-top: 0.05rem;
+  }
+  .tl-date { font-size: 0.73rem; color: var(--muted); white-space: nowrap; }
+  .tl-mid {
+    flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
+    width: 1.6rem;
+  }
+  .tl-dot {
+    width: 1.6rem; height: 1.6rem; border-radius: 50%;
+    background: var(--badge-bg); border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; flex-shrink: 0; z-index: 1;
+  }
+  .tl-line { flex: 1; width: 2px; background: var(--border); min-height: 1rem; margin: 0.1rem 0; }
+  .tl-right { flex: 1; padding-left: 0.75rem; padding-bottom: 1rem; min-width: 0; }
+  .tl-label {
+    display: block; font-size: 0.85rem; font-weight: 600;
+    color: var(--accent); text-decoration: none; word-break: break-word;
+  }
+  .tl-label:hover { text-decoration: underline; }
+  .tl-sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.1rem; }
+
   /* Nav dropdown in sticky bar */
   .nav-details { position: relative; }
   .nav-details summary { list-style: none; }
@@ -1364,15 +1493,45 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     color: var(--muted); text-align: center; padding-bottom: 1rem;
   }
 
+  /* Print header / footer (hidden on screen) */
+  .print-hf { display: none; }
+
+  @page {
+    size: A4;
+    margin: 18mm 14mm 20mm;
+    @top-center { content: ''; }
+    @bottom-center { content: counter(page) ' / ' counter(pages); font-size: 9pt; }
+  }
+
   @media print {
-    .sticky-header { display: none; }
-    body { padding: 0; background: white; color: black; }
+    .sticky-header { display: none !important; }
+    body { padding: 0; margin: 0; background: white; color: black; }
     .hero { background: #c9727a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .hero-qr { display: none; }
     section { break-inside: avoid; }
+    .tl-card { break-inside: avoid; }
     .json-detail { display: none; }
     .bundle-json-section { display: none; }
     .jb-search, .jb-search-count { display: none; }
+    .gs-wrap { display: none !important; }
+    mark.gsh { background: transparent; color: inherit; }
+
+    /* Show print header and footer */
+    .print-header {
+      display: flex !important;
+      position: fixed; top: 0; left: 0; right: 0;
+      justify-content: space-between; align-items: center;
+      font-size: 8.5pt; color: #555;
+      border-bottom: 1px solid #ccc; padding: 0 0 4px;
+    }
+    .print-footer {
+      display: flex !important;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      justify-content: space-between; align-items: center;
+      font-size: 8pt; color: #777;
+      border-top: 1px solid #ddd; padding: 4px 0 0;
+    }
+    .container { margin-top: 0; }
   }
 </style>
 </head>
@@ -1382,8 +1541,25 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   ${patientName ? `<span class="patient-chip">${escHtml(patientName)}</span>` : ''}
   ${prescriptionDate ? `<span class="date-chip">${escHtml(prescriptionDate)}</span>` : ''}
   ${navHtml}
+  <div class="gs-wrap">
+    <input id="gs-input" class="gs-input" type="search" />
+    <span id="gs-count" class="gs-count"></span>
+    <button id="gs-prev" class="gs-nav" title="Previous" disabled>↑</button>
+    <button id="gs-next" class="gs-nav" title="Next" disabled>↓</button>
+  </div>
   <button id="theme-btn" onclick="toggleTheme()">🌙 ${escHtml(darkToggleLabel)}</button>
   <button class="print-btn" onclick="window.print()">🖨 ${escHtml(printLabel)}</button>
+</div>
+<!-- print header / footer (hidden on screen, visible via print CSS) -->
+<div id="print-header" class="print-hf print-header">
+  <span>${escHtml(organization?.name ?? '')}</span>
+  <span>${escHtml(L.title)}</span>
+  <span>${escHtml(patientName)}${patient?.identifier?.[0]?.value ? '  ' + escHtml(patient.identifier[0].value) : ''}</span>
+</div>
+<div id="print-footer" class="print-hf print-footer">
+  <span>${escHtml(L.footer)}</span>
+  <span>${generatedAt}</span>
+  <span id="print-page-num"></span>
 </div>
 <div class="container">
   <header>
@@ -1392,6 +1568,7 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   </header>
   ${metaBarHtml}
   ${heroHtml}
+  ${timelineHtml}
   ${sections}
   <div class="bundle-json-section">
     <details class="json-detail">
@@ -1560,6 +1737,126 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
       }
     })
   })
+
+  // ── Global search (sticky bar) ───────────────────────────────────────────
+  ;(function () {
+    var gsInput = document.getElementById('gs-input')
+    var gsCount = document.getElementById('gs-count')
+    var gsPrev  = document.getElementById('gs-prev')
+    var gsNext  = document.getElementById('gs-next')
+    var GS_PLACEHOLDER = isZhPage ? '全頁搜尋…' : 'Search page…'
+    var GS_RESULTS = isZhPage ? '{cur}/{tot}' : '{cur}/{tot}'
+    if (gsInput) gsInput.setAttribute('placeholder', GS_PLACEHOLDER)
+
+    var gsMatches = []   // Array of <mark class="gsh"> elements
+    var gsCurrent = -1
+
+    function clearGsMarks() {
+      document.querySelectorAll('mark.gsh').forEach(function (m) {
+        var p = m.parentNode
+        if (p) { p.replaceChild(document.createTextNode(m.textContent || ''), m); p.normalize() }
+      })
+      gsMatches = []
+      gsCurrent = -1
+      if (gsCount) gsCount.textContent = ''
+      updateNavButtons()
+    }
+
+    function updateNavButtons() {
+      var has = gsMatches.length > 0
+      if (gsPrev) gsPrev.disabled = !has
+      if (gsNext) gsNext.disabled = !has
+    }
+
+    function scrollToMatch(idx) {
+      if (idx < 0 || idx >= gsMatches.length) return
+      var prev = gsMatches[gsCurrent]
+      if (prev) prev.style.outline = ''
+      gsCurrent = idx
+      var cur = gsMatches[gsCurrent]
+      cur.style.outline = '2px solid #f48fb1'
+      cur.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      if (gsCount) gsCount.textContent = GS_RESULTS.replace('{cur}', String(gsCurrent + 1)).replace('{tot}', String(gsMatches.length))
+    }
+
+    function runGsSearch(query) {
+      clearGsMarks()
+      if (!query) return
+      // Collect text nodes inside .container, skipping .json-block subtrees
+      var container = document.querySelector('.container')
+      if (!container) return
+      var re = new RegExp(query.replace(/[-.*+?^$|()[\]{}\\]/g, '\\$&'), 'gi')
+      var walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+        acceptNode: function (node) {
+          // Skip anything inside a .json-block
+          var el = node.parentElement
+          while (el && el !== container) {
+            if (el.classList && el.classList.contains('json-block')) return NodeFilter.FILTER_REJECT
+            el = el.parentElement
+          }
+          return (node.nodeValue && node.nodeValue.trim()) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
+        }
+      })
+      var nodes = []
+      var n
+      while ((n = walker.nextNode())) {
+        if (re.test(n.nodeValue)) { nodes.push(n); re.lastIndex = 0 }
+      }
+      nodes.forEach(function (textNode) {
+        var val = textNode.nodeValue || ''
+        var frag = document.createDocumentFragment()
+        var last = 0
+        re.lastIndex = 0
+        var m
+        while ((m = re.exec(val)) !== null) {
+          if (m.index > last) frag.appendChild(document.createTextNode(val.slice(last, m.index)))
+          var mark = document.createElement('mark')
+          mark.className = 'gsh'
+          mark.textContent = m[0]
+          frag.appendChild(mark)
+          gsMatches.push(mark)
+          last = m.index + m[0].length
+        }
+        if (last < val.length) frag.appendChild(document.createTextNode(val.slice(last)))
+        if (textNode.parentNode) textNode.parentNode.replaceChild(frag, textNode)
+      })
+      updateNavButtons()
+      if (gsMatches.length > 0) {
+        scrollToMatch(0)
+      } else {
+        if (gsCount) gsCount.textContent = isZhPage ? '無結果' : 'No results'
+      }
+    }
+
+    if (gsInput) {
+      var debounce
+      gsInput.addEventListener('input', function () {
+        clearTimeout(debounce)
+        debounce = setTimeout(function () { runGsSearch(gsInput.value.trim()) }, 220)
+      })
+      gsInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { gsInput.value = ''; clearGsMarks() }
+        if (e.key === 'Enter') {
+          if (e.shiftKey) { scrollToMatch((gsCurrent - 1 + gsMatches.length) % gsMatches.length) }
+          else { scrollToMatch((gsCurrent + 1) % gsMatches.length) }
+        }
+      })
+    }
+    if (gsPrev) gsPrev.addEventListener('click', function () {
+      if (gsMatches.length) scrollToMatch((gsCurrent - 1 + gsMatches.length) % gsMatches.length)
+    })
+    if (gsNext) gsNext.addEventListener('click', function () {
+      if (gsMatches.length) scrollToMatch((gsCurrent + 1) % gsMatches.length)
+    })
+    updateNavButtons()
+  })()
+
+  // Global search highlight style (injected dynamically to keep template clean)
+  ;(function () {
+    var s = document.createElement('style')
+    s.textContent = 'mark.gsh { background: #ffe082; color: #1a1a1a; border-radius: 2px; padding: 0 1px; }'
+    document.head.appendChild(s)
+  })()
 </script>
 </body>
 </html>`

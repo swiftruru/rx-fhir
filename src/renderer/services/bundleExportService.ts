@@ -1006,6 +1006,13 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   }
   .copy-btn:hover { background: rgba(255,255,255,0.2); }
 
+  /* JSON syntax highlighting */
+  .json-block .jk  { color: #79c0ff; }   /* key   — blue   */
+  .json-block .js  { color: #a5d6a7; }   /* string — green  */
+  .json-block .jn  { color: #ffcc80; }   /* number — orange */
+  .json-block .jb  { color: #ce93d8; }   /* bool  — purple  */
+  .json-block .jnl { color: #f48fb1; }   /* null  — pink    */
+
   /* Full bundle JSON section */
   .bundle-json-section {
     background: var(--card);
@@ -1061,12 +1068,35 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
 </div>
 <script>
 (function () {
-  // Copy buttons inside JSON blocks — read textContent of <code> to avoid HTML entities
+  // JSON syntax highlighter — no external library needed
+  function escH(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  }
+  function highlightJson(text) {
+    // Match: key strings (followed by :), value strings, booleans, null, numbers
+    return text.replace(
+      /("(?:\\.|[^"\\])*")(\s*:)|("(?:\\.|[^"\\])*")|(true|false)|(null)|(-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)/g,
+      function(m, key, colon, str, bool, nul, num) {
+        if (key  !== undefined) return '<span class="jk">' + escH(key)  + '</span>' + escH(colon)
+        if (str  !== undefined) return '<span class="js">' + escH(str)  + '</span>'
+        if (bool !== undefined) return '<span class="jb">' + escH(bool) + '</span>'
+        if (nul  !== undefined) return '<span class="jnl">'+ escH(nul)  + '</span>'
+        if (num  !== undefined) return '<span class="jn">' + escH(num)  + '</span>'
+        return escH(m)
+      }
+    )
+  }
+  // Apply highlighting — read textContent first (plain JSON), then write innerHTML
+  document.querySelectorAll('.json-block code').forEach(function (el) {
+    var raw = el.textContent || ''
+    el.innerHTML = highlightJson(raw)
+  })
+  // Copy buttons — textContent on a highlighted <code> still returns plain text
   document.querySelectorAll('.copy-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var block = btn.parentElement
       var code = block ? block.querySelector('code') : null
-      var text = code ? code.textContent ?? '' : ''
+      var text = code ? (code.textContent || '') : ''
       if (navigator.clipboard && text) {
         navigator.clipboard.writeText(text).then(function () {
           var orig = btn.textContent
@@ -1079,7 +1109,7 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   // Copyable field values
   document.querySelectorAll('.copyable').forEach(function (el) {
     el.addEventListener('click', function () {
-      var text = el.dataset.copy ?? ''
+      var text = el.dataset.copy || ''
       if (navigator.clipboard && text) {
         navigator.clipboard.writeText(text).then(function () {
           el.classList.add('copied')

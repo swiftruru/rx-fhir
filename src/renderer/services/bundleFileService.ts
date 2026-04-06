@@ -1,6 +1,7 @@
-import type { BundleJsonOpenResult, BundleJsonSaveResult, RecentBundleFileEntry, RxFhirDesktopBridge } from '../types/electron'
+import type { BundleJsonOpenResult, BundleJsonSaveResult, RecentBundleFileEntry, RxFhirDesktopBridge, SaveFileResult } from '../types/electron'
 import type { BundleSummary } from '../types/fhir.d'
 import { extractBundleSummary } from './searchService'
+import { buildPostmanCollection, buildPrescriptionHtml } from './bundleExportService'
 
 export type BundleFileErrorCode =
   | 'bridge-unavailable'
@@ -88,6 +89,55 @@ export async function exportBundleJson(
     content: JSON.stringify(bundle, null, 2),
     defaultFileName: defaultFileName ?? deriveBundleFileName(bundle)
   })
+}
+
+export async function saveFile(
+  content: string,
+  defaultFileName: string,
+  filters: Array<{ name: string; extensions: string[] }>
+): Promise<SaveFileResult> {
+  const bridge = requireDesktopBridge()
+  return bridge.saveFile({ content, defaultFileName, filters })
+}
+
+function deriveBaseFileName(bundle: fhir4.Bundle): string {
+  const entries = getBundleEntries(bundle)
+  const patient = entries.find((entry) => entry.resource?.resourceType === 'Patient')
+    ?.resource as fhir4.Patient | undefined
+  const composition = entries.find((entry) => entry.resource?.resourceType === 'Composition')
+    ?.resource as fhir4.Composition | undefined
+
+  const patientIdentifier = sanitizeFileSegment(patient?.identifier?.[0]?.value)
+  const patientName = sanitizeFileSegment(patient?.name?.[0]?.text || `${patient?.name?.[0]?.family ?? ''}${patient?.name?.[0]?.given?.[0] ?? ''}`)
+  const date = sanitizeFileSegment(composition?.date?.slice(0, 10))
+  const bundleId = sanitizeFileSegment(bundle.id)
+
+  const parts = [patientIdentifier ?? patientName, date ?? bundleId].filter(Boolean)
+  return parts.join('-') || 'rxfhir-bundle'
+}
+
+export async function exportBundlePostman(
+  bundle: fhir4.Bundle,
+  fhirBaseUrl: string,
+  onProgress?: (checked: number, total: number) => void
+): Promise<SaveFileResult> {
+  const collection = await buildPostmanCollection(bundle, fhirBaseUrl, onProgress)
+  const content = JSON.stringify(collection, null, 2)
+  const baseName = deriveBaseFileName(bundle)
+  return saveFile(content, `rxfhir-postman-${baseName}.json`, [
+    { name: 'Postman Collection JSON', extensions: ['json'] }
+  ])
+}
+
+export async function exportBundleHtml(
+  bundle: fhir4.Bundle,
+  locale: string
+): Promise<SaveFileResult> {
+  const content = buildPrescriptionHtml(bundle, locale)
+  const baseName = deriveBaseFileName(bundle)
+  return saveFile(content, `rxfhir-report-${baseName}.html`, [
+    { name: 'HTML Report', extensions: ['html'] }
+  ])
 }
 
 export async function importBundleJson(): Promise<ImportedBundleResult | null> {

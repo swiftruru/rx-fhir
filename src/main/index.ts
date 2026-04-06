@@ -481,6 +481,29 @@ ipcMain.handle('preferences-json:open', async () => {
   }
 })
 
+ipcMain.handle(
+  'file:save',
+  async (_event, payload: { content: string; defaultFileName: string; filters: Electron.FileFilter[] }) => {
+    const targetWindow = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    const { canceled, filePath } = await dialog.showSaveDialog(targetWindow, {
+      defaultPath: payload.defaultFileName,
+      filters: payload.filters
+    })
+
+    if (canceled || !filePath) {
+      return { canceled: true }
+    }
+
+    await writeFile(filePath, payload.content, 'utf8')
+
+    return {
+      canceled: false,
+      filePath,
+      fileName: basename(filePath)
+    }
+  }
+)
+
 ipcMain.handle('external-url:open', async (_event, url: string) => {
   const parsed = new URL(url)
   if (!['http:', 'https:'].includes(parsed.protocol)) {

@@ -22,7 +22,9 @@
       "examplesLabel": "Query Examples",
       "examplesTitle": "Apply a Query Example",
       "examplesDescription": "Fill the current Basic / Date / Complex tab with a sample query so demos and feature checks can start faster.",
-      "examplesButton": "Apply Query Example"
+      "examplesButton": "Apply Query Example",
+      "exampleApplied": "Query example applied to the search form on the left",
+      "exampleAppliedWith": "Query example applied: {{label}}"
     },
     "dropzone": {
       "title": "Drop to Import a Bundle JSON",
@@ -87,6 +89,7 @@
       "clientFilter": "Client-side Filter",
       "custodianFallback": "(custodian chain is unsupported, so the app falls back to identifier search and filters afterward)",
       "authorFallback": "(author chain is unsupported, so the app falls back to identifier search and filters afterward)",
+      "dateFallback": "(Bundle.timestamp ≠ Composition.date, so the app fetches by identifier and filters by Composition.date afterward)",
       "filteredCounts": "Fetched {{fetched}} candidate bundle(s) -> matched {{matched}}",
       "organizationNotFound": "No organization matched the organization code."
     },
@@ -217,6 +220,13 @@
     "exportButton": "Export JSON",
     "exportSuccess": "Bundle JSON exported: {{fileName}}",
     "exportSuccessAnnouncement": "Bundle JSON exported as {{fileName}}.",
+    "exportDropdownLabel": "Export",
+    "exportJson": "Export FHIR JSON",
+    "exportPostman": "Export Postman Collection",
+    "exportHtml": "Export HTML Report",
+    "exportPostmanChecking": "Checking server status",
+    "exportPostmanSuccess": "Postman Collection exported: {{fileName}}",
+    "exportHtmlSuccess": "HTML report exported: {{fileName}}",
     "importedBadge": "Local Import",
     "sections": {
       "prescription": {

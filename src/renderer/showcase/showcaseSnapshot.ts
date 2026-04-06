@@ -385,7 +385,8 @@ function buildSubmissionRecord(bundle: fhir4.Bundle, serverUrl: string, submitte
     practitionerName: metadata.practitionerName,
     conditionDisplay: metadata.conditionDisplay,
     submittedAt,
-    serverUrl
+    serverUrl,
+    compositionDate: (bundle.entry?.find((e) => e.resource?.resourceType === 'Composition')?.resource as fhir4.Composition | undefined)?.date?.slice(0, 10)
   }
 }
 

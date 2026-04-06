@@ -536,7 +536,13 @@ export default function ConsumerPage(): React.JSX.Element {
   }
 
   function handleApplyQueryExample(): void {
-    searchFormRef.current?.fillMock()
+    const label = searchFormRef.current?.fillMock()
+    const message = label
+      ? t('page.shortcuts.exampleAppliedWith', { label })
+      : t('page.shortcuts.exampleApplied')
+    setPrefillNotice({ variant: 'info', message })
+    announcePolite(message)
+    pushToast({ variant: 'success', description: message })
   }
 
   function handleCloseDetail(): void {

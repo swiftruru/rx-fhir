@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Code2, Braces, Download } from 'lucide-react'
+import { X, Code2, Braces } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
@@ -7,9 +7,8 @@ import { ScrollArea } from '../../components/ui/scroll-area'
 import { Alert, AlertDescription } from '../../components/ui/alert'
 import FhirErrorAlert from '../../components/FhirErrorAlert'
 import JsonViewer from '../../components/JsonViewer'
+import ExportDropdown from '../../components/ExportDropdown'
 import type { BundleSummary } from '../../types/fhir.d'
-import { exportBundleJson, getBundleFileErrorMessage } from '../../services/bundleFileService'
-import { useAccessibilityStore } from '../../store/accessibilityStore'
 import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
 import { useShortcutActionStore } from '../../store/shortcutActionStore'
 
@@ -39,8 +38,6 @@ function Field({ label, value }: { label: string; value?: string }): React.JSX.E
 
 export default function PrescriptionDetail({ summary, onClose }: Props): React.JSX.Element {
   const { t } = useTranslation('consumer')
-  const { t: tc } = useTranslation('common')
-  const announcePolite = useAccessibilityStore((state) => state.announcePolite)
   const showcaseStatus = useFeatureShowcaseStore((state) => state.status)
   const showcaseUi = useFeatureShowcaseStore((state) => state.ui)
   const setConsumerActions = useShortcutActionStore((state) => state.setConsumerActions)
@@ -48,7 +45,6 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
   const [showJson, setShowJson] = useState(false)
   const [fileMessage, setFileMessage] = useState<string>()
   const [fileError, setFileError] = useState<string>()
-  const [exporting, setExporting] = useState(false)
   const showcaseBackupRef = useRef<boolean>()
   const headingRef = useRef<HTMLHeadingElement>(null)
   const showcaseActive = showcaseStatus === 'running' || showcaseStatus === 'paused'
@@ -108,24 +104,6 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
 
     return () => window.cancelAnimationFrame(frame)
   }, [summary.id])
-
-  async function handleExport(): Promise<void> {
-    setExporting(true)
-    setFileError(undefined)
-    setFileMessage(undefined)
-
-    try {
-      const result = await exportBundleJson(bundle)
-      if (result.canceled || !result.fileName) return
-      const message = t('detail.exportSuccess', { fileName: result.fileName })
-      setFileMessage(message)
-      announcePolite(t('detail.exportSuccessAnnouncement', { fileName: result.fileName }))
-    } catch (error) {
-      setFileError(getBundleFileErrorMessage(error, tc))
-    } finally {
-      setExporting(false)
-    }
-  }
 
   return (
     <section
@@ -189,17 +167,11 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
                   {t('detail.toggleJson')}
                 </Button>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 rounded-xl px-3"
-                disabled={exporting}
-                onClick={() => void handleExport()}
-              >
-                <Download className="h-3.5 w-3.5" />
-                {t('detail.exportButton')}
-              </Button>
+              <ExportDropdown
+                bundle={bundle}
+                onSuccess={(message) => { setFileError(undefined); setFileMessage(message) }}
+                onError={(message) => { setFileMessage(undefined); setFileError(message) }}
+              />
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">

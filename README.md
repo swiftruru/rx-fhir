@@ -3,7 +3,7 @@
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.16-d4779a?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.17-d4779a?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/github/license/swiftruru/rx-fhir?style=flat-square&color=d4779a" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-8e8e93?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
@@ -165,7 +165,12 @@ Search and inspect FHIR Bundles on the configured server:
 - Empty-result states now explain likely causes and suggest next actions based on the actual search mode
 - Prescription detail view now uses a fixed-width detail pane with a clearer `Structured / JSON` toggle in the header
 - Structured detail view and raw JSON viewer — the JSON panel stays within the detail pane width and scrolls internally; switching results auto-expands the viewer
-- Bundle detail JSON can also be exported from Consumer
+- Bundle detail now includes an **Export dropdown** with three formats: FHIR JSON, Postman Collection v2.1, and HTML report
+- **Postman Collection export** probes the FHIR server for each resource to determine whether PUT or POST is correct (using HAPI-2840 duplicate detection and identifier-based search), then generates a ready-to-run collection with four query requests covering basic, date, and complex search modes, each with a client-side filter test script that mirrors the app's own workaround logic
+- **HTML report export** generates a self-contained, printable prescription summary with embedded CSS
+- **Date search** now correctly filters by `Composition.date` (prescription date) instead of `Bundle.timestamp` (submission time), using the same fetch-then-filter workaround as organization and author complex searches
+- Date query example now pre-fills with the actual `Composition.date` from the most recently submitted bundle, falling back to the most recently used date search, so the example always matches a real record on the server
+- Feature Showcase now clears Activity Center notification history on start and restores it on exit, keeping showcase runs visually clean
 - Supports Creator-to-Consumer handoff with automatic query prefill, auto-search, and newly created bundle focus
 
 ### Settings and App Shell
@@ -234,7 +239,7 @@ Public HAPI FHIR servers do not fully support chained search on `Bundle`. The ap
 |------|----------|-------------------|
 | Basic | identifier | `GET /Bundle?identifier={value}` (patient identifier mapped to `Bundle.identifier`) |
 | Basic | name | `GET /Bundle?composition.subject.name={value}` |
-| Date | identifier + date | `GET /Bundle?identifier={id}&timestamp={date}` |
+| Date | identifier + date | fetch bundles by identifier → client-side filter on `Composition.date` prefix (`Bundle.timestamp` ≠ `Composition.date`) |
 | Complex | identifier + author | fetch bundles by identifier → client-side filter on `Composition.author` / `Practitioner.name` |
 | Complex | identifier + organization | resolve organization by identifier → fetch bundles by identifier → client-side filter on `Composition.custodian` |
 

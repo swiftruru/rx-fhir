@@ -15,6 +15,7 @@ export interface SubmissionRecord {
   conditionDisplay?: string
   submittedAt: string
   serverUrl: string
+  compositionDate?: string
 }
 
 interface HistoryState {

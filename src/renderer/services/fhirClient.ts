@@ -176,6 +176,29 @@ async function fetchResourceById<T extends fhir4.Resource>(
   return response.json() as Promise<T>
 }
 
+/**
+ * Lightweight existence check — does NOT log to the FHIR inspector.
+ * Returns true if the resource was found (HTTP 200), false for 404 or network errors.
+ * On ambiguous errors (5xx, etc.) defaults to true (prefer PUT over accidental duplicate POST).
+ */
+export async function checkResourceExists(
+  resourceType: string,
+  id: string,
+  serverUrl: string
+): Promise<boolean> {
+  const base = trimTrailingSlash(serverUrl)
+  try {
+    const response = await fetch(`${base}/${resourceType}/${id}`, {
+      method: 'GET',
+      headers: { Accept: 'application/fhir+json' }
+    })
+    if (response.status === 404) return false
+    return response.ok
+  } catch {
+    return true // network error → be conservative, prefer PUT
+  }
+}
+
 function extractDuplicateExistingResourceId(resourceType: string, error: unknown): string | undefined {
   const errorMessage = getErrorMessage(error)
   const idPattern = new RegExp(`${resourceType}/([A-Za-z0-9._-]+)`, 'i')
@@ -522,6 +545,58 @@ export async function searchBundles(
       label: formatQueryStepLabel(2, 'search.queryStepTexts.clientFilter'),
       labelKey: 'search.queryStepTexts.clientFilter',
       url: `Practitioner.name ~= "${params.authorName}"`,
+      note: tConsumer('search.queryStepTexts.filteredCounts', {
+        fetched: allBundles.entry?.length ?? 0,
+        matched: filtered.length
+      }),
+      noteKey: 'search.queryStepTexts.filteredCounts',
+      noteOptions: {
+        fetched: allBundles.entry?.length ?? 0,
+        matched: filtered.length
+      },
+      fetchedCount: allBundles.entry?.length ?? 0,
+      matchedCount: filtered.length
+    })
+    return { ...allBundles, entry: filtered, total: filtered.length }
+  }
+
+  // Date search: Bundle.timestamp ≠ Composition.date.
+  // HAPI's ?timestamp= matches Bundle.timestamp (submission time), not Composition.date (prescription date).
+  // Workaround: fetch all bundles by identifier, then client-side filter by Composition.date prefix.
+  if (params.mode === 'date' && params.identifier && params.date) {
+    const qs = new URLSearchParams()
+    qs.set('identifier', params.identifier)
+    const searchUrl = buildBundleSearchUrl(qs)
+    onStep?.({
+      step: 1,
+      label: formatQueryStepLabel(1, 'search.queryStepTexts.searchBundle'),
+      labelKey: 'search.queryStepTexts.searchBundle',
+      url: searchUrl,
+      note: tConsumer('search.queryStepTexts.dateFallback'),
+      noteKey: 'search.queryStepTexts.dateFallback'
+    })
+    const response = await performLoggedRequest(searchUrl, {
+      method: 'GET',
+      resourceType: 'Bundle',
+      reasonCode: 'search',
+      headers: FHIR_HEADERS
+    })
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Search failed (${response.status}): ${errorText}`)
+    }
+    const allBundles = await response.json() as fhir4.Bundle
+    const datePrefix = params.date.slice(0, 10)
+    const filtered = (allBundles.entry ?? []).filter((entry) => {
+      const inner = entry.resource as fhir4.Bundle | undefined
+      const composition = getDocumentComposition(inner ?? ({} as fhir4.Bundle))
+      return composition?.date?.startsWith(datePrefix) === true
+    })
+    onStep?.({
+      step: 2,
+      label: formatQueryStepLabel(2, 'search.queryStepTexts.clientFilter'),
+      labelKey: 'search.queryStepTexts.clientFilter',
+      url: `Composition.date starts with "${datePrefix}"`,
       note: tConsumer('search.queryStepTexts.filteredCounts', {
         fetched: allBundles.entry?.length ?? 0,
         matched: filtered.length

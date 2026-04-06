@@ -175,6 +175,7 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
         conditionDisplay: cond?.code?.coding?.[0]?.display,
         submittedAt: new Date().toISOString(),
         serverUrl,
+        compositionDate: data.date?.slice(0, 10),
       })
     } catch (e) {
       const msg = e instanceof Error ? e.message : t('errors.unknown', { ns: 'common' })

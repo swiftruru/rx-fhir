@@ -22,7 +22,9 @@
       "examplesLabel": "查詢範例",
       "examplesTitle": "套用查詢範例",
       "examplesDescription": "依目前選擇的基本 / 日期 / 複合查詢頁籤，帶入一組示範條件，方便上課展示與功能驗證。",
-      "examplesButton": "套用查詢範例"
+      "examplesButton": "套用查詢範例",
+      "exampleApplied": "已套用查詢範例至左側搜尋框",
+      "exampleAppliedWith": "已套用查詢範例：{{label}}"
     },
     "dropzone": {
       "title": "放開即可匯入 Bundle JSON",
@@ -87,6 +89,7 @@
       "clientFilter": "Client 端過濾",
       "custodianFallback": "(custodian chain 不支援，改用 identifier 撈回後過濾)",
       "authorFallback": "(author chain 不支援，改用 identifier 撈回後過濾)",
+      "dateFallback": "(Bundle.timestamp ≠ Composition.date，改用 identifier 撈回後以 Composition.date 過濾)",
       "filteredCounts": "取得 {{fetched}} 筆 → 符合 {{matched}} 筆",
       "organizationNotFound": "找不到符合機構代碼的機構"
     },
@@ -217,6 +220,13 @@
     "exportButton": "匯出 JSON",
     "exportSuccess": "Bundle JSON 已匯出：{{fileName}}",
     "exportSuccessAnnouncement": "Bundle JSON 已匯出為 {{fileName}}。",
+    "exportDropdownLabel": "匯出",
+    "exportJson": "匯出 FHIR JSON",
+    "exportPostman": "匯出 Postman Collection",
+    "exportHtml": "匯出 HTML 報告",
+    "exportPostmanChecking": "正在檢查 Server 狀態",
+    "exportPostmanSuccess": "Postman Collection 已匯出：{{fileName}}",
+    "exportHtmlSuccess": "HTML 報告已匯出：{{fileName}}",
     "importedBadge": "本機匯入",
     "sections": {
       "prescription": {

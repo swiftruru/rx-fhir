@@ -14,6 +14,8 @@ import { getBundleFileErrorMessage, importBundleJson } from '../../services/bund
 import { searchBundles, buildSearchUrl, type QueryStep } from '../../services/fhirClient'
 import { extractSearchResults } from '../../services/searchService'
 import { useAppStore } from '../../store/appStore'
+import { useHistoryStore } from '../../store/historyStore'
+import { useSearchHistoryStore } from '../../store/searchHistoryStore'
 import { useAccessibilityStore } from '../../store/accessibilityStore'
 import { useToastStore } from '../../store/toastStore'
 import type { BundleSummary, SearchParams } from '../../types/fhir.d'
@@ -34,7 +36,7 @@ interface Props {
 }
 
 export interface SearchFormHandle {
-  fillMock: () => void
+  fillMock: () => string | undefined
   importBundle: () => Promise<void>
   submit: () => Promise<void>
   focusPrimaryInput: () => void
@@ -123,8 +125,27 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   const dateMockRef    = useRef(0)
   const complexMockRef = useRef(0)
   const consumedAutoSearchKeyRef = useRef<string>()
+  const historyRecords = useHistoryStore((s) => s.records)
+  const searchHistoryRecords = useSearchHistoryStore((s) => s.records)
   const consumerBasicMocks = useMemo(() => getConsumerBasicMocks(locale), [locale])
-  const consumerDateMocks = useMemo(() => getConsumerDateMocks(locale), [locale])
+  const consumerDateMocks = useMemo(() => {
+    const base = getConsumerDateMocks(locale)
+    return base.map((mock) => {
+      // 1st priority: compositionDate stored on submission record (populated for new submissions)
+      const submissionMatch = historyRecords.find(
+        (r) => r.type === 'bundle' && r.patientIdentifier === mock.identifier && r.compositionDate
+      )
+      if (submissionMatch?.compositionDate) return { ...mock, date: submissionMatch.compositionDate }
+
+      // 2nd priority: most recently used date search for the same identifier
+      const dateSearchMatch = searchHistoryRecords
+        .filter((r) => r.params.mode === 'date' && r.params.identifier === mock.identifier && r.params.date)
+        .sort((a, b) => b.lastUsedAt.localeCompare(a.lastUsedAt))[0]
+      if (dateSearchMatch?.params.date) return { ...mock, date: dateSearchMatch.params.date }
+
+      return mock
+    })
+  }, [locale, historyRecords, searchHistoryRecords])
   const consumerComplexMocks = useMemo(() => getConsumerComplexMocks(locale), [locale])
   const localizedQuerySteps = useMemo(
     () =>
@@ -142,27 +163,31 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
     complexMockRef.current = 0
   }, [locale])
 
-  function fillMock(): void {
+  function fillMock(): string | undefined {
     if (activeTab === 'basic') {
-      if (consumerBasicMocks.length === 0) return
+      if (consumerBasicMocks.length === 0) return undefined
       const d = consumerBasicMocks[basicMockRef.current % consumerBasicMocks.length]
       basicMockRef.current += 1
       basicForm.setValue('searchBy', d.searchBy)
       basicForm.setValue('value', d.value)
+      return `${d.searchBy === 'identifier' ? t('search.basic.searchByOptions.identifier') : t('search.basic.searchByOptions.name')}: ${d.value}`
     } else if (activeTab === 'date') {
-      if (consumerDateMocks.length === 0) return
+      if (consumerDateMocks.length === 0) return undefined
       const d = consumerDateMocks[dateMockRef.current % consumerDateMocks.length]
       dateMockRef.current += 1
       dateForm.setValue('identifier', d.identifier)
       dateForm.setValue('date', d.date)
+      return `${d.identifier} / ${d.date}`
     } else {
-      if (consumerComplexMocks.length === 0) return
+      if (consumerComplexMocks.length === 0) return undefined
       const d = consumerComplexMocks[complexMockRef.current % consumerComplexMocks.length]
       complexMockRef.current += 1
       complexForm.setValue('identifier', d.identifier)
       complexForm.setValue('complexBy', d.complexBy)
       complexForm.setValue('orgId', d.orgId)
       complexForm.setValue('authorName', d.authorName)
+      const extra = d.complexBy === 'organization' ? d.orgId : d.authorName
+      return `${d.identifier} / ${extra}`
     }
   }
 

@@ -43,6 +43,12 @@ const bundleJsonBridge = {
       fileName?: string
       content?: string
     }>,
+  saveFile: (payload: { content: string; defaultFileName: string; filters: Array<{ name: string; extensions: string[] }> }) =>
+    ipcRenderer.invoke('file:save', payload) as Promise<{
+      canceled: boolean
+      filePath?: string
+      fileName?: string
+    }>,
   openExternalUrl: (url: string) =>
     ipcRenderer.invoke('external-url:open', url) as Promise<{ opened: boolean }>,
   setAppZoomFactor: (zoomFactor: number) =>

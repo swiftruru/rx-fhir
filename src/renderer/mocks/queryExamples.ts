@@ -44,12 +44,16 @@ export function getConsumerBasicMocks(locale: MockLocale): ConsumerBasicMockInpu
 }
 
 export function getConsumerDateMocks(locale: MockLocale): ConsumerDateMockInput[] {
+  // Date is intentionally left empty: the mock fills only the identifier so the user
+  // can type the actual prescription date from their own submitted bundle.
+  // Using a dynamic relativeDate() here would be wrong because Composition.date on the
+  // FHIR Server is fixed at submission time and won't match today's relative calculation.
   return uniqueBy(
     sortPrimaryDemoFirst(getResolvedScenarioPacks(locale)).map((scenario) => ({
       identifier: scenario.creator.patient.studentId,
-      date: getScenarioEncounterDate(scenario)
+      date: ''
     })),
-    (item) => `${item.identifier}:${item.date}`
+    (item) => item.identifier
   )
 }
 

@@ -7,6 +7,7 @@ import { useFeatureShowcaseStore } from '../store/featureShowcaseStore'
 import { useHistoryStore } from '../store/historyStore'
 import { useSearchHistoryStore } from '../store/searchHistoryStore'
 import { useFhirInspectorStore } from '../store/fhirInspectorStore'
+import { useToastStore } from '../store/toastStore'
 import { FEATURE_SHOWCASE_STEPS } from '../showcase/featureShowcaseScript'
 import { buildFeatureShowcaseSnapshot } from '../showcase/showcaseSnapshot'
 
@@ -31,6 +32,7 @@ interface ShowcaseBackup {
     latest: ReturnType<typeof useFhirInspectorStore.getState>['latest']
     history: ReturnType<typeof useFhirInspectorStore.getState>['history']
   }
+  toastHistory: ReturnType<typeof useToastStore.getState>['history']
 }
 
 const AUTOPLAY_DURATION_MULTIPLIER = 1.6
@@ -82,9 +84,12 @@ export default function FeatureShowcaseRunner(): null {
       fhirRequests: {
         latest: useFhirInspectorStore.getState().latest,
         history: useFhirInspectorStore.getState().history
-      }
+      },
+      toastHistory: useToastStore.getState().history
     }
 
+    // Clear toast history so showcase runs in a clean notification state
+    useToastStore.getState().clearHistory()
     try {
       const snapshot = buildFeatureShowcaseSnapshot(locale, serverUrl)
       useFeatureShowcaseStore.getState().setSnapshot(snapshot)
@@ -138,6 +143,7 @@ export default function FeatureShowcaseRunner(): null {
       latest: backup.fhirRequests.latest,
       history: backup.fhirRequests.history
     })
+    useToastStore.setState({ history: backup.toastHistory })
     useFeatureShowcaseStore.getState().setSnapshot(undefined)
     backupRef.current = undefined
   }, [status])

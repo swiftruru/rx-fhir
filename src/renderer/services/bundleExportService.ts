@@ -670,14 +670,31 @@ function getLabels(locale: string): Record<string, string> {
   return LABELS['en']
 }
 
-function field(label: string, value?: string | null): string {
+function field(label: string, value?: string | null, copyable = false): string {
   if (!value) return ''
-  return `<div class="field"><span class="label">${label}</span><span class="value">${escHtml(value)}</span></div>`
+  const esc = escHtml(value)
+  const inner = copyable
+    ? `<span class="value copyable" data-copy="${esc}" title="點擊複製">${esc}<span class="copy-icon">⎘</span></span>`
+    : `<span class="value">${esc}</span>`
+  return `<div class="field"><span class="label">${label}</span>${inner}</div>`
 }
 
-function section(title: string, content: string): string {
+function buildJsonDetail(resourceType: string, resource: object): string {
+  const json = escHtml(JSON.stringify(resource, null, 2))
+  return `<details class="json-detail">
+    <summary>JSON <span class="resource-type">${escHtml(resourceType)}</span></summary>
+    <div class="json-block">
+      <button class="copy-btn">複製</button>
+      <pre><code>${json}</code></pre>
+    </div>
+  </details>`
+}
+
+function section(title: string, content: string, icon?: string, rawResource?: fhir4.Resource): string {
   if (!content.trim()) return ''
-  return `<section><h2>${escHtml(title)}</h2>${content}</section>`
+  const iconHtml = icon ? `<span class="section-icon">${icon}</span>` : ''
+  const jsonDetail = rawResource ? buildJsonDetail(rawResource.resourceType, rawResource) : ''
+  return `<section><h2>${iconHtml}${escHtml(title)}</h2>${content}${jsonDetail}</section>`
 }
 
 function escHtml(text: string): string {
@@ -713,66 +730,89 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     ? `${observation.valueQuantity.value} ${observation.valueQuantity.unit ?? ''}`
     : undefined
 
+  const patientName = patient?.name?.[0]?.text ?? ''
+  const prescriptionDate = composition?.date?.slice(0, 10) ?? ''
+  const printLabel = locale.startsWith('zh') ? '列印' : 'Print'
+  const copyLabel = locale.startsWith('zh') ? '複製' : 'Copy'
+  const bundleJsonLabel = locale.startsWith('zh') ? '原始 FHIR Bundle JSON' : 'Raw FHIR Bundle JSON'
+  const copyFullLabel = locale.startsWith('zh') ? '複製完整 JSON' : 'Copy Full JSON'
+
+  // Medication section — card-in-card layout
+  const medicationSection = medication ? (() => {
+    const medName = medication.code?.text ?? ''
+    const medCode = medication.code?.coding?.[0]?.code ?? ''
+    const medForm = medication.form?.text ?? ''
+    const doseText = medicationRequest?.dosageInstruction?.[0]?.text ?? ''
+    const routeText = medicationRequest?.dosageInstruction?.[0]?.route?.coding?.[0]?.display ?? ''
+    const dosageLabel = locale.startsWith('zh') ? '用藥指示' : 'Dosage Instructions'
+    const content = `<div class="med-card">
+      <div class="med-header">
+        <span class="med-name">${escHtml(medName)}</span>
+        ${medCode ? `<span class="badge">${escHtml(medCode)}</span>` : ''}
+      </div>
+      ${medForm ? `${field(L.form, medForm)}` : ''}
+      ${doseText || routeText ? `<hr class="med-divider" /><p class="dosage-label">${escHtml(dosageLabel)}</p>` : ''}
+      ${doseText ? `<p class="dosage-text">${escHtml(doseText)}</p>` : ''}
+      ${routeText ? field(L.route, routeText) : ''}
+    </div>`
+    return section(L.medicationAndRequest, content, '💊', medication)
+  })() : ''
+
   const sections = [
     section(L.prescription, [
       field(L.docTitle, composition?.title),
       field(L.date, composition?.date),
       field(L.status, composition?.status),
-      field(L.bundleId, bundle.id),
-    ].join('')),
+      field(L.bundleId, bundle.id, true),
+    ].join(''), '📋', composition),
 
     section(L.patient, [
       field(L.name, patient?.name?.[0]?.text),
-      field(L.identifier, patient?.identifier?.[0]?.value),
+      field(L.identifier, patient?.identifier?.[0]?.value, true),
       field(L.gender, patient?.gender),
       field(L.birthDate, patient?.birthDate),
-    ].join('')),
+    ].join(''), '👤', patient),
 
     section(L.practitioner, [
       field(L.name, practitioner?.name?.[0]?.text),
-      field(L.licenseNumber, practitioner?.identifier?.[0]?.value),
+      field(L.licenseNumber, practitioner?.identifier?.[0]?.value, true),
       field(L.qualification, practitioner?.qualification?.[0]?.code?.text),
-    ].join('')),
+    ].join(''), '🩺', practitioner),
 
     section(L.organization, [
       field(L.orgName, organization?.name),
-      field(L.orgIdentifier, organization?.identifier?.[0]?.value),
+      field(L.orgIdentifier, organization?.identifier?.[0]?.value, true),
       field(L.orgType, organization?.type?.[0]?.coding?.[0]?.display),
-    ].join('')),
+    ].join(''), '🏥', organization),
 
     section(L.encounter, [
       field(L.encounterType, encounter?.class?.display),
       field(L.encounterStart, encounter?.period?.start),
       field(L.encounterEnd, encounter?.period?.end),
       field(L.encounterStatus, encounter?.status),
-    ].join('')),
+    ].join(''), '📅', encounter),
 
     condition ? section(L.condition, [
       conditionBadges ? `<div class="badges">${conditionBadges}</div>` : '',
       field(L.clinicalStatus, condition?.clinicalStatus?.coding?.[0]?.code),
-    ].join('')) : '',
+    ].join(''), '🔍', condition) : '',
 
     section(L.observation, [
       field(L.observationItem, observation?.code?.text),
       field(L.observationResult, observationValue),
       field(L.observationStatus, observation?.status),
-    ].join('')),
+    ].join(''), '🔬', observation),
 
     section(L.coverage, [
       field(L.coverageType, coverage?.type?.text),
       field(L.insuranceId, coverage?.subscriberId),
       field(L.effectiveDate, coverage?.period?.start),
-    ].join('')),
+    ].join(''), '🏷️', coverage),
 
-    medication ? section(L.medicationAndRequest, [
-      field(L.medicationName, medication?.code?.text),
-      field(L.medicationCode, medication?.code?.coding?.[0]?.code),
-      field(L.form, medication?.form?.text),
-      field(L.dose, medicationRequest?.dosageInstruction?.[0]?.text),
-      field(L.route, medicationRequest?.dosageInstruction?.[0]?.route?.coding?.[0]?.display),
-    ].join('')) : '',
+    medicationSection,
   ].join('\n')
 
+  const bundleJson = escHtml(JSON.stringify(bundle, null, 2))
   const generatedAt = new Date().toLocaleString(locale.startsWith('zh') ? 'zh-TW' : 'en-US')
 
   return `<!DOCTYPE html>
@@ -795,11 +835,52 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); padding: 2rem 1rem; }
-  .container { max-width: 760px; margin: 0 auto; }
-  header { margin-bottom: 2rem; }
-  header h1 { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  body { background: var(--bg); color: var(--text); padding: 0 0 2rem; }
+  .container { max-width: 760px; margin: 0 auto; padding: 0 1rem; }
+
+  /* Sticky header bar */
+  .sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--accent);
+    color: white;
+    padding: 0.55rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(201,114,122,0.25);
+  }
+  .sticky-header .app-name { font-weight: 700; font-size: 0.9rem; margin-right: auto; opacity: 0.95; }
+  .sticky-header .patient-chip {
+    font-size: 0.8rem;
+    background: rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 0.15rem 0.65rem;
+    white-space: nowrap;
+  }
+  .sticky-header .date-chip {
+    font-size: 0.8rem;
+    opacity: 0.85;
+    white-space: nowrap;
+  }
+  .sticky-header .print-btn {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.35);
+    color: white;
+    padding: 0.25rem 0.7rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+  .sticky-header .print-btn:hover { background: rgba(255,255,255,0.32); }
+
+  header { padding-top: 1.25rem; margin-bottom: 1.5rem; }
+  header h1 { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
   header .meta { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+
   section {
     background: var(--card);
     border: 1px solid var(--border);
@@ -814,7 +895,11 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     letter-spacing: 0.06em;
     color: var(--muted);
     margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
   }
+  .section-icon { font-size: 0.95rem; line-height: 1; }
   .field {
     display: grid;
     grid-template-columns: 6rem 1fr;
@@ -824,6 +909,24 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   }
   .label { color: var(--muted); }
   .value { font-weight: 500; word-break: break-word; }
+
+  /* Copyable field values */
+  .copyable {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border-radius: 4px;
+    padding: 0 0.2rem;
+    transition: background 0.15s;
+  }
+  .copyable:hover { background: var(--badge-bg); color: var(--accent); }
+  .copy-icon { opacity: 0; font-size: 0.78rem; transition: opacity 0.15s; }
+  .copyable:hover .copy-icon { opacity: 0.7; }
+  .copyable.copied { color: #2d7a3a; }
+  .copyable.copied .copy-icon { opacity: 0; }
+  .copyable.copied::after { content: ' ✓'; font-size: 0.78rem; }
+
   .badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
   .badge {
     background: var(--badge-bg);
@@ -833,27 +936,160 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     font-size: 0.75rem;
     font-weight: 500;
   }
+
+  /* Medication card */
+  .med-card {
+    background: var(--badge-bg);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.25rem;
+  }
+  .med-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
+  .med-name { font-size: 1.05rem; font-weight: 700; color: var(--text); }
+  .med-divider { border: none; border-top: 1px solid var(--border); margin: 0.6rem 0 0.5rem; }
+  .dosage-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+  .dosage-text { font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; }
+
+  /* JSON detail / collapse */
+  .json-detail { margin-top: 0.85rem; border-top: 1px solid var(--border); padding-top: 0.6rem; }
+  .json-detail summary {
+    cursor: pointer;
+    font-size: 0.73rem;
+    color: var(--muted);
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    list-style: none;
+  }
+  .json-detail summary::-webkit-details-marker { display: none; }
+  .json-detail summary::before { content: '▶'; font-size: 0.6rem; transition: transform 0.15s; }
+  .json-detail[open] summary::before { transform: rotate(90deg); }
+  .json-detail[open] summary { color: var(--accent); }
+  .resource-type {
+    background: var(--badge-bg);
+    color: var(--badge-text);
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.68rem;
+    font-weight: 500;
+  }
+  .json-block {
+    position: relative;
+    margin-top: 0.5rem;
+    background: #1e1214;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .json-block pre {
+    padding: 1rem;
+    overflow-x: auto;
+    font-size: 0.72rem;
+    font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+    color: #f5e0e3;
+    line-height: 1.55;
+    white-space: pre;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #f5e0e3;
+    padding: 0.22rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .copy-btn:hover { background: rgba(255,255,255,0.2); }
+
+  /* Full bundle JSON section */
+  .bundle-json-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .bundle-json-section > .json-detail { border-top: none; padding-top: 0; margin-top: 0; }
+  .bundle-json-section > .json-detail > summary { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+  .bundle-json-section > .json-detail[open] > summary { color: var(--accent); }
+
   footer {
-    margin-top: 2rem;
+    margin-top: 1.5rem;
     font-size: 0.75rem;
     color: var(--muted);
     text-align: center;
+    padding-bottom: 1rem;
   }
+
   @media print {
+    .sticky-header { display: none; }
     body { padding: 0; background: white; }
     section { break-inside: avoid; }
+    .json-detail { display: none; }
+    .bundle-json-section { display: none; }
   }
 </style>
 </head>
 <body>
+<div class="sticky-header">
+  <span class="app-name">℞ RxFHIR</span>
+  ${patientName ? `<span class="patient-chip">${escHtml(patientName)}</span>` : ''}
+  ${prescriptionDate ? `<span class="date-chip">${escHtml(prescriptionDate)}</span>` : ''}
+  <button class="print-btn" onclick="window.print()">🖨 ${escHtml(printLabel)}</button>
+</div>
 <div class="container">
   <header>
     <h1>${escHtml(L.title)}</h1>
     <p class="meta">${escHtml(L.generatedAt)}: ${generatedAt}</p>
   </header>
   ${sections}
+  <div class="bundle-json-section">
+    <details class="json-detail">
+      <summary>📦 ${escHtml(bundleJsonLabel)}</summary>
+      <div class="json-block">
+        <button class="copy-btn">${escHtml(copyFullLabel)}</button>
+        <pre><code>${bundleJson}</code></pre>
+      </div>
+    </details>
+  </div>
   <footer>${escHtml(L.footer)}</footer>
 </div>
+<script>
+(function () {
+  // Copy buttons inside JSON blocks — read textContent of <code> to avoid HTML entities
+  document.querySelectorAll('.copy-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var block = btn.parentElement
+      var code = block ? block.querySelector('code') : null
+      var text = code ? code.textContent ?? '' : ''
+      if (navigator.clipboard && text) {
+        navigator.clipboard.writeText(text).then(function () {
+          var orig = btn.textContent
+          btn.textContent = '✓'
+          setTimeout(function () { btn.textContent = orig }, 1500)
+        })
+      }
+    })
+  })
+  // Copyable field values
+  document.querySelectorAll('.copyable').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var text = el.dataset.copy ?? ''
+      if (navigator.clipboard && text) {
+        navigator.clipboard.writeText(text).then(function () {
+          el.classList.add('copied')
+          setTimeout(function () { el.classList.remove('copied') }, 1500)
+        })
+      }
+    })
+  })
+}())
+</script>
 </body>
 </html>`
 }

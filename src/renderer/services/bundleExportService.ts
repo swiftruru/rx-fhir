@@ -870,7 +870,6 @@ export function buildCreatorPostmanCollection(
   fhirBaseUrl: string
 ): PostmanCollection {
   const base = fhirBaseUrl.replace(/\/+$/, '')
-  const urlHost = base.replace(/^https?:\/\//, '')
   const sessionDate = new Date().toLocaleDateString('zh-TW')
 
   const iconMap: Record<string, string> = {

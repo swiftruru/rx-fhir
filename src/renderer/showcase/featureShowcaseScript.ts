@@ -164,6 +164,22 @@ export const FEATURE_SHOWCASE_STEPS: FeatureShowcaseStepDefinition[] = [
     }
   },
   {
+    id: 'consumerExport',
+    route: '/consumer',
+    targetId: 'consumer.exportButton',
+    durationMs: 4400,
+    spotlightPadding: 10,
+    highlightStyle: 'glow',
+    panelPlacement: 'bottom-left',
+    ui: {
+      consumer: {
+        middleTab: 'results',
+        showDetail: true,
+        detailView: 'structured'
+      }
+    }
+  },
+  {
     id: 'settingsServer',
     route: '/settings',
     targetId: 'settings.serverCard',

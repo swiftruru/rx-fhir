@@ -23,6 +23,7 @@ export type FeatureShowcaseTargetId =
   | 'consumer.quickStartPane'
   | 'consumer.resultsPane'
   | 'consumer.detailPane'
+  | 'consumer.exportButton'
   | 'settings.serverCard'
   | 'settings.statusCard'
 
@@ -38,6 +39,7 @@ export type FeatureShowcaseStepId =
   | 'consumerResults'
   | 'consumerStructuredDetail'
   | 'consumerRawJson'
+  | 'consumerExport'
   | 'settingsServer'
   | 'settingsStatus'
   | 'appControls'

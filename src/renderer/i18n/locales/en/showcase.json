@@ -109,6 +109,13 @@
       "problem": "A single display mode cannot satisfy both non-technical and technical audiences.",
       "role": "Raw JSON provides a direct view into the source bundle structure."
     },
+    "consumerExport": {
+      "title": "Export Prescription Data",
+      "summary": "The selected Bundle can be exported in three formats to suit different downstream needs.",
+      "feature": "Export supports FHIR Bundle JSON for re-import, a Postman Collection v2.1 with query scripts for API testing, and a self-contained HTML report for printing or sharing — each format serves a distinct use case.",
+      "problem": "Prescription data needs to be portable — usable outside the app for developer testing, tool integration, and clinical or academic reporting.",
+      "role": "The export feature turns Consumer from a read-only viewer into a data output interface that bridges demo environments, API workflows, and reporting needs."
+    },
     "settingsServer": {
       "title": "FHIR Server Settings",
       "summary": "Settings allow the app to switch between target FHIR environments.",

@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '../../components/ui/alert'
 import FhirErrorAlert from '../../components/FhirErrorAlert'
 import JsonViewer from '../../components/JsonViewer'
 import ExportDropdown from '../../components/ExportDropdown'
+import FeatureShowcaseTarget from '../../components/FeatureShowcaseTarget'
 import type { BundleSummary } from '../../types/fhir.d'
 import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
 import { useShortcutActionStore } from '../../store/shortcutActionStore'
@@ -167,11 +168,13 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
                   {t('detail.toggleJson')}
                 </Button>
               </div>
-              <ExportDropdown
-                bundle={bundle}
-                onSuccess={(message) => { setFileError(undefined); setFileMessage(message) }}
-                onError={(message) => { setFileMessage(undefined); setFileError(message) }}
-              />
+              <FeatureShowcaseTarget id="consumer.exportButton">
+                <ExportDropdown
+                  bundle={bundle}
+                  onSuccess={(message) => { setFileError(undefined); setFileMessage(message) }}
+                  onError={(message) => { setFileMessage(undefined); setFileError(message) }}
+                />
+              </FeatureShowcaseTarget>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">

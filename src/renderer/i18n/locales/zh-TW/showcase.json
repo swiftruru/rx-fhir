@@ -109,6 +109,13 @@
       "problem": "示範時常需要兼顧非技術觀眾與技術觀眾，單一呈現方式很難滿足兩邊。",
       "role": "Raw JSON 是驗證資料內容與對照 FHIR 文件結構的重要視角。"
     },
+    "consumerExport": {
+      "title": "匯出處方資料",
+      "summary": "可將目前選取的 Bundle 匯出為三種格式，滿足不同的下游使用需求。",
+      "feature": "匯出功能支援 FHIR Bundle JSON（可直接再匯入）、Postman Collection v2.1（含查詢腳本，可測試 FHIR API）與自包含 HTML 報表（可列印或分享），三種格式各有對應用途。",
+      "problem": "處方資料不只需要在系統內查看，也常需要帶走整合其他工具、讓 API 開發者測試，或產出可閱讀的書面文件。",
+      "role": "匯出功能讓 Consumer 不只是查詢介面，也成為銜接開發測試環境、API 驗證與報表需求的資料輸出出口。"
+    },
     "settingsServer": {
       "title": "FHIR Server 設定",
       "summary": "Settings 可調整目標 FHIR Server，讓系統能切換不同環境。",

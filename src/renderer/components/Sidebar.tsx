@@ -42,8 +42,10 @@ export default function Sidebar(): React.JSX.Element {
         aria-label={tc('accessibility.sidebar')}
         className="flex h-full flex-col bg-sidebar text-sidebar-foreground"
       >
-        {/* macOS traffic-light drag zone — same bg as sidebar so it blends in */}
-        <div className="titlebar-drag-region" />
+        {/* macOS-only: space for traffic-light buttons. Hidden on Windows/Linux where the native title bar handles this. */}
+        {(/mac/i.test(navigator.platform) || /mac/i.test(navigator.userAgent)) && (
+          <div className="titlebar-drag-region" />
+        )}
 
       {/* Logo */}
       <div className={cn('border-b border-sidebar-border', compact ? 'px-3 py-4' : 'px-4 py-4')}>

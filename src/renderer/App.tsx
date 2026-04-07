@@ -273,8 +273,11 @@ function AppShellContent(): React.JSX.Element {
 
         {/* Main content column */}
         <div className="relative flex flex-col flex-1 overflow-hidden">
-          {/* macOS titlebar spacer — draggable, with controls pinned right */}
-          <div className="titlebar-spacer flex items-center justify-end pr-1">
+          {/* macOS-only drag zone; on Windows/Linux just a slim toolbar row */}
+          <div className={cn(
+            'flex items-center justify-end pr-1 border-b border-border/40',
+            (/mac/i.test(navigator.platform) || /mac/i.test(navigator.userAgent)) ? 'titlebar-spacer' : 'h-9'
+          )}>
             <FeatureShowcaseTarget id="app.utilityControls">
               <div className="flex items-center pr-1">
                 <div className="flex h-7 items-center gap-0.5 rounded-full border border-border/60 bg-background/90 px-1 shadow-sm backdrop-blur">

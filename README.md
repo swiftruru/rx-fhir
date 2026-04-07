@@ -3,7 +3,7 @@
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.17-d4779a?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.19-d4779a?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/github/license/swiftruru/rx-fhir?style=flat-square&color=d4779a" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-8e8e93?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
@@ -114,6 +114,7 @@ Current Creator capabilities:
 - The Creator info panel is now resizable like a desktop split view, with horizontal resizing on wide layouts and vertical resizing when the panel moves below the form on narrower windows
 - The FHIR request inspector now includes clickable URLs, request-flow notes, method explanations, and a compact `GET / POST / PUT` quick guide in the empty state
 - FHIR request and response bodies now default to `Raw`, and Live Demo can temporarily collapse the coaching card to spotlight the request flow after each server submission
+- **FHIR Request Inspector Postman export**: when the request history has entries, a one-click export button generates a Postman Collection v2.1 from the captured request history (POST/PUT resource creation, GET check and search requests), with `{{fhirBaseUrl}}` variable substitution and decoded query parameters — no server probing required
 - Final submission now includes a structured prescription summary review card before bundle assembly
 - Composition-first, then document bundle submission
 - The final Creator step can export the assembled FHIR Bundle as local JSON
@@ -166,8 +167,8 @@ Search and inspect FHIR Bundles on the configured server:
 - Prescription detail view now uses a fixed-width detail pane with a clearer `Structured / JSON` toggle in the header
 - Structured detail view and raw JSON viewer — the JSON panel stays within the detail pane width and scrolls internally; switching results auto-expands the viewer
 - Bundle detail now includes an **Export dropdown** with three formats: FHIR JSON, Postman Collection v2.1, and HTML report
-- **Postman Collection export** probes the FHIR server for each resource to determine whether PUT or POST is correct (using HAPI-2840 duplicate detection and identifier-based search), then generates a ready-to-run collection with four query requests covering basic, date, and complex search modes, each with a client-side filter test script that mirrors the app's own workaround logic
-- **HTML report export** generates a self-contained, printable prescription summary with embedded CSS
+- **Postman Collection export** probes the FHIR server for each resource to determine whether PUT or POST is correct (using HAPI-2840 duplicate detection and identifier-based search), then generates a ready-to-run collection with four query requests covering basic, date, and complex search modes, each with a client-side filter test script that mirrors the app's own workaround logic; a cancel button appears during server probing so long-running exports can be aborted without showing an error
+- **HTML report export** generates a self-contained, printable prescription summary with embedded CSS, including: a clinical timeline showing key clinical events in chronological order; a medication summary table before the detailed cards; Observation lab value badges (Normal / High / Low) derived from reference ranges; a color-coded Composition status banner (final / draft / amended / entered-in-error); a global full-text search bar with ↑↓ navigation and match count; and a print layout with A4 margins and fixed page header/footer
 - **Date search** now correctly filters by `Composition.date` (prescription date) instead of `Bundle.timestamp` (submission time), using the same fetch-then-filter workaround as organization and author complex searches
 - Date query example now pre-fills with the actual `Composition.date` from the most recently submitted bundle, falling back to the most recently used date search, so the example always matches a real record on the server
 - Feature Showcase now clears Activity Center notification history on start and restores it on exit, keeping showcase runs visually clean

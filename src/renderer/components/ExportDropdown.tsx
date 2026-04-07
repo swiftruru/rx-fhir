@@ -97,9 +97,7 @@ export default function ExportDropdown({ bundle, onSuccess, onError }: Props): R
   if (isPostmanProbing) {
     const checked = postmanProgress!.checked
     const total = postmanProgress!.total
-    const label = total === 0
-      ? t('detail.exportPostmanChecking')
-      : `${checked}/${total}`
+    const count = total > 0 ? `${checked}/${total}` : '…'
     return (
       <Button
         type="button"
@@ -111,7 +109,8 @@ export default function ExportDropdown({ bundle, onSuccess, onError }: Props): R
         title={tc('buttons.cancel')}
       >
         <Download className="h-3.5 w-3.5 shrink-0" />
-        <span className="shrink-0 tabular-nums text-xs text-muted-foreground">{label}</span>
+        <span className="shrink-0 text-xs">{t('detail.exportPostmanChecking')}</span>
+        <span className="shrink-0 tabular-nums text-xs text-muted-foreground">{count}</span>
         <X className="h-3 w-3 shrink-0 text-destructive/70" />
       </Button>
     )

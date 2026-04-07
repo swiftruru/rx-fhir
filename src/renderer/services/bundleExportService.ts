@@ -862,6 +862,12 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     entries.filter((e) => e.resource?.resourceType === type).map((e) => e.resource as T)
 
   const fdate = (v?: string | null) => formatFhirDate(v, locale) ?? v ?? undefined
+  // Date-only variant for contexts where time detail is unnecessary (e.g. timeline)
+  const fdateOnly = (v?: string | null): string | undefined => {
+    if (!v) return undefined
+    const datePart = v.split('T')[0]
+    return formatFhirDate(datePart, locale) ?? datePart
+  }
 
   const composition = find<fhir4.Composition>('Composition')
   const patient = find<fhir4.Patient>('Patient')
@@ -946,7 +952,7 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   const tlEvents: TimelineEvent[] = []
   const addTlEvent = (isoDate: string | undefined | null, icon: string, label: string, sub: string, anchor: string) => {
     if (!isoDate) return
-    tlEvents.push({ isoDate, displayDate: fdate(isoDate) ?? isoDate, icon, label, sub, anchor })
+    tlEvents.push({ isoDate, displayDate: fdateOnly(isoDate) ?? isoDate, icon, label, sub, anchor })
   }
   addTlEvent(encounter?.period?.start, '📅', isZh ? '就診' : 'Encounter', encounter?.class?.display ?? '', 'sec-encounter')
   addTlEvent(composition?.date, '📋', isZh ? '處方箋開立' : 'Prescription', composition?.title ?? '', 'sec-prescription')
@@ -1439,10 +1445,10 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   .tl-body { display: flex; flex-direction: column; }
   .tl-row { display: flex; align-items: flex-start; gap: 0; }
   .tl-left {
-    width: 5.5rem; flex-shrink: 0; text-align: right;
+    width: 7rem; flex-shrink: 0; text-align: right;
     padding-right: 0.75rem; padding-top: 0.05rem;
   }
-  .tl-date { font-size: 0.73rem; color: var(--muted); white-space: nowrap; }
+  .tl-date { font-size: 0.73rem; color: var(--muted); white-space: normal; word-break: keep-all; }
   .tl-mid {
     flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
     width: 1.6rem;

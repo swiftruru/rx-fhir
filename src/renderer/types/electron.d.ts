@@ -47,6 +47,7 @@ declare global {
   interface Window {
     rxfhir: RxFhirDesktopBridge
   }
+  const __APP_VERSION__: string
 }
 
 export {}

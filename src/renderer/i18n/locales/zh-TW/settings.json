@@ -188,8 +188,15 @@
     "tagline":     "℞ + FHIR = RxFHIR",
     "description": "基於 TW Core 電子處方箋 Profile 的桌面應用程式",
     "spec":        "依據衛福部 EMR-IG 電子處方箋 2.5 規範實作",
-    "version":     "Version 1.0.16 · Electron + React + FHIR R4",
+    "techStack":   "Electron · React · TypeScript · Vite",
+    "fhirSpec":    "FHIR R4 · TW Core EMR-IG 2.5",
     "advisorsNote": "以下依英文姓名字母排序，排名不分先後。",
+    "academicSection": "課程背景",
+    "techSection":     "技術規格",
+    "github":          "GitHub 專案",
+    "githubRepo":      "swiftruru/rx-fhir",
+    "license":         "MIT License · © 2025 潘昱如",
+    "versionCopied":   "已複製！",
     "fields": {
       "author":      "作者",
       "affiliation": "學校",
@@ -198,7 +205,7 @@
       "advisors":    "指導老師"
     },
     "values": {
-      "author":      "潘昱如",
+      "author":      "潘昱如（Yu-Ru Pan）",
       "affiliation": "國立臺北護理健康大學",
       "department":  "資訊管理系所",
       "course":      "醫療資訊系統基礎"

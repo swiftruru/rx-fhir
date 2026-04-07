@@ -242,7 +242,7 @@ async function createAboutWindow(): Promise<void> {
 <body>
   ${iconDataUrl ? `<img src="${iconDataUrl}" alt="RxFHIR" />` : ''}
   <h1>RxFHIR</h1>
-  <p class="version">版本 1.0.16</p>
+  <p class="version">版本 ${app.getVersion()}</p>
   <p class="desc">℞ + FHIR = RxFHIR<br>基於 TW Core 電子處方箋 Profile 的桌面應用程式</p>
 </body>
 </html>`)

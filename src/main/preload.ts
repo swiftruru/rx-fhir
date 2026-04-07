@@ -52,7 +52,16 @@ const bundleJsonBridge = {
   openExternalUrl: (url: string) =>
     ipcRenderer.invoke('external-url:open', url) as Promise<{ opened: boolean }>,
   setAppZoomFactor: (zoomFactor: number) =>
-    ipcRenderer.invoke('app-zoom:set', zoomFactor) as Promise<{ zoomFactor: number }>
+    ipcRenderer.invoke('app-zoom:set', zoomFactor) as Promise<{ zoomFactor: number }>,
+  checkForUpdates: () =>
+    ipcRenderer.invoke('app-update:check') as Promise<import('./updater/updateChecker').UpdateCheckResult>,
+  onUpdateResult: (callback: (result: import('./updater/updateChecker').UpdateCheckResult) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, result: import('./updater/updateChecker').UpdateCheckResult): void => {
+      callback(result)
+    }
+    ipcRenderer.on('app-update:result', handler)
+    return () => { ipcRenderer.removeListener('app-update:result', handler) }
+  }
 }
 
 if (process.contextIsolated) {

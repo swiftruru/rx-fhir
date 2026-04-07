@@ -198,6 +198,16 @@
     "homepage":        "個人首頁",
     "homepageUrl":     "swift.moe",
     "license":         "MIT License · © 2025 潘昱如",
+    "update": {
+      "section":        "版本更新",
+      "currentVersion": "目前版本",
+      "checkButton":    "檢查更新",
+      "checking":       "檢查中…",
+      "upToDate":       "已是最新版本",
+      "available":      "發現新版本 {{version}}",
+      "failed":         "無法檢查更新，請確認網路連線。",
+      "openReleases":   "前往 GitHub Releases"
+    },
     "fields": {
       "author":      "作者",
       "affiliation": "學校",

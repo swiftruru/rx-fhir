@@ -198,6 +198,16 @@
     "homepage":        "Personal Homepage",
     "homepageUrl":     "swift.moe",
     "license":         "MIT License · © 2025 Yu-Ru Pan",
+    "update": {
+      "section":        "App Updates",
+      "currentVersion": "Current Version",
+      "checkButton":    "Check for Updates",
+      "checking":       "Checking…",
+      "upToDate":       "You're up to date",
+      "available":      "New version {{version}} available",
+      "failed":         "Could not check for updates. Please check your connection.",
+      "openReleases":   "View on GitHub Releases"
+    },
     "fields": {
       "author":      "Author",
       "affiliation": "Affiliation",

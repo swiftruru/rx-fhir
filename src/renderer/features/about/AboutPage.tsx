@@ -1,18 +1,45 @@
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BookOpen, GraduationCap, Code2, ExternalLink } from 'lucide-react'
+import { BookOpen, GraduationCap, Code2, ExternalLink, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
 import { Separator } from '../../components/ui/separator'
 import appIcon from '../../assets/icon.png'
+import type { UpdateCheckResult } from '../../types/electron'
 
 const APP_VERSION = __APP_VERSION__
 
+type UpdateUiStatus = 'idle' | 'checking' | 'up-to-date' | 'update-available' | 'error'
+
 export default function AboutPage(): React.JSX.Element {
   const { t } = useTranslation('settings')
+  const [updateStatus, setUpdateStatus] = useState<UpdateUiStatus>('idle')
+  const [updateResult, setUpdateResult] = useState<UpdateCheckResult | null>(null)
+
+  // Subscribe to the passive startup update check push from main process
+  useEffect(() => {
+    if (!window.rxfhir?.onUpdateResult) return
+    const unsubscribe = window.rxfhir.onUpdateResult((result) => {
+      setUpdateResult(result)
+      setUpdateStatus(result.status === 'update-available' ? 'update-available' : 'idle')
+    })
+    return unsubscribe
+  }, [])
 
   function openUrl(url: string): void {
     void window.rxfhir?.openExternalUrl(url)
+  }
+
+  async function handleCheckForUpdates(): Promise<void> {
+    if (!window.rxfhir?.checkForUpdates) return
+    setUpdateStatus('checking')
+    setUpdateResult(null)
+    const result = await window.rxfhir.checkForUpdates()
+    setUpdateResult(result)
+    if (result.status === 'update-available') setUpdateStatus('update-available')
+    else if (result.status === 'up-to-date') setUpdateStatus('up-to-date')
+    else setUpdateStatus('error')
   }
 
   return (
@@ -40,9 +67,14 @@ export default function AboutPage(): React.JSX.Element {
             <p className="text-sm text-muted-foreground">{t('about.tagline')}</p>
             <p className="text-xs text-muted-foreground">{t('about.description')}</p>
           </div>
-          <span className="text-[11px] text-muted-foreground/70 font-mono mt-1">
-            v{APP_VERSION}
-          </span>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[11px] text-muted-foreground/70 font-mono">
+              v{APP_VERSION}
+            </span>
+            {updateStatus === 'update-available' && (
+              <span className="h-2 w-2 rounded-full bg-amber-400" aria-label="Update available" />
+            )}
+          </div>
         </div>
 
         {/* ── Academic Background ── */}
@@ -133,6 +165,70 @@ export default function AboutPage(): React.JSX.Element {
                 </Button>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* ── App Updates ── */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <RefreshCw className="h-4 w-4 text-muted-foreground" />
+              {t('about.update.section')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">{t('about.update.currentVersion')}</p>
+                <p className="font-mono text-sm font-medium mt-0.5">v{APP_VERSION}</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1.5 px-3 text-xs shrink-0"
+                disabled={updateStatus === 'checking'}
+                onClick={() => { void handleCheckForUpdates() }}
+              >
+                <RefreshCw className={`h-3 w-3 ${updateStatus === 'checking' ? 'animate-spin' : ''}`} />
+                {updateStatus === 'checking'
+                  ? t('about.update.checking')
+                  : t('about.update.checkButton')}
+              </Button>
+            </div>
+
+            {/* Up-to-date */}
+            {updateStatus === 'up-to-date' && (
+              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                <span className="text-xs">{t('about.update.upToDate')}</span>
+              </div>
+            )}
+
+            {/* Update available */}
+            {updateStatus === 'update-available' && updateResult?.latestVersion && (
+              <div className="rounded-lg border border-amber-300/60 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/10 px-3 py-2.5 space-y-2">
+                <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                  {t('about.update.available', { version: updateResult.latestVersion })}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 gap-1.5 px-3 text-xs border-amber-400/60 text-amber-800 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-500/20"
+                  onClick={() => openUrl(updateResult.releaseUrl ?? 'https://github.com/swiftruru/rx-fhir/releases')}
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  {t('about.update.openReleases')}
+                </Button>
+              </div>
+            )}
+
+            {/* Error */}
+            {updateStatus === 'error' && (
+              <div className="flex items-start gap-2 text-destructive">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                <span className="text-xs">{t('about.update.failed')}</span>
+              </div>
+            )}
           </CardContent>
         </Card>
 

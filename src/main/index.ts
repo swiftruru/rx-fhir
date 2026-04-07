@@ -2,6 +2,7 @@ import electron from 'electron'
 import { access, readFile, writeFile } from 'node:fs/promises'
 import { basename, join } from 'path'
 import { fileURLToPath } from 'node:url'
+import { setupUpdateIpc, scheduleStartupUpdateCheck } from './updater/index'
 const { app, shell, BrowserWindow, nativeImage, Menu, nativeTheme, dialog, ipcMain, screen } = electron
 type ElectronBrowserWindow = InstanceType<typeof BrowserWindow>
 
@@ -545,10 +546,15 @@ app.whenReady().then(() => {
     watchWindowShortcuts(window)
   })
 
-  void createWindow()
+  setupUpdateIpc()
+  void createWindow().then(() => {
+    scheduleStartupUpdateCheck()
+  })
 
   app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) void createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) {
+      void createWindow().then(() => { scheduleStartupUpdateCheck() })
+    }
   })
 })
 

@@ -30,6 +30,17 @@ export interface SaveFileResult {
   fileName?: string
 }
 
+export type UpdateStatus = 'up-to-date' | 'update-available' | 'check-failed'
+
+export interface UpdateCheckResult {
+  status: UpdateStatus
+  currentVersion: string
+  latestVersion?: string
+  releaseUrl?: string
+  releaseName?: string
+  error?: string
+}
+
 export interface RxFhirDesktopBridge {
   saveBundleJson: (payload: { content: string; defaultFileName?: string }) => Promise<BundleJsonSaveResult>
   openBundleJson: () => Promise<BundleJsonOpenResult>
@@ -41,6 +52,8 @@ export interface RxFhirDesktopBridge {
   saveFile: (payload: { content: string; defaultFileName: string; filters: Array<{ name: string; extensions: string[] }> }) => Promise<SaveFileResult>
   openExternalUrl: (url: string) => Promise<{ opened: boolean }>
   setAppZoomFactor: (zoomFactor: number) => Promise<{ zoomFactor: number }>
+  checkForUpdates: () => Promise<UpdateCheckResult>
+  onUpdateResult: (callback: (result: UpdateCheckResult) => void) => () => void
 }
 
 declare global {

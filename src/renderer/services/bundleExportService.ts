@@ -932,6 +932,34 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     }).join('<span class="meta-sep">·</span>')}
   </div>` : ''
 
+  // Document status banner + attestation
+  const statusBannerHtml = (() => {
+    const status = composition?.status
+    if (!status) return ''
+    type StatusKey = 'final' | 'draft' | 'amended' | 'entered-in-error' | 'preliminary'
+    const statusMeta: Record<StatusKey, { cls: string; icon: string; zh: string; en: string }> = {
+      'final':           { cls: 'status-final',   icon: '✓', zh: '正式文件',   en: 'Final' },
+      'amended':         { cls: 'status-amended',  icon: '✎', zh: '已修訂',     en: 'Amended' },
+      'draft':           { cls: 'status-draft',    icon: '⚠', zh: '草稿',       en: 'Draft' },
+      'preliminary':     { cls: 'status-draft',    icon: '⚠', zh: '初稿',       en: 'Preliminary' },
+      'entered-in-error':{ cls: 'status-error',    icon: '✕', zh: '已作廢',     en: 'Entered in Error' },
+    }
+    const meta = statusMeta[status as StatusKey] ?? { cls: 'status-draft', icon: '•', zh: status, en: status }
+    const label = isZh ? meta.zh : meta.en
+    // Attester info
+    const attester = composition?.attester?.[0]
+    const attesterName = (attester?.party as { display?: string } | undefined)?.display ?? ''
+    const attesterTime = attester?.time ? fdate(attester.time) : ''
+    const attesterHtml = attesterName
+      ? `<span class="status-attester">${isZh ? '簽署人' : 'Signed by'}: ${escHtml(attesterName)}${attesterTime ? '&nbsp;·&nbsp;' + escHtml(attesterTime) : ''}</span>`
+      : ''
+    return `<div class="status-banner ${meta.cls}">
+      <span class="status-icon">${meta.icon}</span>
+      <span class="status-label">${escHtml(label)}</span>
+      ${attesterHtml}
+    </div>`
+  })()
+
   // QR code — encodes patient identifier for mobile scanning
   const qrValue = patient?.identifier?.[0]?.value ?? ''
   const qrSvg = generateQrSvg(qrValue)
@@ -1021,18 +1049,45 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     return section(L.condition, rows, '🔍')
   })()
 
-  // Observations — multi-row table
+  // Observations — multi-row table with lab value indicators
   const observationSection = (() => {
     if (observations.length === 0) return ''
-    // Table layout when multiple rows
-    const thead = `<tr><th>${escHtml(L.observationItem)}</th><th>${escHtml(L.value)}</th><th>${escHtml(L.unit)}</th><th>${escHtml(L.observationStatus)}</th></tr>`
+    const refLabel   = isZh ? '參考範圍' : 'Ref range'
+    const statusNormal = isZh ? '正常' : 'Normal'
+    const statusHigh   = isZh ? '偏高' : 'High'
+    const statusLow    = isZh ? '偏低' : 'Low'
+    const thead = `<tr>
+      <th>${escHtml(L.observationItem)}</th>
+      <th>${escHtml(L.value)}</th>
+      <th>${escHtml(L.unit)}</th>
+      <th>${escHtml(refLabel)}</th>
+      <th>${escHtml(L.observationStatus)}</th>
+    </tr>`
     const trows = observations.map((o) => {
-      const val = o.valueQuantity?.value != null ? String(o.valueQuantity.value) : (o.valueString ?? '')
+      const numVal = o.valueQuantity?.value
+      const val  = numVal != null ? String(numVal) : (o.valueString ?? '')
       const unit = o.valueQuantity?.unit ?? ''
+      const rr   = o.referenceRange?.[0]
+      const rrLow  = rr?.low?.value
+      const rrHigh = rr?.high?.value
+      const rrText = rr?.text ?? (rrLow != null || rrHigh != null
+        ? `${rrLow ?? ''}–${rrHigh ?? ''}`
+        : '')
+      let labBadge = ''
+      if (numVal != null && (rrLow != null || rrHigh != null)) {
+        if (rrHigh != null && numVal > rrHigh) {
+          labBadge = `<span class="lab-badge lab-high">${escHtml(statusHigh)} ↑</span>`
+        } else if (rrLow != null && numVal < rrLow) {
+          labBadge = `<span class="lab-badge lab-low">${escHtml(statusLow)} ↓</span>`
+        } else {
+          labBadge = `<span class="lab-badge lab-normal">${escHtml(statusNormal)} ✓</span>`
+        }
+      }
       return `<tr>
         <td>${escHtml(o.code?.text ?? o.code?.coding?.[0]?.display ?? '')}</td>
-        <td>${escHtml(val)}</td>
+        <td>${escHtml(val)}${labBadge ? ' ' + labBadge : ''}</td>
         <td>${escHtml(unit)}</td>
+        <td>${escHtml(rrText)}</td>
         <td>${escHtml(o.status ?? '')}</td>
       </tr>`
     }).join('')
@@ -1044,16 +1099,50 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     return section(L.observation, `<table class="data-table"><thead>${thead}</thead><tbody>${trows}</tbody></table>${jsonDetails}`, '🔬')
   })()
 
-  // Medications — multi card-in-card
+  // Medications — quick-reference summary table + detail cards
   const medicationSection = (() => {
     if (medicationRequests.length === 0 && medications.length === 0) return ''
+    // Column headers
+    const colNum    = '#'
+    const colName   = isZh ? '藥品名稱' : 'Medication'
+    const colDose   = isZh ? '劑量 / 用法' : 'Dose / Instructions'
+    const colRoute  = isZh ? '途徑' : 'Route'
+    const colSupply = isZh ? '數量' : 'Supply'
+    const summaryRows = medicationRequests.map((mr, i) => {
+      const med      = medications[i] ?? medications[0]
+      const medName  = med?.code?.text ?? mr.medicationCodeableConcept?.text ?? ''
+      const medCode  = med?.code?.coding?.[0]?.code ?? ''
+      const doseText = mr.dosageInstruction?.[0]?.text ?? ''
+      const route    = mr.dosageInstruction?.[0]?.route?.coding?.[0]?.display ?? mr.dosageInstruction?.[0]?.route?.text ?? ''
+      const qty      = mr.dispenseRequest?.quantity
+      const supply   = qty?.value != null ? `${qty.value}${qty.unit ? ' ' + qty.unit : ''}` : ''
+      return `<tr>
+        <td><span class="med-idx" style="display:inline-flex">${i + 1}</span></td>
+        <td><strong>${escHtml(medName)}</strong>${medCode ? ` <span class="badge">${escHtml(medCode)}</span>` : ''}</td>
+        <td>${escHtml(doseText || '—')}</td>
+        <td>${escHtml(route || '—')}</td>
+        <td>${escHtml(supply || '—')}</td>
+      </tr>`
+    }).join('')
+    const summaryTable = medicationRequests.length > 0 ? `
+      <table class="data-table med-summary-table">
+        <thead><tr>
+          <th>${escHtml(colNum)}</th>
+          <th>${escHtml(colName)}</th>
+          <th>${escHtml(colDose)}</th>
+          <th>${escHtml(colRoute)}</th>
+          <th>${escHtml(colSupply)}</th>
+        </tr></thead>
+        <tbody>${summaryRows}</tbody>
+      </table>
+      <hr class="med-divider" style="margin:0.75rem 0" />` : ''
     const cards = medicationRequests.map((mr, i) => {
       const med = medications[i] ?? medications[0]
-      const medName = med?.code?.text ?? ''
+      const medName = med?.code?.text ?? mr.medicationCodeableConcept?.text ?? ''
       const medCode = med?.code?.coding?.[0]?.code ?? ''
       const medForm = med?.form?.text ?? ''
       const doseText = mr.dosageInstruction?.[0]?.text ?? ''
-      const routeText = mr.dosageInstruction?.[0]?.route?.coding?.[0]?.display ?? ''
+      const routeText = mr.dosageInstruction?.[0]?.route?.coding?.[0]?.display ?? mr.dosageInstruction?.[0]?.route?.text ?? ''
       const cardJson = med ? buildJsonDetail(`Medication[${i}]`, med) + buildJsonDetail(`MedicationRequest[${i}]`, mr) : buildJsonDetail(`MedicationRequest[${i}]`, mr)
       return `<div class="med-card">
         <div class="med-header">
@@ -1068,7 +1157,7 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
         ${cardJson}
       </div>`
     }).join('')
-    return section(L.medicationAndRequest, cards, '💊')
+    return section(L.medicationAndRequest, summaryTable + cards, '💊')
   })()
 
   // Navigation items for anchor links
@@ -1433,6 +1522,41 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     font-size: 0.68rem; font-weight: 700;
   }
 
+  /* Document status banner */
+  .status-banner {
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+    border-radius: 8px; padding: 0.45rem 1rem; margin-bottom: 0.75rem;
+    font-size: 0.82rem; font-weight: 500; border-width: 1px; border-style: solid;
+  }
+  .status-icon { font-size: 1rem; line-height: 1; }
+  .status-label { font-weight: 700; }
+  .status-attester { color: inherit; opacity: 0.8; font-weight: 400; margin-left: auto; font-size: 0.78rem; }
+  .status-final   { background: #e8f5e9; border-color: #a5d6a7; color: #2e7d32; }
+  .status-amended { background: #e3f2fd; border-color: #90caf9; color: #1565c0; }
+  .status-draft   { background: #fff8e1; border-color: #ffe082; color: #f57f17; }
+  .status-error   { background: #ffebee; border-color: #ef9a9a; color: #c62828; }
+  [data-theme="dark"] .status-final   { background: #1b3a1f; border-color: #4caf50; color: #a5d6a7; }
+  [data-theme="dark"] .status-amended { background: #0d2b4a; border-color: #42a5f5; color: #90caf9; }
+  [data-theme="dark"] .status-draft   { background: #3a2e00; border-color: #ffd54f; color: #ffe082; }
+  [data-theme="dark"] .status-error   { background: #3b0c0c; border-color: #ef5350; color: #ef9a9a; }
+
+  /* Lab value indicators (observation table) */
+  .lab-badge {
+    display: inline-block; border-radius: 999px;
+    padding: 0.05rem 0.45rem; font-size: 0.68rem; font-weight: 600;
+    vertical-align: middle; white-space: nowrap;
+  }
+  .lab-normal { background: #e8f5e9; color: #2e7d32; }
+  .lab-high   { background: #fff3e0; color: #e65100; }
+  .lab-low    { background: #e3f2fd; color: #1565c0; }
+  [data-theme="dark"] .lab-normal { background: #1b3a1f; color: #a5d6a7; }
+  [data-theme="dark"] .lab-high   { background: #3a1a00; color: #ffcc80; }
+  [data-theme="dark"] .lab-low    { background: #0d2b4a; color: #90caf9; }
+
+  /* Medication quick-reference summary table */
+  .med-summary-table { margin-bottom: 0; }
+  .med-summary-table td:first-child { width: 2rem; text-align: center; }
+
   /* Clinical timeline */
   .tl-card {
     background: var(--card); border: 1px solid var(--border);
@@ -1573,6 +1697,7 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     <p class="meta">${escHtml(L.generatedAt)}: ${generatedAt}</p>
   </header>
   ${metaBarHtml}
+  ${statusBannerHtml}
   ${heroHtml}
   ${timelineHtml}
   ${sections}

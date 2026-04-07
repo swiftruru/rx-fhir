@@ -55,6 +55,8 @@ const bundleJsonBridge = {
     ipcRenderer.invoke('app-zoom:set', zoomFactor) as Promise<{ zoomFactor: number }>,
   checkForUpdates: () =>
     ipcRenderer.invoke('app-update:check') as Promise<import('./updater/updateChecker').UpdateCheckResult>,
+  getCachedUpdateResult: () =>
+    ipcRenderer.invoke('app-update:get-cached') as Promise<import('./updater/updateChecker').UpdateCheckResult | null>,
   onUpdateResult: (callback: (result: import('./updater/updateChecker').UpdateCheckResult) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, result: import('./updater/updateChecker').UpdateCheckResult): void => {
       callback(result)

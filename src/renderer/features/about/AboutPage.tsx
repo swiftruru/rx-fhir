@@ -17,12 +17,27 @@ export default function AboutPage(): React.JSX.Element {
   const [updateStatus, setUpdateStatus] = useState<UpdateUiStatus>('idle')
   const [updateResult, setUpdateResult] = useState<UpdateCheckResult | null>(null)
 
+  // On mount, retrieve any cached startup result in case the push was sent
+  // before this page was open (the most common case).
+  useEffect(() => {
+    void window.rxfhir?.getCachedUpdateResult?.().then((result) => {
+      if (result?.status === 'update-available') {
+        setUpdateResult(result)
+        setUpdateStatus('update-available')
+      }
+    })
+  }, [])
+
   // Subscribe to the passive startup update check push from main process
+  // (catches the case where About is already open when the check completes —
+  //  updates the amber dot without re-firing a toast, which App.tsx handles).
   useEffect(() => {
     if (!window.rxfhir?.onUpdateResult) return
     const unsubscribe = window.rxfhir.onUpdateResult((result) => {
-      setUpdateResult(result)
-      setUpdateStatus(result.status === 'update-available' ? 'update-available' : 'idle')
+      if (result.status === 'update-available') {
+        setUpdateResult(result)
+        setUpdateStatus('update-available')
+      }
     })
     return unsubscribe
   }, [])

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Bell, Sun, Moon, Monitor, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -32,6 +32,7 @@ import { useActivityCenterStore } from './store/activityCenterStore'
 import { useLiveDemoStore } from './store/liveDemoStore'
 import { useFeatureShowcaseStore } from './store/featureShowcaseStore'
 import { useToastStore } from './store/toastStore'
+import type { UpdateCheckResult } from './types/electron'
 import { getRouteNavKey } from './lib/routeMeta'
 import { cn } from './lib/utils'
 import { hasCreatorPersistableWork, useCreatorStore } from './store/creatorStore'
@@ -105,11 +106,45 @@ function AppShellContent(): React.JSX.Element {
   const startFeatureShowcase = useFeatureShowcaseStore((state) => state.start)
   const toggleActivityCenter = useActivityCenterStore((state) => state.toggleCenter)
   const unreadActivityCount = useToastStore((state) => state.history.filter((item) => !item.read).length)
+  const pushToast = useToastStore((state) => state.pushToast)
   const featureShowcaseActive = featureShowcaseStatus === 'running' || featureShowcaseStatus === 'paused'
   const liveDemoActive = liveDemoStatus === 'running' || liveDemoStatus === 'paused'
   const reducedMotion = useReducedMotion()
   const mainRef = useRef<HTMLElement>(null)
   const previousPathRef = useRef<string>()
+
+  const { t: ts } = useTranslation('settings')
+
+  const showUpdateToast = useCallback((result: UpdateCheckResult) => {
+    if (result.status !== 'update-available') return
+    pushToast({
+      variant: 'info',
+      title: ts('about.update.section'),
+      description: ts('about.update.available', { version: result.latestVersion ?? '' }),
+      durationMs: 12_000,
+      action: {
+        label: ts('about.update.openReleases'),
+        onAction: () => {
+          void window.rxfhir?.openExternalUrl(
+            result.releaseUrl ?? 'https://github.com/swiftruru/rx-fhir/releases'
+          )
+        }
+      }
+    })
+  }, [pushToast, ts])
+
+  // App-level update check listener — fires regardless of which page is open.
+  // 1. Query any cached result from the 5-second startup check (handles the
+  //    case where the check completed before the renderer was ready).
+  // 2. Subscribe to future pushes (handles the case where the check completes
+  //    after the renderer mounts).
+  useEffect(() => {
+    void window.rxfhir?.getCachedUpdateResult?.().then((result) => {
+      if (result) showUpdateToast(result)
+    })
+    const unsubscribe = window.rxfhir?.onUpdateResult?.(showUpdateToast)
+    return unsubscribe
+  }, [showUpdateToast])
 
   useKeyboardShortcuts()
 

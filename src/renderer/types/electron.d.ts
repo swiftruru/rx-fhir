@@ -53,6 +53,7 @@ export interface RxFhirDesktopBridge {
   openExternalUrl: (url: string) => Promise<{ opened: boolean }>
   setAppZoomFactor: (zoomFactor: number) => Promise<{ zoomFactor: number }>
   checkForUpdates: () => Promise<UpdateCheckResult>
+  getCachedUpdateResult: () => Promise<UpdateCheckResult | null>
   onUpdateResult: (callback: (result: UpdateCheckResult) => void) => () => void
 }
 

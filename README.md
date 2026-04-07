@@ -3,7 +3,7 @@
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.19-d4779a?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.20-d4779a?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/github/license/swiftruru/rx-fhir?style=flat-square&color=d4779a" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-8e8e93?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
@@ -106,7 +106,7 @@ Current Creator capabilities:
 - Most Creator forms now include consistent inline guide cards with examples and field-level hints for identifiers, encounter timing, ICD-10, LOINC, insurance, medication coding, medication route, and supplemental extensions
 - Keyboard accessibility is improved with stepper shortcuts, clearer focus-visible states, and an app-wide shortcut system with a help dialog plus customizable bindings in Settings
 - Live Demo mode provides a guided, step-by-step teaching flow with manual-first pacing, optional autoplay, human-like typed mock input, and in-view scrolling so fields and submit actions are demonstrated on screen instead of updating off-screen
-- Feature Showcase mode provides a spotlight-style product tour with adjacent coaching panels, highlighted targets, darker background dimming, and polished product-style transitions
+- Feature Showcase mode provides a spotlight-style product tour with adjacent coaching panels, highlighted targets, darker background dimming, and polished product-style transitions; the tour now includes a dedicated export step (step 12 of 16) spotlighting the Consumer export dropdown
 - Live JSON preview of created resources
 - JSON preview now follows the active light / dark theme instead of staying fixed in a dark-only style
 - JSON preview now includes a compact toolbar with font-size switching, collapse, and all/latest-resource toggles for demos
@@ -194,10 +194,11 @@ Search and inspect FHIR Bundles on the configured server:
 - `zh-TW` / `en` language toggle
 - Embedded `Noto Sans TC` UI font for more consistent offline typography, especially on Windows
 - Custom macOS app naming, icon, and About window
+- The About page is redesigned with a Hero block (app icon, dynamic version number, tagline), a separate academic background card (author, institution, advisors), and a technical info card with links to the GitHub repository and personal homepage; the macOS native About window version is now read dynamically from the app instead of being hardcoded
 
 ### UX Highlights
 
-- Creator now shows draft save state more explicitly and blocks accidental navigation away from unfinished work
+- Creator now shows draft save state more explicitly; draft auto-save ensures no work is lost when navigating away, so navigation is no longer blocked by a confirmation dialog
 - Creator also keeps a post-submission diff summary so users can quickly see what changed since the last successful bundle submission
 - Creator layout is now more responsive on narrower desktop windows, while keeping the stepper and info panel visible in desktop-style split layouts
 - Consumer now supports both native file import and drag-and-drop Bundle inspection in the real Electron window

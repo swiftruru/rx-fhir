@@ -348,7 +348,12 @@ function setupMacMenu(): void {
 }
 
 async function createWindow(): Promise<void> {
-  const icon = nativeImage.createFromPath(getIconPath())
+  const rawIcon = nativeImage.createFromPath(getIconPath())
+  // Windows title bar requires a square icon; resize to 256×256 to avoid
+  // the icon being clipped or distorted when the source PNG is not square.
+  const icon = process.platform === 'win32'
+    ? rawIcon.resize({ width: 256, height: 256 })
+    : rawIcon
   const savedWindowState = await readWindowState()
 
   const mainWindow = new BrowserWindow({

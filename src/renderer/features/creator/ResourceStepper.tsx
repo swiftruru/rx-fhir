@@ -967,7 +967,7 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
                             {t('stepper.panelModeRequest')}
                           </Button>
                         </div>
-                        {rightPanelMode === 'request' && requestHistory.some((e) => e.reasonCode === 'create' || e.reasonCode === 'update') && (
+                        {rightPanelMode === 'request' && requestHistory.length > 0 && (
                           <Button
                             type="button"
                             variant="outline"

@@ -873,12 +873,15 @@ export function buildCreatorPostmanCollection(
   const urlHost = base.replace(/^https?:\/\//, '')
   const sessionDate = new Date().toLocaleDateString('zh-TW')
 
-  const actionEntries = entries.filter(
-    (e) => e.reasonCode === 'create' || e.reasonCode === 'update'
-  )
+  const iconMap: Record<string, string> = {
+    create: '➕',
+    update: '✏️',
+    'check-existing': '🔍',
+    search: '🔍'
+  }
 
-  const items: PostmanItem[] = actionEntries.map((entry) => {
-    const icon = entry.method === 'PUT' ? '✏️' : '➕'
+  const items: PostmanItem[] = entries.map((entry) => {
+    const icon = entry.reasonCode ? (iconMap[entry.reasonCode] ?? '📡') : (entry.method === 'PUT' ? '✏️' : entry.method === 'GET' ? '🔍' : '➕')
     const resourceType = entry.resourceType ?? entry.method
     const name = `${icon} ${resourceType} — ${entry.method}`
 
@@ -887,9 +890,18 @@ export function buildCreatorPostmanCollection(
       ? entry.url.replace(base, '{{fhirBaseUrl}}')
       : entry.url
 
-    // Decompose URL for Postman url.path array
-    const pathAfterHost = rawUrl.replace(/^https?:\/\/[^/]+/, '').replace(/^\/?/, '')
+    // Split path and query string
+    const [pathPart, queryString] = rawUrl.split('?')
+    const pathAfterHost = pathPart.replace(/^https?:\/\/[^/]+/, '').replace(/^\/?/, '')
     const pathParts = pathAfterHost.split('/').filter(Boolean)
+    const queryParams = queryString
+      ? queryString.split('&').map((kv) => {
+          const eqIdx = kv.indexOf('=')
+          return eqIdx === -1
+            ? { key: kv, value: '' }
+            : { key: kv.slice(0, eqIdx), value: decodeURIComponent(kv.slice(eqIdx + 1)) }
+        })
+      : undefined
 
     const headers: PostmanHeader[] = Object.entries(entry.requestHeaders).map(
       ([key, value]) => ({ key, value })
@@ -901,7 +913,8 @@ export function buildCreatorPostmanCollection(
       url: {
         raw: rawUrl,
         host: [urlHost],
-        path: pathParts
+        path: pathParts,
+        ...(queryParams ? { query: queryParams } : {})
       }
     }
 

@@ -1303,22 +1303,30 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   .sticky-header button:hover { background: rgba(255,255,255,0.32); }
 
   /* Global search in sticky bar */
-  .gs-wrap { display: flex; align-items: center; gap: 0.25rem; }
-  .gs-input {
+  .gs-wrap { display: flex; align-items: center; gap: 0.35rem; }
+  .gs-pill {
+    display: flex; align-items: center;
     background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
-    color: white; border-radius: 8px; padding: 0.22rem 0.6rem;
+    border-radius: 8px; overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .gs-pill:focus-within { border-color: rgba(255,255,255,0.7); }
+  .gs-input {
+    background: transparent; border: none;
+    color: white; padding: 0.22rem 0.6rem;
     font-size: 0.78rem; font-family: inherit; outline: none; width: 110px;
-    transition: width 0.2s, border-color 0.15s;
+    transition: width 0.2s;
   }
-  .gs-input:focus { width: 150px; border-color: rgba(255,255,255,0.7); }
+  .gs-input:focus { width: 150px; }
   .gs-input::placeholder { color: rgba(255,255,255,0.5); }
-  .gs-count { font-size: 0.68rem; color: rgba(255,255,255,0.7); white-space: nowrap; min-width: 2.5rem; }
+  .gs-count { font-size: 0.68rem; color: rgba(255,255,255,0.7); white-space: nowrap; }
   .gs-nav {
-    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
-    color: white; border-radius: 6px; padding: 0.18rem 0.45rem;
-    cursor: pointer; font-size: 0.75rem; line-height: 1;
+    background: transparent; border: none; border-left: 1px solid rgba(255,255,255,0.2);
+    color: white; padding: 0.2rem 0.45rem;
+    cursor: pointer; font-size: 0.75rem; line-height: 1; font-family: inherit;
+    transition: background 0.12s;
   }
-  .gs-nav:hover { background: rgba(255,255,255,0.3); }
+  .gs-nav:hover { background: rgba(255,255,255,0.2); }
   .gs-nav:disabled { opacity: 0.3; cursor: default; }
 
   /* Bundle metadata bar */
@@ -1676,10 +1684,12 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   ${prescriptionDate ? `<span class="date-chip">${escHtml(prescriptionDate)}</span>` : ''}
   ${navHtml}
   <div class="gs-wrap">
-    <input id="gs-input" class="gs-input" type="search" />
+    <div class="gs-pill">
+      <input id="gs-input" class="gs-input" type="search" />
+      <button id="gs-prev" class="gs-nav" title="Previous" disabled>↑</button>
+      <button id="gs-next" class="gs-nav" title="Next" disabled>↓</button>
+    </div>
     <span id="gs-count" class="gs-count"></span>
-    <button id="gs-prev" class="gs-nav" title="Previous" disabled>↑</button>
-    <button id="gs-next" class="gs-nav" title="Next" disabled>↓</button>
   </div>
   <button id="theme-btn" onclick="toggleTheme()">🌙 ${escHtml(darkToggleLabel)}</button>
   <button class="print-btn" onclick="window.print()">🖨 ${escHtml(printLabel)}</button>

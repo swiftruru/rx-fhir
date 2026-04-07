@@ -2,7 +2,7 @@ import electron from 'electron'
 import { access, readFile, writeFile } from 'node:fs/promises'
 import { basename, join } from 'path'
 import { fileURLToPath } from 'node:url'
-import { setupUpdateIpc, scheduleStartupUpdateCheck } from './updater/index'
+import { setupUpdateIpc, scheduleStartupUpdateCheck, checkForUpdates, GITHUB_RELEASES_PAGE } from './updater/index'
 const { app, shell, BrowserWindow, nativeImage, Menu, nativeTheme, dialog, ipcMain, screen } = electron
 type ElectronBrowserWindow = InstanceType<typeof BrowserWindow>
 
@@ -258,7 +258,51 @@ function setupMacMenu(): void {
     {
       label: 'RxFHIR',        // ← menu bar shows this label
       submenu: [
-        { label: 'About RxFHIR', click: () => createAboutWindow() },
+        { label: 'About RxFHIR', click: () => { void createAboutWindow() } },
+        { type: 'separator' },
+        {
+          label: 'Check for Updates…',
+          click: async (menuItem) => {
+            menuItem.enabled = false
+            menuItem.label = 'Checking…'
+
+            const result = await checkForUpdates(app.getVersion())
+
+            menuItem.enabled = true
+            menuItem.label = 'Check for Updates…'
+
+            if (result.status === 'update-available') {
+              const { response } = await dialog.showMessageBox({
+                type: 'info',
+                title: 'Update Available',
+                message: `RxFHIR ${result.latestVersion ?? ''} is available`,
+                detail: `You are running version ${result.currentVersion}. Would you like to view the release on GitHub?`,
+                buttons: ['View on GitHub Releases', 'Later'],
+                defaultId: 0,
+                cancelId: 1
+              })
+              if (response === 0) {
+                void shell.openExternal(result.releaseUrl ?? GITHUB_RELEASES_PAGE)
+              }
+            } else if (result.status === 'up-to-date') {
+              await dialog.showMessageBox({
+                type: 'info',
+                title: 'You\'re Up to Date',
+                message: 'RxFHIR is up to date',
+                detail: `Version ${result.currentVersion} is the latest release.`,
+                buttons: ['OK']
+              })
+            } else {
+              await dialog.showMessageBox({
+                type: 'warning',
+                title: 'Update Check Failed',
+                message: 'Could not check for updates',
+                detail: 'Please check your network connection and try again.',
+                buttons: ['OK']
+              })
+            }
+          }
+        },
         { type: 'separator' },
         { role: 'services' },
         { type: 'separator' },

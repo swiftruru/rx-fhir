@@ -207,6 +207,7 @@
       "available":      "New version {{version}} available",
       "failed":         "Could not check for updates. Please check your connection.",
       "openReleases":   "View on GitHub Releases",
+      "remindLater":    "Remind Me Later",
       "skipVersion":    "Skip This Version"
     },
     "fields": {

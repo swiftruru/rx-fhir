@@ -207,6 +207,7 @@
       "available":      "發現新版本 {{version}}",
       "failed":         "無法檢查更新，請確認網路連線。",
       "openReleases":   "前往 GitHub Releases",
+      "remindLater":    "下次再提示",
       "skipVersion":    "略過此版本"
     },
     "fields": {

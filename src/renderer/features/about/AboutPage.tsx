@@ -238,6 +238,17 @@ export default function AboutPage(): React.JSX.Element {
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="h-7 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    onClick={() => {
+                      setUpdateStatus('idle')
+                      setUpdateResult(null)
+                    }}
+                  >
+                    {t('about.update.remindLater')}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="h-7 px-3 text-xs text-amber-700/70 hover:text-amber-900 hover:bg-amber-100/60 dark:text-amber-400/70 dark:hover:text-amber-300 dark:hover:bg-amber-500/10"
                     onClick={() => {
                       void window.rxfhir?.skipUpdateVersion(updateResult.latestVersion!)

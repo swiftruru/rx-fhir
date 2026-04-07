@@ -132,6 +132,13 @@ function AppShellContent(): React.JSX.Element {
           }
         },
         {
+          label: ts('about.update.remindLater'),
+          onAction: () => {
+            // No-op: closes the toast without persisting anything.
+            // Next startup the 5-second check will re-run and notify again.
+          }
+        },
+        {
           label: ts('about.update.skipVersion'),
           onAction: () => {
             if (result.latestVersion) {

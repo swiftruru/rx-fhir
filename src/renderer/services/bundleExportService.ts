@@ -890,16 +890,25 @@ export function buildCreatorPostmanCollection(
       ? entry.url.replace(base, '{{fhirBaseUrl}}')
       : entry.url
 
-    // Split path and query string
-    const [pathPart, queryString] = rawUrl.split('?')
-    const pathAfterHost = pathPart.replace(/^https?:\/\/[^/]+/, '').replace(/^\/?/, '')
-    const pathParts = pathAfterHost.split('/').filter(Boolean)
+    // Split path and query string from the normalised URL
+    const qIdx = rawUrl.indexOf('?')
+    const pathPart = qIdx === -1 ? rawUrl : rawUrl.slice(0, qIdx)
+    const queryString = qIdx === -1 ? '' : rawUrl.slice(qIdx + 1)
+
+    // Strip {{fhirBaseUrl}} prefix to get only the resource path segments
+    const PLACEHOLDER = '{{fhirBaseUrl}}'
+    const pathAfterBase = pathPart.startsWith(PLACEHOLDER)
+      ? pathPart.slice(PLACEHOLDER.length).replace(/^\//, '')
+      : pathPart.replace(/^https?:\/\/[^/]+\/[^/]+\//, '') // fallback: strip scheme+host+base
+    const pathParts = pathAfterBase.split('/').filter(Boolean)
+
+    // Decode query params so Postman displays them as key-value pairs
     const queryParams = queryString
       ? queryString.split('&').map((kv) => {
           const eqIdx = kv.indexOf('=')
           return eqIdx === -1
-            ? { key: kv, value: '' }
-            : { key: kv.slice(0, eqIdx), value: decodeURIComponent(kv.slice(eqIdx + 1)) }
+            ? { key: decodeURIComponent(kv), value: '' }
+            : { key: decodeURIComponent(kv.slice(0, eqIdx)), value: decodeURIComponent(kv.slice(eqIdx + 1)) }
         })
       : undefined
 
@@ -907,12 +916,13 @@ export function buildCreatorPostmanCollection(
       ([key, value]) => ({ key, value })
     )
 
+    // Use {{fhirBaseUrl}} as the Postman host so host+path reconstructs correctly
     const request: PostmanRequest = {
       method: entry.method,
       header: headers,
       url: {
         raw: rawUrl,
-        host: [urlHost],
+        host: [PLACEHOLDER],
         path: pathParts,
         ...(queryParams ? { query: queryParams } : {})
       }

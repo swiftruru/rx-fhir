@@ -154,27 +154,25 @@ export default function ExportDropdown({ bundle, onSuccess, onError }: Props): R
 
       {/* Progress bar shown below the button while Postman server checks run */}
       {showProgress && (
-        <div className="absolute left-0 right-0 top-full mt-1 space-y-0.5 rounded-lg border border-border/60 bg-popover px-2 py-1.5 shadow-sm">
-          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+        <div className="absolute right-0 top-full mt-1 w-52 rounded-lg border border-border/60 bg-popover px-2.5 py-2 shadow-sm">
+          <div className="mb-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
             <span>{t('detail.exportPostmanChecking')}</span>
-            <div className="flex items-center gap-1.5">
-              <span className="tabular-nums">{postmanProgress!.checked}/{postmanProgress!.total}</span>
-              <button
-                type="button"
-                onClick={() => abortControllerRef.current?.abort()}
-                className="rounded px-1 py-0.5 text-[10px] text-destructive hover:bg-destructive/10 transition-colors"
-                aria-label={tc('buttons.cancel')}
-              >
-                {tc('buttons.cancel')}
-              </button>
-            </div>
+            <span className="tabular-nums">{postmanProgress!.checked}/{postmanProgress!.total}</span>
           </div>
-          <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+          <div className="mb-2 h-1 w-full overflow-hidden rounded-full bg-muted">
             <div
               className="h-full rounded-full bg-primary transition-all duration-200"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
+          <button
+            type="button"
+            onClick={() => abortControllerRef.current?.abort()}
+            className="w-full rounded-md py-1 text-[11px] font-medium text-destructive hover:bg-destructive/10 transition-colors"
+            aria-label={tc('buttons.cancel')}
+          >
+            {tc('buttons.cancel')}
+          </button>
         </div>
       )}
     </div>

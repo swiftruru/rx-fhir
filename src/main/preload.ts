@@ -57,6 +57,8 @@ const bundleJsonBridge = {
     ipcRenderer.invoke('app-update:check') as Promise<import('./updater/updateChecker').UpdateCheckResult>,
   getCachedUpdateResult: () =>
     ipcRenderer.invoke('app-update:get-cached') as Promise<import('./updater/updateChecker').UpdateCheckResult | null>,
+  skipUpdateVersion: (version: string) =>
+    ipcRenderer.invoke('app-update:skip-version', version) as Promise<void>,
   onUpdateResult: (callback: (result: import('./updater/updateChecker').UpdateCheckResult) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, result: import('./updater/updateChecker').UpdateCheckResult): void => {
       callback(result)

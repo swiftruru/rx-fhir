@@ -122,14 +122,24 @@ function AppShellContent(): React.JSX.Element {
       title: ts('about.update.section'),
       description: ts('about.update.available', { version: result.latestVersion ?? '' }),
       durationMs: 12_000,
-      action: {
-        label: ts('about.update.openReleases'),
-        onAction: () => {
-          void window.rxfhir?.openExternalUrl(
-            result.releaseUrl ?? 'https://github.com/swiftruru/rx-fhir/releases'
-          )
+      actions: [
+        {
+          label: ts('about.update.openReleases'),
+          onAction: () => {
+            void window.rxfhir?.openExternalUrl(
+              result.releaseUrl ?? 'https://github.com/swiftruru/rx-fhir/releases'
+            )
+          }
+        },
+        {
+          label: ts('about.update.skipVersion'),
+          onAction: () => {
+            if (result.latestVersion) {
+              void window.rxfhir?.skipUpdateVersion(result.latestVersion)
+            }
+          }
         }
-      }
+      ]
     })
   }, [pushToast, ts])
 

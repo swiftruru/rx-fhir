@@ -225,15 +225,29 @@ export default function AboutPage(): React.JSX.Element {
                 <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
                   {t('about.update.available', { version: updateResult.latestVersion })}
                 </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 gap-1.5 px-3 text-xs border-amber-400/60 text-amber-800 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-500/20"
-                  onClick={() => openUrl(updateResult.releaseUrl ?? 'https://github.com/swiftruru/rx-fhir/releases')}
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  {t('about.update.openReleases')}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1.5 px-3 text-xs border-amber-400/60 text-amber-800 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-500/20"
+                    onClick={() => openUrl(updateResult.releaseUrl ?? 'https://github.com/swiftruru/rx-fhir/releases')}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    {t('about.update.openReleases')}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-3 text-xs text-amber-700/70 hover:text-amber-900 hover:bg-amber-100/60 dark:text-amber-400/70 dark:hover:text-amber-300 dark:hover:bg-amber-500/10"
+                    onClick={() => {
+                      void window.rxfhir?.skipUpdateVersion(updateResult.latestVersion!)
+                      setUpdateStatus('idle')
+                      setUpdateResult(null)
+                    }}
+                  >
+                    {t('about.update.skipVersion')}
+                  </Button>
+                </div>
               </div>
             )}
 

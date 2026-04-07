@@ -65,23 +65,30 @@ function ToastCard({ toast }: { toast: ToastItem }): React.JSX.Element {
           {toast.title && <p className="text-sm font-semibold leading-5">{toast.title}</p>}
           <p className="text-sm leading-5">{toast.description}</p>
 
-          {toast.action && (
-            <div className="pt-1">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-8 bg-background/70"
-                onClick={() => {
-                  markHistoryItemRead(toast.id)
-                  toast.action?.onAction()
-                  dismissToast(toast.id)
-                }}
-              >
-                {toast.action.label}
-              </Button>
-            </div>
-          )}
+          {(() => {
+            const actionsToRender = toast.actions ?? (toast.action ? [toast.action] : [])
+            if (actionsToRender.length === 0) return null
+            return (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {actionsToRender.map((a, i) => (
+                  <Button
+                    key={i}
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8 bg-background/70"
+                    onClick={() => {
+                      markHistoryItemRead(toast.id)
+                      a.onAction()
+                      dismissToast(toast.id)
+                    }}
+                  >
+                    {a.label}
+                  </Button>
+                ))}
+              </div>
+            )
+          })()}
         </div>
 
         <button

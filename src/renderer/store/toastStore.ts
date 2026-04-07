@@ -14,7 +14,8 @@ export interface ToastItem {
   description: string
   title?: string
   durationMs: number
-  action?: ToastAction
+  action?: ToastAction    // single action (backward compat)
+  actions?: ToastAction[] // multiple actions (preferred)
 }
 
 export interface ToastHistoryItem extends Omit<ToastItem, 'durationMs'> {
@@ -28,6 +29,7 @@ interface ToastInput {
   title?: string
   durationMs?: number
   action?: ToastAction
+  actions?: ToastAction[]
 }
 
 interface ToastState {
@@ -50,7 +52,7 @@ export const useToastStore = create<ToastState>()(
     (set) => ({
       toasts: [],
       history: [],
-      pushToast: ({ variant = 'info', description, title, durationMs = DEFAULT_DURATION_MS, action }) => {
+      pushToast: ({ variant = 'info', description, title, durationMs = DEFAULT_DURATION_MS, action, actions }) => {
         if (!description.trim()) return ''
 
         const id = crypto.randomUUID()
@@ -60,7 +62,8 @@ export const useToastStore = create<ToastState>()(
           description,
           title,
           durationMs,
-          action
+          action,
+          actions
         }
 
         const historyEntry: ToastHistoryItem = {
@@ -69,6 +72,7 @@ export const useToastStore = create<ToastState>()(
           description,
           title,
           action,
+          actions,
           createdAt: new Date().toISOString(),
           read: false
         }

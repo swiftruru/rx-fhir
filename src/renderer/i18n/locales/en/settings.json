@@ -206,7 +206,8 @@
       "upToDate":       "You're up to date",
       "available":      "New version {{version}} available",
       "failed":         "Could not check for updates. Please check your connection.",
-      "openReleases":   "View on GitHub Releases"
+      "openReleases":   "View on GitHub Releases",
+      "skipVersion":    "Skip This Version"
     },
     "fields": {
       "author":      "Author",

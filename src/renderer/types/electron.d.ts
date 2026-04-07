@@ -54,6 +54,7 @@ export interface RxFhirDesktopBridge {
   setAppZoomFactor: (zoomFactor: number) => Promise<{ zoomFactor: number }>
   checkForUpdates: () => Promise<UpdateCheckResult>
   getCachedUpdateResult: () => Promise<UpdateCheckResult | null>
+  skipUpdateVersion: (version: string) => Promise<void>
   onUpdateResult: (callback: (result: UpdateCheckResult) => void) => () => void
 }
 

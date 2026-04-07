@@ -141,6 +141,7 @@
     "jsonPanelTitle": "已建立資源 JSON",
     "panelModeJson": "資源 JSON",
     "panelModeRequest": "FHIR 請求",
+    "exportPostman": "匯出 Postman",
     "jsonShowingAll": "目前顯示全部 {{count}} 筆資源",
     "jsonShowingLast": "目前只顯示最新更新的資源：{{resource}}",
     "jsonStatusAll": "全部 {{count}} 筆",

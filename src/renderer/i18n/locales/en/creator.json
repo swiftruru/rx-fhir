@@ -141,6 +141,7 @@
     "jsonPanelTitle": "Resources JSON",
     "panelModeJson": "Resources JSON",
     "panelModeRequest": "FHIR Request",
+    "exportPostman": "Export Postman",
     "jsonShowingAll": "Showing all {{count}} resource(s)",
     "jsonShowingLast": "Showing only the latest updated resource: {{resource}}",
     "jsonStatusAll": "All {{count}}",

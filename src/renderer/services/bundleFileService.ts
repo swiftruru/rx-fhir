@@ -1,7 +1,8 @@
 import type { BundleJsonOpenResult, BundleJsonSaveResult, RecentBundleFileEntry, RxFhirDesktopBridge, SaveFileResult } from '../types/electron'
 import type { BundleSummary } from '../types/fhir.d'
 import { extractBundleSummary } from './searchService'
-import { buildPostmanCollection, buildPrescriptionHtml } from './bundleExportService'
+import { buildPostmanCollection, buildCreatorPostmanCollection, buildPrescriptionHtml } from './bundleExportService'
+import type { FhirRequestEntry } from '../store/fhirInspectorStore'
 
 export type BundleFileErrorCode =
   | 'bridge-unavailable'
@@ -126,6 +127,18 @@ export async function exportBundlePostman(
   const content = JSON.stringify(collection, null, 2)
   const baseName = deriveBaseFileName(bundle)
   return saveFile(content, `rxfhir-postman-${baseName}.json`, [
+    { name: 'Postman Collection JSON', extensions: ['json'] }
+  ])
+}
+
+export async function exportCreatorPostman(
+  entries: FhirRequestEntry[],
+  fhirBaseUrl: string
+): Promise<SaveFileResult> {
+  const collection = buildCreatorPostmanCollection(entries, fhirBaseUrl)
+  const content = JSON.stringify(collection, null, 2)
+  const date = new Date().toISOString().slice(0, 10)
+  return saveFile(content, `rxfhir-creator-postman-${date}.json`, [
     { name: 'Postman Collection JSON', extensions: ['json'] }
   ])
 }

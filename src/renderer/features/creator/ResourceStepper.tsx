@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, ChevronRight, ChevronsUpDown, Layers3, Loader2, Package, SendHorizontal, Target, Type } from 'lucide-react'
+import { Braces, Check, ChevronRight, ChevronsUpDown, Layers3, Loader2, Package, SendHorizontal, Target, Type } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
 import { ScrollArea } from '../../components/ui/scroll-area'
@@ -10,6 +10,8 @@ import FeatureShowcaseTarget from '../../components/FeatureShowcaseTarget'
 import { useReducedMotion } from '../../hooks/useReducedMotion'
 import { cn } from '../../lib/utils'
 import { useCreatorStore } from '../../store/creatorStore'
+import { useAppStore } from '../../store/appStore'
+import { exportCreatorPostman } from '../../services/bundleFileService'
 import { useAccessibilityStore } from '../../store/accessibilityStore'
 import { useFhirInspectorStore } from '../../store/fhirInspectorStore'
 import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
@@ -250,6 +252,7 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
   } = useCreatorStore()
   const latestRequest = useFhirInspectorStore((state) => state.latest)
   const requestHistory = useFhirInspectorStore((state) => state.history)
+  const serverUrl = useAppStore((state) => state.serverUrl)
   const announcePolite = useAccessibilityStore((state) => state.announcePolite)
   const showcaseStatus = useFeatureShowcaseStore((state) => state.status)
   const showcaseUi = useFeatureShowcaseStore((state) => state.ui)
@@ -941,7 +944,7 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
                         !isRightPanelSideBySide && 'sm:flex-row sm:items-start sm:justify-between'
                       )}
                     >
-                      <div className="min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
                         <div className="inline-flex items-center rounded-lg border border-border/70 bg-background/90 p-1 shadow-sm">
                           <Button
                             type="button"
@@ -964,6 +967,18 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
                             {t('stepper.panelModeRequest')}
                           </Button>
                         </div>
+                        {rightPanelMode === 'request' && requestHistory.some((e) => e.reasonCode === 'create' || e.reasonCode === 'update') && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 gap-1.5 px-3 text-[11px] shrink-0"
+                            onClick={() => void exportCreatorPostman(requestHistory, serverUrl)}
+                          >
+                            <Braces className="h-3.5 w-3.5" />
+                            {t('stepper.exportPostman')}
+                          </Button>
+                        )}
                       </div>
                       {rightPanelMode === 'json' && (
                         <div className="flex justify-stretch sm:justify-end">

@@ -1,5 +1,6 @@
 // Pure data-transformation helpers — no I/O, no React imports.
 import QRCode from 'qrcode'
+import type { FhirRequestEntry } from '../store/fhirInspectorStore'
 
 // ─── Postman Collection v2.1 ────────────────────────────────────────────────
 
@@ -854,6 +855,76 @@ function formatFhirDate(value: string | undefined | null, locale: string): strin
   }
 }
 
+
+// ─── Creator Postman Export ──────────────────────────────────────────────────
+
+/**
+ * Builds a Postman Collection v2.1 from the Creator's FHIR request history.
+ * Only includes 'create' (POST) and 'update' (PUT) entries — internal
+ * 'check-existing' GET probes and 'search' GETs are excluded.
+ * The fhirBaseUrl prefix in every URL is replaced with {{fhirBaseUrl}} so
+ * the collection is portable across environments.
+ */
+export function buildCreatorPostmanCollection(
+  entries: FhirRequestEntry[],
+  fhirBaseUrl: string
+): PostmanCollection {
+  const base = fhirBaseUrl.replace(/\/+$/, '')
+  const urlHost = base.replace(/^https?:\/\//, '')
+  const sessionDate = new Date().toLocaleDateString('zh-TW')
+
+  const actionEntries = entries.filter(
+    (e) => e.reasonCode === 'create' || e.reasonCode === 'update'
+  )
+
+  const items: PostmanItem[] = actionEntries.map((entry) => {
+    const icon = entry.method === 'PUT' ? '✏️' : '➕'
+    const resourceType = entry.resourceType ?? entry.method
+    const name = `${icon} ${resourceType} — ${entry.method}`
+
+    // Normalise URL: replace base with {{fhirBaseUrl}}
+    const rawUrl = entry.url.startsWith(base)
+      ? entry.url.replace(base, '{{fhirBaseUrl}}')
+      : entry.url
+
+    // Decompose URL for Postman url.path array
+    const pathAfterHost = rawUrl.replace(/^https?:\/\/[^/]+/, '').replace(/^\/?/, '')
+    const pathParts = pathAfterHost.split('/').filter(Boolean)
+
+    const headers: PostmanHeader[] = Object.entries(entry.requestHeaders).map(
+      ([key, value]) => ({ key, value })
+    )
+
+    const request: PostmanRequest = {
+      method: entry.method,
+      header: headers,
+      url: {
+        raw: rawUrl,
+        host: [urlHost],
+        path: pathParts
+      }
+    }
+
+    if (entry.requestBody != null) {
+      request.body = {
+        mode: 'raw',
+        raw: JSON.stringify(entry.requestBody, null, 2),
+        options: { raw: { language: 'json' } }
+      }
+    }
+
+    return { name, request }
+  })
+
+  return {
+    info: {
+      name: `RxFHIR Creator — ${sessionDate}`,
+      schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json'
+    },
+    item: items,
+    variable: [{ key: 'fhirBaseUrl', value: base }]
+  }
+}
 
 export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): string {
   const L = getLabels(locale)

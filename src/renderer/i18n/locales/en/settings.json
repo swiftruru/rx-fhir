@@ -195,8 +195,9 @@
     "techSection":     "Technical Info",
     "github":          "GitHub Repository",
     "githubRepo":      "swiftruru/rx-fhir",
+    "homepage":        "Personal Homepage",
+    "homepageUrl":     "swift.moe",
     "license":         "MIT License · © 2025 Yu-Ru Pan",
-    "versionCopied":   "Copied!",
     "fields": {
       "author":      "Author",
       "affiliation": "Affiliation",

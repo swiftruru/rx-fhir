@@ -195,8 +195,9 @@
     "techSection":     "技術規格",
     "github":          "GitHub 專案",
     "githubRepo":      "swiftruru/rx-fhir",
+    "homepage":        "個人首頁",
+    "homepageUrl":     "swift.moe",
     "license":         "MIT License · © 2025 潘昱如",
-    "versionCopied":   "已複製！",
     "fields": {
       "author":      "作者",
       "affiliation": "學校",

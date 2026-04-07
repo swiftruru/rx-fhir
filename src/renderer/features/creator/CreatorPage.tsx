@@ -148,6 +148,10 @@ export default function CreatorPage(): React.JSX.Element {
 
   useEffect(() => {
     if (!bundleId || bundleId === lastAnnouncedBundleId) return
+    if (featureShowcaseStatus !== 'idle') {
+      setLastAnnouncedBundleId(bundleId)
+      return
+    }
 
     pushToast({
       variant: 'success',
@@ -159,7 +163,7 @@ export default function CreatorPage(): React.JSX.Element {
       }
     })
     setLastAnnouncedBundleId(bundleId)
-  }, [bundleId, handleGoToConsumer, lastAnnouncedBundleId, pushToast, t])
+  }, [bundleId, featureShowcaseStatus, handleGoToConsumer, lastAnnouncedBundleId, pushToast, t])
 
   const draftStatusUi = draftStatus === 'saving'
     ? {

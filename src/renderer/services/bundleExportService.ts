@@ -967,12 +967,17 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   // QR code — encodes patient identifier for mobile scanning
   const qrValue = patient?.identifier?.[0]?.value ?? ''
   const qrSvg = generateQrSvg(qrValue)
+  // qrHtml: only the clickable thumbnail — dialog is rendered at body level to avoid stacking context issues
   const qrHtml = qrSvg
     ? `<div class="qr-wrap" title="${isZh ? '點擊放大' : 'Click to enlarge'}" onclick="document.getElementById('qr-modal').showModal()">
         ${qrSvg}
         <p class="qr-label">${escHtml(qrValue)}</p>
-      </div>
-      <dialog id="qr-modal" onclick="this.close()" style="border:none;background:transparent;padding:0">
+      </div>`
+    : ''
+
+  // Dialog rendered at body level so showModal() positions it relative to the viewport
+  const qrModalHtml = qrSvg
+    ? `<dialog id="qr-modal" onclick="this.close()" style="border:none;background:transparent;padding:0;margin:auto">
         <div style="background:white;border-radius:16px;padding:1.5rem;text-align:center;cursor:pointer">
           ${generateQrSvg(qrValue).replace('class="qr-svg"', 'width="240" height="240"')}
           <p style="margin-top:0.75rem;font-size:0.9rem;font-family:monospace;color:#2d1a1f">${escHtml(qrValue)}</p>
@@ -1365,6 +1370,7 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
   .qr-wrap:hover { background: rgba(255,255,255,0.22); }
   .qr-svg { border-radius: 4px; display: block; }
   .qr-label { font-size: 0.65rem; opacity: 0.8; font-family: monospace; }
+  dialog { position: fixed; inset: 0; margin: auto; }
   dialog::backdrop { background: rgba(0,0,0,0.55); }
 
   header { padding-top: 1.25rem; margin-bottom: 1.5rem; }
@@ -2003,6 +2009,7 @@ export function buildPrescriptionHtml(bundle: fhir4.Bundle, locale: string): str
     document.head.appendChild(s)
   })()
 </script>
+${qrModalHtml}
 </body>
 </html>`
 }

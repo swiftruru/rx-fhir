@@ -3,7 +3,7 @@
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.20-d4779a?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.21-d4779a?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/github/license/swiftruru/rx-fhir?style=flat-square&color=d4779a" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-8e8e93?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
@@ -195,6 +195,7 @@ Search and inspect FHIR Bundles on the configured server:
 - Embedded `Noto Sans TC` UI font for more consistent offline typography, especially on Windows
 - Custom macOS app naming, icon, and About window
 - The About page is redesigned with a Hero block (app icon, dynamic version number, tagline), a separate academic background card (author, institution, advisors), and a technical info card with links to the GitHub repository and personal homepage; the macOS native About window version is now read dynamically from the app instead of being hardcoded
+- The About page includes an **App Updates** section that checks GitHub Releases for newer versions; a manual "Check for Updates" button shows one of three states (up-to-date, update available, or check failed); when a new version is found a link to the Releases page is shown; on app startup a background check runs after 5 seconds and adds a dot indicator next to the version number if an update is available — all platforms use the same lightweight strategy (GitHub public API + semver compare, no code signing or auto-install required)
 
 ### UX Highlights
 

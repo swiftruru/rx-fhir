@@ -33,13 +33,32 @@ function sortPrimaryDemoFirst(scenarios: MockScenarioPack[]): MockScenarioPack[]
 export function getConsumerBasicMocks(locale: MockLocale): ConsumerBasicMockInput[] {
   const scenarios = sortPrimaryDemoFirst(getResolvedScenarioPacks(locale))
 
-  return uniqueBy(
-    scenarios.map((scenario) => ({
-      searchBy: 'identifier' as const,
-      value: scenario.creator.patient.studentId
-    })),
-    (item) => `${item.searchBy}:${item.value}`
-  )
+  const identifierMocks: ConsumerBasicMockInput[] = scenarios.map((scenario) => ({
+    searchBy: 'identifier' as const,
+    value: scenario.creator.patient.studentId
+  }))
+
+  // Insert a name-based example for the primary demo patient right after its
+  // identifier example, so users can also try name search with familiar data.
+  const primaryDemo = scenarios.find((s) => s.isPrimaryDemo)
+  // Use family name only — HAPI FHIR name search matches per component, so
+  // a multi-word string like "Pan RuRu" would not match family="Pan" + given="RuRu".
+  const nameMocks: ConsumerBasicMockInput[] = primaryDemo
+    ? [{
+        searchBy: 'name' as const,
+        value: primaryDemo.creator.patient.familyName
+      }]
+    : []
+
+  // Order: primary demo identifier, primary demo name, then remaining identifier examples
+  const [primaryIdentifier, ...restIdentifiers] = identifierMocks
+  const ordered: ConsumerBasicMockInput[] = [
+    ...(primaryIdentifier ? [primaryIdentifier] : []),
+    ...nameMocks,
+    ...restIdentifiers
+  ]
+
+  return uniqueBy(ordered, (item) => `${item.searchBy}:${item.value}`)
 }
 
 export function getConsumerDateMocks(locale: MockLocale): ConsumerDateMockInput[] {

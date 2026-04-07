@@ -22,9 +22,10 @@ import { useShortcutActionStore } from '../../store/shortcutActionStore'
 import { useAccessibilityStore } from '../../store/accessibilityStore'
 import { useToastStore } from '../../store/toastStore'
 import { useAppStore } from '../../store/appStore'
+import { useConsumerSearchStore } from '../../store/consumerSearchStore'
 import { getBundleFileErrorMessage, importBundleJsonFile, listRecentBundleJsonFiles, openRecentBundleJson, rememberRecentBundleJson } from '../../services/bundleFileService'
-import { fetchBundleById } from '../../services/fhirClient'
-import { extractBundleHistoryMetadata } from '../../services/searchService'
+import { fetchBundleById, searchBundlesNextPage } from '../../services/fhirClient'
+import { extractBundleHistoryMetadata, extractSearchResults } from '../../services/searchService'
 import {
   buildSearchPrefillFromParams,
   getSearchTabFromParams,
@@ -88,6 +89,11 @@ export default function ConsumerPage(): React.JSX.Element {
   const [dragDepth, setDragDepth] = useState(0)
   const [dropFeedback, setDropFeedback] = useState<{ message: string; variant: 'success' | 'destructive' } | null>(null)
   const [recentFiles, setRecentFiles] = useState<RecentBundleFileEntry[]>([])
+  const [nextUrl, setNextUrl] = useState<string | null>(null)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [lastNameFilter, setLastNameFilter] = useState<string | undefined>(undefined)
+  const setIsSearching = useConsumerSearchStore((state) => state.setIsSearching)
+  const isSearching = useConsumerSearchStore((state) => state.isSearching)
   const showcaseBackupRef = useRef<ConsumerPageBackup>()
   const searchFormRef = useRef<SearchFormHandle>(null)
   const showcaseActive = showcaseStatus === 'running' || showcaseStatus === 'paused'
@@ -160,8 +166,10 @@ export default function ConsumerPage(): React.JSX.Element {
         'setSearchTab',
         'setMiddleTab'
       ])
+      // Reset searching flag so navigation guard doesn't linger after unmount
+      setIsSearching(false)
     }
-  }, [clearConsumerActions, setConsumerActions])
+  }, [clearConsumerActions, setConsumerActions, setIsSearching])
 
   useEffect(() => {
     if (showcaseActive && !showcaseBackupRef.current) {
@@ -248,10 +256,21 @@ export default function ConsumerPage(): React.JSX.Element {
     setSelected(consumerUi.showDetail && nextMiddleTab === 'results' ? nextSelected : null)
   }, [showcaseActive, showcaseSnapshot, showcaseUi.consumer])
 
+  function handleSearchStart(): void {
+    setResults([])
+    setTotal(0)
+    setSelected(null)
+    setNextUrl(null)
+    setSearchExecution(null)
+    setMiddleTab('results')
+  }
+
   function handleResults(r: BundleSummary[], totalCount: number, execution: ConsumerSearchExecution): void {
     setResults(r)
     setTotal(totalCount)
     setSearchExecution(execution)
+    setNextUrl(execution.nextUrl ?? null)
+    setLastNameFilter(execution.params.mode === 'basic' ? execution.params.name : undefined)
     recordSearch(execution.params)
     setMiddleTab('results')
     setPrefillNotice(null)
@@ -301,6 +320,26 @@ export default function ConsumerPage(): React.JSX.Element {
       })
     )
     void refreshRecentFiles()
+  }
+
+  async function handleLoadMore(): Promise<void> {
+    if (!nextUrl || isLoadingMore) return
+    setIsLoadingMore(true)
+    try {
+      const more = await searchBundlesNextPage(nextUrl, lastNameFilter)
+      const moreResults = extractSearchResults(more)
+      const moreNextUrl = more.link?.find((l: { relation: string; url: string }) => l.relation === 'next')?.url ?? null
+      setResults((prev) => {
+        const existingIds = new Set(prev.map((r) => r.id))
+        const deduplicated = moreResults.filter((r) => !existingIds.has(r.id))
+        return [...prev, ...deduplicated]
+      })
+      setNextUrl(moreNextUrl)
+    } catch {
+      // silently ignore load-more errors; user can retry
+    } finally {
+      setIsLoadingMore(false)
+    }
   }
 
   async function refreshRecentFiles(): Promise<void> {
@@ -639,6 +678,8 @@ export default function ConsumerPage(): React.JSX.Element {
                 onComplexByChange={setActiveComplexBy}
                 onResults={handleResults}
                 onImportBundle={handleImportedBundle}
+                onSearchStart={handleSearchStart}
+                onBusyChange={setIsSearching}
                 prefill={prefill}
                 prefillNotice={prefillNotice}
                 onPrefillConsumed={() => setPrefill(null)}
@@ -656,8 +697,8 @@ export default function ConsumerPage(): React.JSX.Element {
           <Tabs value={middleTab} onValueChange={(value) => setMiddleTab(value as 'results' | 'quickstart')}>
             <div className="flex items-center justify-between gap-2">
               <TabsList className="grid shrink-0 grid-cols-2 rounded-xl bg-muted/45 p-1">
-                <TabsTrigger value="results" className="rounded-lg">{t('page.middleTabs.results')}</TabsTrigger>
-                <TabsTrigger value="quickstart" className="rounded-lg">{t('page.middleTabs.quickStart')}</TabsTrigger>
+                <TabsTrigger value="results" disabled={isSearching} className="rounded-lg">{t('page.middleTabs.results')}</TabsTrigger>
+                <TabsTrigger value="quickstart" disabled={isSearching} className="rounded-lg">{t('page.middleTabs.quickStart')}</TabsTrigger>
               </TabsList>
               {!showDetail && (
                 <div className="flex flex-nowrap items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -678,13 +719,17 @@ export default function ConsumerPage(): React.JSX.Element {
 
         {middleTab === 'results' ? (
           <FeatureShowcaseTarget id="consumer.resultsPane" className="flex-1 min-h-0">
-            {hasSearched ? (
+            {hasSearched || isSearching ? (
               <ResultList
                 results={results}
                 total={total}
                 searchExecution={searchExecution}
                 selected={selected}
                 onSelect={setSelected}
+                nextUrl={nextUrl}
+                isLoadingMore={isLoadingMore}
+                onLoadMore={handleLoadMore}
+                isSearching={isSearching}
               />
             ) : (
               <div className="flex h-full items-center justify-center bg-muted/[0.08] px-6 text-muted-foreground">
@@ -777,6 +822,7 @@ export default function ConsumerPage(): React.JSX.Element {
           </div>
         </FeatureShowcaseTarget>
       )}
+
     </div>
   )
 }

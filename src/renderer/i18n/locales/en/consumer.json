@@ -34,6 +34,11 @@
     "middleTabs": {
       "results": "Results",
       "quickStart": "Shortcuts"
+    },
+    "searchingGuard": {
+      "title": "Search in Progress",
+      "toastDescription": "The search is not finished yet. Leaving now will cancel it.",
+      "leaveAction": "Leave Anyway"
     }
   },
   "search": {
@@ -54,7 +59,7 @@
       "identifierLabel": "Identifier (Student ID)",
       "nameLabel":       "Patient Name",
       "identifierPlaceholder": "e.g. B12345678",
-      "namePlaceholder":       "e.g. Wang Xiao Ming"
+      "namePlaceholder":       "e.g. Pan RuRu"
     },
     "date": {
       "identifierLabel":       "Patient Identifier (Student ID)",
@@ -77,6 +82,7 @@
       "submitButtonOrg":       "Search by Organization",
       "submitButtonAuthor":    "Search by Author"
     },
+    "cancelButton": "Cancel search",
     "queryUrlLabel": "Query URL",
     "queryStepsLabel": "Query Steps",
     "idealQueryLabel": "Ideal FHIR Standard Query",
@@ -87,11 +93,18 @@
       "resolveOrganizationId": "Resolve Organization ID",
       "searchBundle": "Search Bundle",
       "clientFilter": "Client-side Filter",
+      "searchPatient": "Search Patient",
       "custodianFallback": "(custodian chain is unsupported, so the app falls back to identifier search and filters afterward)",
       "authorFallback": "(author chain is unsupported, so the app falls back to identifier search and filters afterward)",
       "dateFallback": "(Bundle.timestamp ≠ Composition.date, so the app fetches by identifier and filters by Composition.date afterward)",
+      "nameFallback": "(Bundle name chain is unsupported, so the app searches Patient by name first, then queries Bundle by identifier and filters afterward)",
       "filteredCounts": "Fetched {{fetched}} candidate bundle(s) -> matched {{matched}}",
-      "organizationNotFound": "No organization matched the organization code."
+      "organizationNotFound": "No organization matched the organization code.",
+      "searchOwnedBundles": "Search Submitted Bundles",
+      "ownedBundlesFallback": "(using identifiers from your submission history)",
+      "searchComposition": "Search via Composition Chain",
+      "compositionFallback": "(Composition.subject → Bundle?composition — finds bundles from any FHIR app regardless of identifier convention)",
+      "compositionStats": "(found {{compositions}} Composition(s) → retrieved {{bundles}} Bundle(s) via composition chain)"
     },
     "errors": {
       "basicValueRequiredIdentifier": "Enter a patient identifier.",
@@ -162,6 +175,8 @@
     "opened": "Opened recent file: {{fileName}}"
   },
   "results": {
+    "searching":      "Searching for prescriptions",
+    "searchingHint":  "Querying the FHIR Server, please wait…",
     "empty":          "No results found",
     "emptyHint":      "Use the form on the left to search",
     "errorTitle":     "This search did not complete",
@@ -208,7 +223,11 @@
     "showing":        "Showing {{count}}",
     "selectedBadge": "Selected",
     "unknownPatient": "Unknown Patient",
-    "importedBadge": "Local Import"
+    "importedBadge": "Local Import",
+    "cancelled":      "Search cancelled",
+    "cancelledHint":  "The search was stopped. Adjust your criteria and try again.",
+    "loadMore":       "Load more results",
+    "loadingMore":    "Loading…"
   },
   "detail": {
     "title": "Prescription Details",

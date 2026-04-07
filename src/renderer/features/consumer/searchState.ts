@@ -27,6 +27,8 @@ export interface ConsumerSearchExecution {
   lastUrl?: string
   querySteps: QueryStep[]
   error?: string
+  nextUrl?: string   // HAPI pagination — present when more results exist on the server
+  cancelled?: boolean
 }
 
 export function getSearchTabFromParams(params: SearchParams): SearchTab {

@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Search, Loader2 } from 'lucide-react'
+import { Search, Loader2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -28,6 +28,8 @@ interface Props {
   onComplexByChange?: (value: 'organization' | 'author') => void
   onResults: (results: BundleSummary[], total: number, execution: ConsumerSearchExecution) => void
   onImportBundle: (summary: BundleSummary) => void
+  onSearchStart?: () => void
+  onBusyChange?: (busy: boolean) => void
   prefill?: SearchPrefill | null
   prefillNotice?: { message: string; variant?: 'info' | 'warning' } | null
   onPrefillConsumed?: () => void
@@ -95,6 +97,8 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   onComplexByChange,
   onResults,
   onImportBundle,
+  onSearchStart,
+  onBusyChange,
   prefill,
   prefillNotice,
   onPrefillConsumed,
@@ -109,6 +113,11 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   const fhirBaseUrl = useAppStore((s) => s.serverUrl)
   const [loading, setLoading] = useState(false)
   const [importing, setImporting] = useState(false)
+
+  useEffect(() => {
+    onBusyChange?.(loading || importing)
+  }, [loading, importing, onBusyChange])
+
   const [lastUrl, setLastUrl] = useState<string>()
   const [idealUrl, setIdealUrl] = useState<string>()
   const [querySteps, setQuerySteps] = useState<QueryStep[]>([])
@@ -121,9 +130,10 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
     defaultValues: { identifier: '', complexBy: 'organization', orgId: '', authorName: '' }
   })
 
-  const basicMockRef   = useRef(0)
-  const dateMockRef    = useRef(0)
-  const complexMockRef = useRef(0)
+  const basicMockRef        = useRef(0)
+  const dateMockRef         = useRef(0)
+  const complexMockRef      = useRef(0)
+  const abortControllerRef  = useRef<AbortController | null>(null)
   const consumedAutoSearchKeyRef = useRef<string>()
   const historyRecords = useHistoryStore((s) => s.records)
   const searchHistoryRecords = useSearchHistoryStore((s) => s.records)
@@ -258,7 +268,19 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
     await complexForm.handleSubmit(handleComplexSubmit)()
   }
 
-  async function doSearch(params: SearchParams): Promise<void> {
+  function cancelSearch(): void {
+    abortControllerRef.current?.abort()
+  }
+
+  async function doSearch(
+    params: SearchParams,
+    searchOptions?: { ownedIdentifiers?: string[] }
+  ): Promise<void> {
+    abortControllerRef.current?.abort()
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
+
+    onSearchStart?.()
     announcePolite(t('search.status.searching'))
     setLoading(true)
     setError(undefined)
@@ -271,7 +293,8 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
         (params.complexSearchBy === 'organization' && Boolean(params.organizationId)) ||
         (params.complexSearchBy === 'author' && Boolean(params.authorName))
       )
-    if (!isClientFilteredComplex) {
+    const isNameSearch = params.mode === 'basic' && Boolean(params.name)
+    if (!isClientFilteredComplex && !isNameSearch) {
       setLastUrl(buildSearchUrl(params))
     } else {
       setLastUrl(undefined)
@@ -279,7 +302,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
     const steps: QueryStep[] = []
     const buildExecution = (overrides?: Partial<ConsumerSearchExecution>): ConsumerSearchExecution => ({
       params,
-      lastUrl: isClientFilteredComplex ? undefined : buildSearchUrl(params),
+      lastUrl: (isClientFilteredComplex || isNameSearch) ? undefined : buildSearchUrl(params),
       querySteps: [...steps],
       error: undefined,
       ...overrides
@@ -287,13 +310,23 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
 
     try {
       const bundle = await searchBundles(params, (step) => {
-        steps.push(step)
+        const existingIndex = steps.findIndex((s) => s.step === step.step)
+        if (existingIndex >= 0) {
+          steps[existingIndex] = step
+        } else {
+          steps.push(step)
+        }
         setQuerySteps([...steps])
-      })
+      }, { ...searchOptions, signal: abortController.signal })
       const results = extractSearchResults(bundle)
       const total = bundle.total ?? results.length
-      onResults(results, total, buildExecution())
+      const nextUrl = bundle.link?.find((l: { relation: string; url: string }) => l.relation === 'next')?.url
+      onResults(results, total, buildExecution({ nextUrl }))
     } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') {
+        onResults([], 0, buildExecution({ cancelled: true }))
+        return
+      }
       const message = e instanceof Error ? e.message : t('search.error')
       setError(message)
       onResults([], 0, buildExecution({ error: message }))
@@ -336,11 +369,19 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   }
 
   async function handleBasicSubmit(data: BasicSearchFormValues): Promise<void> {
-    await doSearch({
-      mode: 'basic',
+    const params = {
+      mode: 'basic' as const,
       identifier: data.searchBy === 'identifier' ? data.value : undefined,
       name: data.searchBy === 'name' ? data.value : undefined
-    })
+    }
+    if (data.searchBy === 'name') {
+      const ownedIdentifiers = historyRecords
+        .map((r) => r.patientIdentifier)
+        .filter((id): id is string => Boolean(id))
+      await doSearch(params, { ownedIdentifiers })
+    } else {
+      await doSearch(params)
+    }
   }
 
   async function handleDateSubmit(data: DateSearchFormValues): Promise<void> {
@@ -395,13 +436,13 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
           aria-label={t('search.tabListLabel')}
           className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl bg-muted/45 p-1.5"
         >
-          <TabsTrigger value="basic" className="rounded-xl px-3 py-2 text-xs sm:text-sm">
+          <TabsTrigger value="basic" disabled={isBusy} className="rounded-xl px-3 py-2 text-xs sm:text-sm">
             {t('search.tabs.basic')}
           </TabsTrigger>
-          <TabsTrigger value="date" className="rounded-xl px-3 py-2 text-xs sm:text-sm">
+          <TabsTrigger value="date" disabled={isBusy} className="rounded-xl px-3 py-2 text-xs sm:text-sm">
             {t('search.tabs.date')}
           </TabsTrigger>
-          <TabsTrigger value="complex" className="rounded-xl px-3 py-2 text-xs sm:text-sm">
+          <TabsTrigger value="complex" disabled={isBusy} className="rounded-xl px-3 py-2 text-xs sm:text-sm">
             {t('search.tabs.complex')}
           </TabsTrigger>
         </TabsList>
@@ -449,10 +490,18 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
                 </p>
               )}
             </div>
-            <Button type="submit" disabled={isBusy} className="h-11 w-full gap-2 rounded-xl">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              {tc('buttons.search')}
-            </Button>
+
+            <div className="flex gap-2">
+              <Button type="submit" disabled={isBusy} className="h-11 flex-1 gap-2 rounded-xl">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                {tc('buttons.search')}
+              </Button>
+              {loading && (
+                <Button type="button" variant="outline" size="icon" className="h-11 w-11 shrink-0 rounded-xl" onClick={cancelSearch} aria-label={t('search.cancelButton')}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </form>
         </TabsContent>
 
@@ -493,10 +542,17 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
                 </p>
               )}
             </div>
-            <Button type="submit" disabled={isBusy} className="h-11 w-full gap-2 rounded-xl">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              {t('search.date.submitButton')}
-            </Button>
+            <div className="flex gap-2">
+              <Button type="submit" disabled={isBusy} className="h-11 flex-1 gap-2 rounded-xl">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                {t('search.date.submitButton')}
+              </Button>
+              {loading && (
+                <Button type="button" variant="outline" size="icon" className="h-11 w-11 shrink-0 rounded-xl" onClick={cancelSearch} aria-label={t('search.cancelButton')}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </form>
         </TabsContent>
 
@@ -561,10 +617,17 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
                 />
               </div>
             )}
-            <Button type="submit" disabled={isBusy} className="h-11 w-full gap-2 rounded-xl">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              {complexBy === 'organization' ? t('search.complex.submitButtonOrg') : t('search.complex.submitButtonAuthor')}
-            </Button>
+            <div className="flex gap-2">
+              <Button type="submit" disabled={isBusy} className="h-11 flex-1 gap-2 rounded-xl">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                {complexBy === 'organization' ? t('search.complex.submitButtonOrg') : t('search.complex.submitButtonAuthor')}
+              </Button>
+              {loading && (
+                <Button type="button" variant="outline" size="icon" className="h-11 w-11 shrink-0 rounded-xl" onClick={cancelSearch} aria-label={t('search.cancelButton')}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </form>
         </TabsContent>
       </Tabs>

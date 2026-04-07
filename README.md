@@ -188,6 +188,11 @@ Search and inspect FHIR Bundles on the configured server:
 - **HTML report export** generates a self-contained, printable prescription summary with embedded CSS, including: a clinical timeline showing key clinical events in chronological order; a medication summary table before the detailed cards; Observation lab value badges (Normal / High / Low) derived from reference ranges; a color-coded Composition status banner (final / draft / amended / entered-in-error); a global full-text search bar with ↑↓ navigation and match count; and a print layout with A4 margins and fixed page header/footer
 - **Date search** now correctly filters by `Composition.date` (prescription date) instead of `Bundle.timestamp` (submission time), using the same fetch-then-filter workaround as organization and author complex searches
 - Date query example now pre-fills with the actual `Composition.date` from the most recently submitted bundle, falling back to the most recently used date search, so the example always matches a real record on the server
+- **Composition chain search**: name and identifier searches now include a final step that looks up `Composition` resources linked to matched patients and retrieves their parent Bundles via `Bundle?composition=`, so prescriptions submitted from any FHIR client (e.g. Postman, third-party apps) are discoverable — not just those created with RxFHIR's own identifier convention
+- **Cancel search**: an `×` icon button appears next to the submit button during an active query; clicking it aborts all in-flight HTTP requests immediately via `AbortController` and shows a distinct cancelled state in the results panel
+- **Search UX improvements**: results are cleared at the start of each new query so stale data never misleads; a spinner with animated skeleton cards appears in the results panel immediately; all search-mode tabs and the middle Results / Shortcuts tabs are disabled while a query is running to prevent accidental tab switches mid-search
+- **Navigation guard**: if the user tries to navigate to another page while a search is in progress, a toast with an optional "Leave Anyway" action appears instead of silently aborting the search
+- **Consumer search isolation**: Consumer queries no longer appear in Creator's FHIR Request Inspector panel — the two modules now maintain completely separate HTTP logging contexts
 - Feature Showcase now clears Activity Center notification history on start and restores it on exit, keeping showcase runs visually clean
 - Supports Creator-to-Consumer handoff with automatic query prefill, auto-search, and newly created bundle focus
 
@@ -258,10 +263,19 @@ Public HAPI FHIR servers do not fully support chained search on `Bundle`. The ap
 | Mode | UI Input | Implemented Query |
 |------|----------|-------------------|
 | Basic | identifier | `GET /Bundle?identifier={value}` (patient identifier mapped to `Bundle.identifier`) |
-| Basic | name | `GET /Bundle?composition.subject.name={value}` |
+| Basic | name | Step A: `GET /Patient?name={value}` → `GET /Bundle?identifier={id}` per matched patient; Step B fallback: `GET /Bundle?_count=N` → client-side name filter; Step C: Composition chain (see below) |
 | Date | identifier + date | fetch bundles by identifier → client-side filter on `Composition.date` prefix (`Bundle.timestamp` ≠ `Composition.date`) |
 | Complex | identifier + author | fetch bundles by identifier → client-side filter on `Composition.author` / `Practitioner.name` |
 | Complex | identifier + organization | resolve organization by identifier → fetch bundles by identifier → client-side filter on `Composition.custodian` |
+
+#### Composition Chain (cross-app bundle discovery)
+
+For name and identifier searches, after the identifier-based steps a final **Composition chain** step runs:
+
+1. `GET /Composition?subject=Patient/{id}` — find all Compositions linked to the matched patient
+2. `GET /Bundle?composition=Composition/{id}` — retrieve the parent document Bundle for each Composition
+
+This discovers prescriptions submitted from **any FHIR client** (Postman, third-party apps, etc.), not only those that follow RxFHIR's `Bundle.identifier` convention. Results from all steps are merged and deduplicated by Bundle ID, with locally submitted bundles sorted first.
 
 ---
 

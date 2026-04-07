@@ -1,7 +1,8 @@
 import { useRef } from 'react'
-import { FileText, CalendarDays, Building2, Pill, Stethoscope, Lightbulb, SearchX, TriangleAlert } from 'lucide-react'
+import { FileText, CalendarDays, Building2, Pill, Stethoscope, Lightbulb, SearchX, TriangleAlert, Loader2, Ban } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '../../components/ui/badge'
+import { Button } from '../../components/ui/button'
 import { Card, CardContent } from '../../components/ui/card'
 import { ScrollArea } from '../../components/ui/scroll-area'
 import type { BundleSummary } from '../../types/fhir.d'
@@ -13,6 +14,10 @@ interface Props {
   searchExecution?: ConsumerSearchExecution | null
   selected: BundleSummary | null
   onSelect: (summary: BundleSummary) => void
+  nextUrl?: string | null
+  isLoadingMore?: boolean
+  onLoadMore?: () => void
+  isSearching?: boolean
 }
 
 function parseFilterCounts(querySteps: ConsumerSearchExecution['querySteps']): { fetched: number; matched: number } | null {
@@ -144,7 +149,7 @@ function getSuggestionTexts(execution: ConsumerSearchExecution, t: (key: string,
   return [...suggestions]
 }
 
-export default function ResultList({ results, total, searchExecution, selected, onSelect }: Props): React.JSX.Element {
+export default function ResultList({ results, total, searchExecution, selected, onSelect, nextUrl, isLoadingMore, onLoadMore, isSearching }: Props): React.JSX.Element {
   const { t } = useTranslation('consumer')
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
   const selectedIndex = selected ? results.findIndex((summary) => summary.id === selected.id) : -1
@@ -170,6 +175,49 @@ export default function ResultList({ results, total, searchExecution, selected, 
 
     event.preventDefault()
     focusOption(nextIndex)
+  }
+
+  if (isSearching) {
+    return (
+      <div className="h-full overflow-auto bg-muted/[0.08] p-4">
+        <Card className="rounded-[24px] border-dashed border-border/70 bg-background/85 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex flex-col items-center justify-center text-center text-muted-foreground gap-3 py-4">
+              <Loader2 className="h-10 w-10 animate-spin opacity-40" />
+              <p className="text-sm font-medium text-foreground">{t('results.searching')}</p>
+              <p className="text-xs opacity-60">{t('results.searchingHint')}</p>
+            </div>
+            <div className="mt-4 space-y-2.5">
+              {[80, 60, 70].map((w) => (
+                <div key={w} className="rounded-[18px] border border-border/40 bg-muted/30 p-4 space-y-2 animate-pulse">
+                  <div className="flex gap-2 items-center">
+                    <div className={`h-3.5 rounded-full bg-muted/60`} style={{ width: `${w}%` }} />
+                    <div className="h-3.5 w-12 rounded-full bg-muted/40 ml-auto" />
+                  </div>
+                  <div className="h-3 w-2/5 rounded-full bg-muted/40" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (results.length === 0 && searchExecution?.cancelled) {
+    return (
+      <div className="h-full overflow-auto bg-muted/[0.08] p-4">
+        <Card className="rounded-[24px] border-dashed border-border/70 bg-background/85 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex flex-col items-center justify-center text-center text-muted-foreground gap-3 py-4">
+              <Ban className="h-10 w-10 opacity-30" />
+              <p className="text-sm font-medium text-foreground">{t('results.cancelled')}</p>
+              <p className="text-xs opacity-60">{t('results.cancelledHint')}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   if (results.length === 0) {
@@ -365,6 +413,20 @@ export default function ResultList({ results, total, searchExecution, selected, 
             )
           })}
         </ul>
+        {nextUrl && (
+          <div className="flex justify-center pb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 rounded-xl text-xs"
+              disabled={isLoadingMore}
+              onClick={onLoadMore}
+            >
+              {isLoadingMore && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {isLoadingMore ? t('results.loadingMore') : t('results.loadMore')}
+            </Button>
+          </div>
+        )}
       </ScrollArea>
     </div>
   )

@@ -34,6 +34,11 @@
     "middleTabs": {
       "results": "搜尋結果",
       "quickStart": "查詢輔助"
+    },
+    "searchingGuard": {
+      "title": "查詢進行中",
+      "toastDescription": "查詢尚未完成，現在離開將中斷查詢。",
+      "leaveAction": "仍要離開"
     }
   },
   "search": {
@@ -54,7 +59,7 @@
       "identifierLabel": "識別碼（學號）",
       "nameLabel":       "病人姓名",
       "identifierPlaceholder": "例：B12345678",
-      "namePlaceholder":       "例：王小明"
+      "namePlaceholder":       "例：潘小如"
     },
     "date": {
       "identifierLabel":       "病人識別碼（學號）",
@@ -77,6 +82,7 @@
       "submitButtonOrg":    "機構複合查詢",
       "submitButtonAuthor": "醫師複合查詢"
     },
+    "cancelButton": "取消查詢",
     "queryUrlLabel": "查詢 URL",
     "queryStepsLabel": "查詢步驟",
     "idealQueryLabel": "理想 FHIR 標準查詢",
@@ -87,11 +93,18 @@
       "resolveOrganizationId": "解析機構 ID",
       "searchBundle": "查詢 Bundle",
       "clientFilter": "Client 端過濾",
+      "searchPatient": "查詢 Patient",
       "custodianFallback": "(custodian chain 不支援，改用 identifier 撈回後過濾)",
       "authorFallback": "(author chain 不支援，改用 identifier 撈回後過濾)",
       "dateFallback": "(Bundle.timestamp ≠ Composition.date，改用 identifier 撈回後以 Composition.date 過濾)",
+      "nameFallback": "(Bundle name chain 不支援，改用先查 Patient 再以 identifier 查 Bundle 後過濾)",
       "filteredCounts": "取得 {{fetched}} 筆 → 符合 {{matched}} 筆",
-      "organizationNotFound": "找不到符合機構代碼的機構"
+      "organizationNotFound": "找不到符合機構代碼的機構",
+      "searchOwnedBundles": "查詢已提交處方",
+      "ownedBundlesFallback": "（以提交紀錄中的識別碼逐一查詢）",
+      "searchComposition": "透過 Composition 查詢",
+      "compositionFallback": "（Composition.subject → Bundle?composition，可找到任意 FHIR App 提交的 Bundle，不受 identifier 慣例限制）",
+      "compositionStats": "（找到 {{compositions}} 筆 Composition → 透過 composition chain 取得 {{bundles}} 筆 Bundle）"
     },
     "errors": {
       "basicValueRequiredIdentifier": "請輸入病人識別碼。",
@@ -162,6 +175,8 @@
     "opened": "已開啟最近檔案：{{fileName}}"
   },
   "results": {
+    "searching":    "正在查詢處方資料",
+    "searchingHint": "正在向 FHIR Server 查詢，請稍候…",
     "empty":        "尚無查詢結果",
     "emptyHint":    "請使用左側表單進行查詢",
     "errorTitle":   "本次查詢未完成",
@@ -208,7 +223,11 @@
     "showing":      "顯示 {{count}} 筆",
     "selectedBadge": "已選取",
     "unknownPatient": "未知病人",
-    "importedBadge": "本機匯入"
+    "importedBadge": "本機匯入",
+    "cancelled":     "查詢已取消",
+    "cancelledHint": "查詢已被中斷，請調整條件後重新查詢。",
+    "loadMore":      "載入更多結果",
+    "loadingMore":   "載入中…"
   },
   "detail": {
     "title": "處方箋詳情",

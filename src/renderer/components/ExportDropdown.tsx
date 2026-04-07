@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Download, ChevronDown, FileJson, Braces, FileText } from 'lucide-react'
+import { Download, ChevronDown, FileJson, Braces, FileText, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
 import { Button } from './ui/button'
@@ -91,91 +91,80 @@ export default function ExportDropdown({ bundle, onSuccess, onError }: Props): R
   }
 
   const anyLoading = loading.size > 0
-  const showProgress = postmanProgress !== null && postmanProgress.total > 0
-  const progressPercent = showProgress
-    ? Math.round((postmanProgress!.checked / postmanProgress!.total) * 100)
-    : 0
+  const isPostmanProbing = postmanProgress !== null
+
+  // While Postman is probing, replace the dropdown entirely with a cancel button
+  if (isPostmanProbing) {
+    const checked = postmanProgress!.checked
+    const total = postmanProgress!.total
+    const label = total === 0
+      ? t('detail.exportPostmanChecking')
+      : `${checked}/${total}`
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-8 gap-1.5 rounded-xl px-3 border-destructive/40 hover:border-destructive hover:bg-destructive/10 hover:text-destructive transition-colors"
+        onClick={() => abortControllerRef.current?.abort()}
+        aria-label={tc('buttons.cancel')}
+        title={tc('buttons.cancel')}
+      >
+        <Download className="h-3.5 w-3.5 shrink-0" />
+        <span className="shrink-0 tabular-nums text-xs text-muted-foreground">{label}</span>
+        <X className="h-3 w-3 shrink-0 text-destructive/70" />
+      </Button>
+    )
+  }
 
   return (
-    <div className="relative">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-8 gap-1.5 rounded-xl px-3"
-            disabled={anyLoading}
-            aria-label={t('detail.exportDropdownLabel')}
-          >
-            <Download className="h-3.5 w-3.5 shrink-0" />
-            <span className="shrink-0">{t('detail.exportDropdownLabel')}</span>
-            {postmanProgress !== null ? (
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {postmanProgress.total === 0
-                  ? t('detail.exportPostmanChecking')
-                  : `${postmanProgress.checked}/${postmanProgress.total}`}
-              </span>
-            ) : anyLoading ? (
-              <span className="h-3 w-3 shrink-0 animate-spin rounded-full border border-muted-foreground border-t-transparent" />
-            ) : (
-              <ChevronDown className={cn('h-3 w-3 shrink-0 transition-transform', open && 'rotate-180')} />
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          side="bottom"
-          align="end"
-          sideOffset={6}
-          className="w-56 p-1.5"
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 rounded-xl px-3"
+          disabled={anyLoading}
+          aria-label={t('detail.exportDropdownLabel')}
         >
-          <div className="flex flex-col gap-0.5">
-            <ExportItem
-              icon={<FileJson className="h-3.5 w-3.5" />}
-              label={t('detail.exportJson')}
-              loading={isLoading('json')}
-              onClick={() => void handleExport('json')}
-            />
-            <ExportItem
-              icon={<Braces className="h-3.5 w-3.5" />}
-              label={t('detail.exportPostman')}
-              loading={isLoading('postman')}
-              onClick={() => void handleExport('postman')}
-            />
-            <ExportItem
-              icon={<FileText className="h-3.5 w-3.5" />}
-              label={t('detail.exportHtml')}
-              loading={isLoading('html')}
-              onClick={() => void handleExport('html')}
-            />
-          </div>
-        </PopoverContent>
-      </Popover>
-
-      {/* Progress bar shown below the button while Postman server checks run */}
-      {showProgress && (
-        <div className="absolute right-0 top-full mt-1 w-52 rounded-lg border border-border/60 bg-popover px-2.5 py-2 shadow-sm">
-          <div className="mb-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
-            <span>{t('detail.exportPostmanChecking')}</span>
-            <span className="tabular-nums">{postmanProgress!.checked}/{postmanProgress!.total}</span>
-          </div>
-          <div className="mb-2 h-1 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-200"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => abortControllerRef.current?.abort()}
-            className="w-full rounded-md py-1 text-[11px] font-medium text-destructive hover:bg-destructive/10 transition-colors"
-            aria-label={tc('buttons.cancel')}
-          >
-            {tc('buttons.cancel')}
-          </button>
+          <Download className="h-3.5 w-3.5 shrink-0" />
+          <span className="shrink-0">{t('detail.exportDropdownLabel')}</span>
+          {anyLoading ? (
+            <span className="h-3 w-3 shrink-0 animate-spin rounded-full border border-muted-foreground border-t-transparent" />
+          ) : (
+            <ChevronDown className={cn('h-3 w-3 shrink-0 transition-transform', open && 'rotate-180')} />
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        side="bottom"
+        align="end"
+        sideOffset={6}
+        className="w-56 p-1.5"
+      >
+        <div className="flex flex-col gap-0.5">
+          <ExportItem
+            icon={<FileJson className="h-3.5 w-3.5" />}
+            label={t('detail.exportJson')}
+            loading={isLoading('json')}
+            onClick={() => void handleExport('json')}
+          />
+          <ExportItem
+            icon={<Braces className="h-3.5 w-3.5" />}
+            label={t('detail.exportPostman')}
+            loading={isLoading('postman')}
+            onClick={() => void handleExport('postman')}
+          />
+          <ExportItem
+            icon={<FileText className="h-3.5 w-3.5" />}
+            label={t('detail.exportHtml')}
+            loading={isLoading('html')}
+            onClick={() => void handleExport('html')}
+          />
         </div>
-      )}
-    </div>
+      </PopoverContent>
+    </Popover>
   )
 }
 

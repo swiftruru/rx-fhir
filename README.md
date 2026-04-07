@@ -25,8 +25,25 @@
 </p>
 
 <p align="center">
-  <strong>Download the latest app builds:</strong><br />
-  <a href="https://github.com/swiftruru/rx-fhir/releases">https://github.com/swiftruru/rx-fhir/releases</a>
+  <strong>Ready-to-run desktop builds — no source code required:</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/swiftruru/rx-fhir/releases/latest">
+    <img src="https://img.shields.io/badge/macOS-Download%20.dmg-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download for macOS" />
+  </a>
+  &nbsp;
+  <a href="https://github.com/swiftruru/rx-fhir/releases/latest">
+    <img src="https://img.shields.io/badge/Windows-Setup%20%7C%20Portable-0078D4?style=for-the-badge&logo=windows11&logoColor=white" alt="Download for Windows" />
+  </a>
+  &nbsp;
+  <a href="https://github.com/swiftruru/rx-fhir/releases/latest">
+    <img src="https://img.shields.io/badge/Linux-AppImage%20%7C%20.deb-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download for Linux" />
+  </a>
+</p>
+
+<p align="center">
+  <sub>All three platforms are supported. Click any badge above to go to the latest release.</sub>
 </p>
 
 ---

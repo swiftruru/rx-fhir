@@ -119,9 +119,10 @@ function deriveBaseFileName(bundle: fhir4.Bundle): string {
 export async function exportBundlePostman(
   bundle: fhir4.Bundle,
   fhirBaseUrl: string,
-  onProgress?: (checked: number, total: number) => void
+  onProgress?: (checked: number, total: number) => void,
+  signal?: AbortSignal
 ): Promise<SaveFileResult> {
-  const collection = await buildPostmanCollection(bundle, fhirBaseUrl, onProgress)
+  const collection = await buildPostmanCollection(bundle, fhirBaseUrl, onProgress, signal)
   const content = JSON.stringify(collection, null, 2)
   const baseName = deriveBaseFileName(bundle)
   return saveFile(content, `rxfhir-postman-${baseName}.json`, [

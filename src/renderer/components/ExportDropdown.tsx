@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Download, ChevronDown, FileJson, Braces, FileText } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
@@ -25,6 +25,7 @@ export default function ExportDropdown({ bundle, onSuccess, onError }: Props): R
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState<Set<ExportFormat>>(new Set())
   const [postmanProgress, setPostmanProgress] = useState<{ checked: number; total: number } | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   function isLoading(format: ExportFormat): boolean {
     return loading.has(format)
@@ -57,10 +58,16 @@ export default function ExportDropdown({ bundle, onSuccess, onError }: Props): R
         onSuccess?.(message)
         announcePolite(t('detail.exportSuccessAnnouncement', { fileName: result.fileName }))
       } else if (format === 'postman') {
+        const controller = new AbortController()
+        abortControllerRef.current = controller
         setPostmanProgress({ checked: 0, total: 0 })
-        result = await exportBundlePostman(bundle, serverUrl, (checked, total) => {
-          setPostmanProgress({ checked, total })
-        })
+        try {
+          result = await exportBundlePostman(bundle, serverUrl, (checked, total) => {
+            setPostmanProgress({ checked, total })
+          }, controller.signal)
+        } finally {
+          abortControllerRef.current = null
+        }
         setPostmanProgress(null)
         if (result.canceled || !result.fileName) return
         const message = t('detail.exportPostmanSuccess', { fileName: result.fileName })
@@ -75,6 +82,8 @@ export default function ExportDropdown({ bundle, onSuccess, onError }: Props): R
       }
     } catch (error) {
       setPostmanProgress(null)
+      // AbortError means the user cancelled — don't show an error toast
+      if (error instanceof Error && error.name === 'AbortError') return
       onError?.(getBundleFileErrorMessage(error, tc))
     } finally {
       stopLoading(format)
@@ -148,7 +157,17 @@ export default function ExportDropdown({ bundle, onSuccess, onError }: Props): R
         <div className="absolute left-0 right-0 top-full mt-1 space-y-0.5 rounded-lg border border-border/60 bg-popover px-2 py-1.5 shadow-sm">
           <div className="flex items-center justify-between text-[10px] text-muted-foreground">
             <span>{t('detail.exportPostmanChecking')}</span>
-            <span className="tabular-nums">{postmanProgress!.checked}/{postmanProgress!.total}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="tabular-nums">{postmanProgress!.checked}/{postmanProgress!.total}</span>
+              <button
+                type="button"
+                onClick={() => abortControllerRef.current?.abort()}
+                className="rounded px-1 py-0.5 text-[10px] text-destructive hover:bg-destructive/10 transition-colors"
+                aria-label={tc('buttons.cancel')}
+              >
+                {tc('buttons.cancel')}
+              </button>
+            </div>
           </div>
           <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
             <div

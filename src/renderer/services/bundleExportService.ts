@@ -199,7 +199,8 @@ async function searchByPatient(
  */
 async function resolveHttpMethod(
   resource: fhir4.Resource,
-  baseUrl: string
+  baseUrl: string,
+  signal?: AbortSignal
 ): Promise<{ method: 'PUT' | 'POST'; serverId?: string }> {
   const base = baseUrl.replace(/\/+$/, '')
   const type = resource.resourceType
@@ -208,7 +209,8 @@ async function resolveHttpMethod(
     const resp = await fetch(`${base}/${type}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/fhir+json', Accept: 'application/fhir+json' },
-      body: JSON.stringify(resource)
+      body: JSON.stringify(resource),
+      signal
     })
 
     console.log(`[RxFHIR Export] probe ${type}: HTTP ${resp.status}`)
@@ -407,7 +409,8 @@ function buildQueryItems(bundle: fhir4.Bundle, _baseUrl: string, urlHost: string
 export async function buildPostmanCollection(
   bundle: fhir4.Bundle,
   fhirBaseUrl: string,
-  onProgress?: (checked: number, total: number) => void
+  onProgress?: (checked: number, total: number) => void,
+  signal?: AbortSignal
 ): Promise<PostmanCollection> {
   const allEntries = bundle.entry ?? []
   const patient = getResource<fhir4.Patient>(bundle, 'Patient')
@@ -470,7 +473,8 @@ export async function buildPostmanCollection(
 
   // Step 1: Probe resources sequentially to avoid HAPI 429 rate limiting.
   for (const resource of needsResolution) {
-    const result = await resolveHttpMethod(resource, baseUrl)
+    signal?.throwIfAborted()
+    const result = await resolveHttpMethod(resource, baseUrl, signal)
     methodMap.set(resource, result)
     checked += 1
     onProgress?.(checked, total)

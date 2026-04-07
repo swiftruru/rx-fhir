@@ -11,7 +11,8 @@
     "close": "關閉",
     "fillMock": "填入範例",
     "import": "匯入 JSON",
-    "export": "匯出 JSON"
+    "export": "匯出 JSON",
+    "cancel": "取消"
   },
   "server": {
     "checking": "連線中…",

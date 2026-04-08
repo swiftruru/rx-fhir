@@ -3,7 +3,7 @@
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.27-d4779a?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.28-d4779a?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/github/license/swiftruru/rx-fhir?style=flat-square&color=d4779a" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-8e8e93?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
@@ -123,7 +123,7 @@ Current Creator capabilities:
 - Most Creator forms now include consistent inline guide cards with examples and field-level hints for identifiers, encounter timing, ICD-10, LOINC, insurance, medication coding, medication route, and supplemental extensions
 - Keyboard accessibility is improved with stepper shortcuts, clearer focus-visible states, and an app-wide shortcut system with a help dialog plus customizable bindings in Settings
 - Live Demo mode provides a guided, step-by-step teaching flow with manual-first pacing, optional autoplay, human-like typed mock input, and in-view scrolling so fields and submit actions are demonstrated on screen instead of updating off-screen
-- Feature Showcase mode provides a spotlight-style product tour with adjacent coaching panels, highlighted targets, darker background dimming, and polished product-style transitions; the tour now covers 17 steps including a dedicated export step (step 12) and a side-by-side Bundle Diff step (step 13) with a live comparison dialog open during the coaching panel; showcase runs never write mock records into the user's submission history
+- Feature Showcase mode provides a spotlight-style product tour with adjacent coaching panels, highlighted targets, darker background dimming, and polished product-style transitions; the tour now covers 17 steps including a dedicated export step (step 12) and a side-by-side Bundle Diff step (step 13) with a live comparison dialog open during the coaching panel; showcase runs never write mock records into the user's submission history; any in-progress Live Demo is stopped before showcase begins to prevent mock FHIR submissions from appearing as error toasts during the tour
 - Live JSON preview of created resources
 - JSON preview now follows the active light / dark theme instead of staying fixed in a dark-only style
 - JSON preview now includes a compact toolbar with font-size switching, collapse, and all/latest-resource toggles for demos
@@ -201,6 +201,7 @@ Search and inspect FHIR Bundles on the configured server:
 - **Result CSV export**: the results toolbar includes a one-click CSV export button that generates an RFC 4180-compliant file with UTF-8 BOM for Excel and Numbers compatibility; only the currently filtered and sorted results are exported, and the filename includes the export date
 - **Side-by-side Bundle Diff**: after selecting a prescription, every other result card shows a labeled "Compare" button (icon + text, outline style for discoverability); clicking it opens a full-screen diff dialog with all structured fields — patient, practitioner, organization, encounter, condition, observation, coverage, and medication — aligned side by side; differing fields are highlighted in amber, identical ones are neutral, and a badge shows the total difference count; a Swap A/B button flips the comparison direction without reopening the dialog
 - Feature Showcase now clears Activity Center notification history on start and restores it on exit, keeping showcase runs visually clean; showcase runs no longer write mock records into the user's submission history store
+- **FHIR 410 Gone recovery**: when HAPI's search index points to a soft-deleted resource and the subsequent `fetchResourceById` receives 410, the client now automatically issues a `PUT` to the same ID to resurrect it — eliminating the "Resource was deleted" error that previously surfaced during Creator Extension and other resource steps on the public HAPI server
 - Supports Creator-to-Consumer handoff with automatic query prefill, auto-search, and newly created bundle focus
 
 ### Settings and App Shell

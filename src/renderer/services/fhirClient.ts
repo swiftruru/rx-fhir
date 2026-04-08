@@ -280,9 +280,24 @@ export async function findOrCreateDetailed<T extends fhir4.Resource>(
   } catch (error) {
     const duplicateId = extractDuplicateExistingResourceId(resourceType, error)
     if (duplicateId) {
-      return {
-        resource: await fetchResourceById<T>(resourceType, duplicateId),
-        reused: true
+      try {
+        return {
+          resource: await fetchResourceById<T>(resourceType, duplicateId),
+          reused: true
+        }
+      } catch (fetchError) {
+        // HAPI returned 412 pointing to a soft-deleted resource (410 Gone).
+        // The search index is stale — the "duplicate" no longer exists.
+        // Resurrect it via PUT on the same ID; FHIR spec §3.1.0.6 states that
+        // PUT on a deleted resource creates a new current version.
+        const msg = fetchError instanceof Error ? fetchError.message : ''
+        if (msg.includes('(410)')) {
+          return {
+            resource: await putResource<T>(resourceType, duplicateId, body),
+            reused: false
+          }
+        }
+        throw fetchError
       }
     }
 

@@ -4,6 +4,7 @@ import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useAppStore } from '../store/appStore'
 import { useCreatorStore } from '../store/creatorStore'
 import { useFeatureShowcaseStore } from '../store/featureShowcaseStore'
+import { useLiveDemoStore } from '../store/liveDemoStore'
 import { useSearchHistoryStore } from '../store/searchHistoryStore'
 import { useFhirInspectorStore } from '../store/fhirInspectorStore'
 import { useToastStore } from '../store/toastStore'
@@ -60,6 +61,16 @@ export default function FeatureShowcaseRunner(): null {
 
   useEffect(() => {
     if (runId === 0) return
+
+    // Stop Live Demo if it is running. The showcase navigates the Creator to the
+    // Composition step; if Live Demo is paused mid-run its async loop would detect
+    // the newly registered composition controller and auto-submit — firing a real
+    // POST Composition to the FHIR server with mock patient IDs that don't exist,
+    // producing 400 error toasts during the showcase.
+    const liveDemoStatus = useLiveDemoStore.getState().status
+    if (liveDemoStatus !== 'idle') {
+      useLiveDemoStore.getState().stop()
+    }
 
     // Only take a fresh backup when none exists yet.
     // Replay increments runId without restoring first, so we must not overwrite

@@ -202,7 +202,7 @@ jobs:
         run: |
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
             gh release upload "$TAG_NAME" release-assets/macos/* release-assets/windows/* release-assets/linux/* --clobber
-            gh release edit "$TAG_NAME" --title "$RELEASE_TITLE" --notes-file "$RELEASE_NOTES_FILE"
+            gh release edit "$TAG_NAME" --title "$RELEASE_TITLE" --notes-file "$RELEASE_NOTES_FILE" --draft=false
           else
             gh release create "$TAG_NAME" \
               release-assets/macos/* \

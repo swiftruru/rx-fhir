@@ -11,6 +11,7 @@ import ResultList from './ResultList'
 import PrescriptionDetail from './PrescriptionDetail'
 import RecentRecords from './RecentRecords'
 import SavedSearches from './SavedSearches'
+import HistoryDashboard from './HistoryDashboard'
 import RecentBundleFiles from './RecentBundleFiles'
 import type { BundleSummary, SearchParams } from '../../types/fhir.d'
 import type { RecentBundleFileEntry } from '../../types/electron'
@@ -25,7 +26,9 @@ import { useAppStore } from '../../store/appStore'
 import { useConsumerSearchStore } from '../../store/consumerSearchStore'
 import { getBundleFileErrorMessage, importBundleJsonFile, listRecentBundleJsonFiles, openRecentBundleJson, rememberRecentBundleJson } from '../../services/bundleFileService'
 import { fetchBundleById, searchBundlesNextPage } from '../../services/fhirClient'
-import { extractBundleHistoryMetadata, extractSearchResults } from '../../services/searchService'
+import { extractBundleHistoryMetadata, extractBundleSummary, extractSearchResults } from '../../services/searchService'
+import SubmissionList from '../history/SubmissionList'
+import SearchList from '../history/SearchList'
 import {
   buildSearchPrefillFromParams,
   getSearchTabFromParams,
@@ -48,7 +51,7 @@ interface ConsumerPageBackup {
   searchExecution: ConsumerSearchExecution | null
   dashboardRecentOpen: boolean
   dashboardSavedOpen: boolean
-  middleTab: 'results' | 'quickstart'
+  middleTab: 'results' | 'quickstart' | 'history'
   activeComplexBy: 'organization' | 'author'
   prefillNotice: { message: string; variant?: 'info' | 'warning' } | null
 }
@@ -83,7 +86,7 @@ export default function ConsumerPage(): React.JSX.Element {
   const [searchExecution, setSearchExecution] = useState<ConsumerSearchExecution | null>(null)
   const [dashboardRecentOpen, setDashboardRecentOpen] = useState(false)
   const [dashboardSavedOpen, setDashboardSavedOpen] = useState(false)
-  const [middleTab, setMiddleTab] = useState<'results' | 'quickstart'>('quickstart')
+  const [middleTab, setMiddleTab] = useState<'results' | 'quickstart' | 'history'>('quickstart')
   const [activeComplexBy, setActiveComplexBy] = useState<'organization' | 'author'>('organization')
   const [prefillNotice, setPrefillNotice] = useState<{ message: string; variant?: 'info' | 'warning' } | null>(null)
   const [dragDepth, setDragDepth] = useState(0)
@@ -563,6 +566,46 @@ export default function ConsumerPage(): React.JSX.Element {
     setPrefill(buildSearchPrefillFromParams(params))
     setAutoSearch(params)
     setPrefillNotice(null)
+    setMiddleTab('results')
+  }
+
+  async function handleOpenHistoryBundle(record: SubmissionRecord): Promise<void> {
+    if (!record.bundleId) {
+      // No bundle ID — fall back to searching by identifier
+      handleRunSavedSearch({ mode: 'basic', identifier: record.patientIdentifier })
+      return
+    }
+    try {
+      const bundle = await fetchBundleById(record.bundleId, record.serverUrl)
+      const summary = extractBundleSummary(bundle)
+      if (summary) {
+        setSelected(summary)
+      } else {
+        pushToast({ variant: 'error', description: t('page.historyTab.bundleNotParsed') })
+      }
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e)
+      const is404 = detail.includes('404') || detail.includes('410')
+      pushToast({
+        variant: 'error',
+        description: is404
+          ? t('page.historyTab.bundleGone')
+          : t('page.historyTab.bundleFetchError'),
+        action: {
+          label: t('page.historyTab.searchInstead'),
+          onAction: () => handleRunSavedSearch({ mode: 'basic', identifier: record.patientIdentifier })
+        }
+      })
+    }
+  }
+
+  function handleHistoryFill(record: SubmissionRecord): void {
+    setMiddleTab('results')
+    void handleFill(record)
+  }
+
+  function handleHistoryRunSearch(params: SearchParams): void {
+    handleRunSavedSearch(params)
   }
 
   function handleSearchTabChange(tab: SearchTab): void {
@@ -624,7 +667,7 @@ export default function ConsumerPage(): React.JSX.Element {
     void handleDropImport(event.dataTransfer.files)
   }
 
-  const showDetail = middleTab === 'results' && Boolean(selected)
+  const showDetail = (middleTab === 'results' || middleTab === 'history') && Boolean(selected)
 
   return (
     <div
@@ -694,11 +737,17 @@ export default function ConsumerPage(): React.JSX.Element {
       {/* Middle panel: Result list */}
       <div className="flex min-w-0 flex-1 shrink-0 flex-col lg:border-r">
         <div className="border-b bg-background px-4 py-3 shrink-0">
-          <Tabs value={middleTab} onValueChange={(value) => setMiddleTab(value as 'results' | 'quickstart')}>
+          <Tabs value={middleTab} onValueChange={(value) => {
+            const next = value as 'results' | 'quickstart' | 'history'
+            setMiddleTab(next)
+            // Clear detail selection when switching away from results/history
+            if (next === 'quickstart') setSelected(null)
+          }}>
             <div className="flex items-center justify-between gap-2">
-              <TabsList className="grid shrink-0 grid-cols-2 rounded-xl bg-muted/45 p-1">
+              <TabsList className="grid shrink-0 grid-cols-3 rounded-xl bg-muted/45 p-1">
                 <TabsTrigger value="results" disabled={isSearching} className="rounded-lg">{t('page.middleTabs.results')}</TabsTrigger>
                 <TabsTrigger value="quickstart" disabled={isSearching} className="rounded-lg">{t('page.middleTabs.quickStart')}</TabsTrigger>
+                <TabsTrigger value="history" disabled={isSearching} className="rounded-lg">{t('page.middleTabs.history')}</TabsTrigger>
               </TabsList>
               {!showDetail && (
                 <div className="flex flex-nowrap items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -741,10 +790,20 @@ export default function ConsumerPage(): React.JSX.Element {
               </div>
             )}
           </FeatureShowcaseTarget>
+        ) : middleTab === 'history' ? (
+          <HistoryTabPane
+            t={t}
+            historyCount={historyCount}
+            savedSearchCount={savedSearchCount}
+            onSelectBundle={(rec) => void handleOpenHistoryBundle(rec)}
+            onFill={handleHistoryFill}
+            onRunSearch={handleHistoryRunSearch}
+          />
         ) : (
           <FeatureShowcaseTarget id="consumer.quickStartPane" className="flex-1 min-h-0">
             <div className="h-full overflow-auto bg-muted/[0.08] p-4 sm:p-5">
               <div className="mx-auto max-w-5xl space-y-4">
+                <HistoryDashboard />
                 <div className="rounded-[24px] border border-dashed border-border/70 bg-background/80 px-5 py-4 shadow-sm">
                   <p className="text-sm font-semibold text-foreground">{t('page.quickStartTitle')}</p>
                   <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t('page.quickStartDescription')}</p>
@@ -823,6 +882,63 @@ export default function ConsumerPage(): React.JSX.Element {
         </FeatureShowcaseTarget>
       )}
 
+    </div>
+  )
+}
+
+/* ─── History inner tab pane ─────────────────────────────────────── */
+
+interface HistoryTabPaneProps {
+  t: (key: string, opts?: Record<string, string | number>) => string
+  historyCount: number
+  savedSearchCount: number
+  onSelectBundle: (record: SubmissionRecord) => void
+  onFill: (record: SubmissionRecord) => void
+  onRunSearch: (params: SearchParams) => void
+}
+
+function HistoryTabPane({
+  t,
+  historyCount,
+  savedSearchCount,
+  onSelectBundle,
+  onFill,
+  onRunSearch,
+}: HistoryTabPaneProps): React.JSX.Element {
+  const [innerTab, setInnerTab] = useState<'submissions' | 'searches'>('submissions')
+
+  return (
+    <div className="flex-1 min-h-0 overflow-auto bg-muted/[0.08]">
+      <div className="p-4 sm:p-5 space-y-4">
+        {/* Inner sub-tabs */}
+        <Tabs value={innerTab} onValueChange={(v) => setInnerTab(v as 'submissions' | 'searches')}>
+          <TabsList className="grid w-full grid-cols-2 rounded-xl bg-muted/45 p-1">
+            <TabsTrigger value="submissions" className="rounded-lg text-xs">
+              {t('page.historyTab.submissions')}
+              {historyCount > 0 && (
+                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">
+                  {historyCount}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="searches" className="rounded-lg text-xs">
+              {t('page.historyTab.searches')}
+              {savedSearchCount > 0 && (
+                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">
+                  {savedSearchCount}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Content */}
+        {innerTab === 'submissions' ? (
+          <SubmissionList onSelect={onSelectBundle} onFill={onFill} />
+        ) : (
+          <SearchList onRunSearch={onRunSearch} />
+        )}
+      </div>
     </div>
   )
 }

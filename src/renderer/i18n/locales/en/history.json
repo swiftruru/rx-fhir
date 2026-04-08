@@ -1,0 +1,65 @@
+{
+  "page": {
+    "title": "History",
+    "description": "Browse, filter, and export all your submission and search records.",
+    "tabs": {
+      "submissions": "Submissions",
+      "searches":    "Searches"
+    }
+  },
+  "submissions": {
+    "filterPlaceholder": "Filter by patient, org, or practitioner…",
+    "filterNoMatch":     "No submissions match the filter",
+    "filterClear":       "Clear filter",
+    "sortLabel":         "Sort",
+    "sortDateDesc":      "Newest First",
+    "sortDateAsc":       "Oldest First",
+    "sortNameAsc":       "Name (A → Z)",
+    "empty":             "No submission records yet",
+    "emptyHint":         "Prescriptions you create in Creator will appear here after submission.",
+    "deleteRecord":      "Delete this record",
+    "deleteConfirm":     "Delete record for {{name}}?",
+    "viewDetail":        "View Details",
+    "fillSearch":        "Fill Search",
+    "typeBadgeBundle":   "Bundle",
+    "typeBadgeResource": "Resource",
+    "fieldOrg":          "Org",
+    "fieldPractitioner": "Practitioner",
+    "fieldCondition":    "Condition",
+    "fieldDate":         "Submitted",
+    "exportButton":      "Export JSON",
+    "exportSuccess":     "Submission history exported: {{fileName}}",
+    "exportFileName":    "rxfhir-submissions-{{date}}.json"
+  },
+  "searches": {
+    "filterPlaceholder": "Filter by identifier, name, org, or author…",
+    "filterNoMatch":     "No searches match the filter",
+    "filterClear":       "Clear filter",
+    "sortLabel":         "Sort",
+    "sortLastUsedDesc":  "Most Recently Used",
+    "sortLastUsedAsc":   "Least Recently Used",
+    "sortPinnedFirst":   "Pinned First",
+    "empty":             "No search records yet",
+    "emptyHint":         "Searches you run in Consumer will appear here automatically.",
+    "deleteSearch":      "Delete this search",
+    "runSearch":         "Run this search",
+    "pinnedBadge":       "Pinned",
+    "modes": {
+      "basic":   "Basic",
+      "date":    "Date",
+      "complex": "Complex"
+    },
+    "criteria": {
+      "identifier":   "ID: {{value}}",
+      "name":         "Name: {{value}}",
+      "date":         "Date: {{value}}",
+      "organization": "Org: {{value}}",
+      "author":       "Author: {{value}}"
+    },
+    "fieldLastUsed":   "Last used",
+    "fieldCreated":    "Created",
+    "exportButton":    "Export JSON",
+    "exportSuccess":   "Search history exported: {{fileName}}",
+    "exportFileName":  "rxfhir-searches-{{date}}.json"
+  }
+}

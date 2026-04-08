@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CheckCircle2, RotateCcw, AlertTriangle, Save, GraduationCap, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -50,7 +50,7 @@ export default function CreatorPage(): React.JSX.Element {
   const navigate = useNavigate()
   const [confirming, setConfirming] = useState(false)
   const [templatePanelOpen, setTemplatePanelOpen] = useState(false)
-  const [lastAnnouncedBundleId, setLastAnnouncedBundleId] = useState<string>()
+  const lastAnnouncedBundleId = useRef<string | undefined>(undefined)
 
   const formattedDraftTime = useMemo(() => {
     if (!draftSavedAt) return undefined
@@ -147,11 +147,9 @@ export default function CreatorPage(): React.JSX.Element {
   }, [announcePolite, bundleId, drafts, location.state, navigate, pushToast, resources, setStep, t])
 
   useEffect(() => {
-    if (!bundleId || bundleId === lastAnnouncedBundleId) return
-    if (featureShowcaseStatus !== 'idle') {
-      setLastAnnouncedBundleId(bundleId)
-      return
-    }
+    if (!bundleId || bundleId === lastAnnouncedBundleId.current) return
+    lastAnnouncedBundleId.current = bundleId
+    if (featureShowcaseStatus !== 'idle') return
 
     pushToast({
       variant: 'success',
@@ -162,8 +160,7 @@ export default function CreatorPage(): React.JSX.Element {
         onAction: handleGoToConsumer
       }
     })
-    setLastAnnouncedBundleId(bundleId)
-  }, [bundleId, featureShowcaseStatus, handleGoToConsumer, lastAnnouncedBundleId, pushToast, t])
+  }, [bundleId, featureShowcaseStatus, handleGoToConsumer, pushToast, t])
 
   const draftStatusUi = draftStatus === 'saving'
     ? {

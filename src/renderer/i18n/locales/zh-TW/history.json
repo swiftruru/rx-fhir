@@ -1,0 +1,65 @@
+{
+  "page": {
+    "title": "歷史記錄",
+    "description": "瀏覽、篩選並匯出所有提交紀錄與查詢記錄。",
+    "tabs": {
+      "submissions": "提交記錄",
+      "searches":    "查詢記錄"
+    }
+  },
+  "submissions": {
+    "filterPlaceholder": "篩選病人、機構或醫師…",
+    "filterNoMatch":     "沒有符合篩選條件的提交記錄",
+    "filterClear":       "清除篩選",
+    "sortLabel":         "排序",
+    "sortDateDesc":      "最新優先",
+    "sortDateAsc":       "最舊優先",
+    "sortNameAsc":       "病人 A → Z",
+    "empty":             "尚無提交記錄",
+    "emptyHint":         "在 Creator 建立並提交的處方箋，會自動出現在這裡。",
+    "deleteRecord":      "刪除這筆記錄",
+    "deleteConfirm":     "確定刪除 {{name}} 的記錄？",
+    "viewDetail":        "查看詳情",
+    "fillSearch":        "帶入查詢",
+    "typeBadgeBundle":   "Bundle",
+    "typeBadgeResource": "Resource",
+    "fieldOrg":          "機構",
+    "fieldPractitioner": "醫師",
+    "fieldCondition":    "診斷",
+    "fieldDate":         "提交時間",
+    "exportButton":      "匯出 JSON",
+    "exportSuccess":     "提交記錄已匯出：{{fileName}}",
+    "exportFileName":    "rxfhir-submissions-{{date}}.json"
+  },
+  "searches": {
+    "filterPlaceholder": "篩選識別碼、姓名、機構或醫師…",
+    "filterNoMatch":     "沒有符合篩選條件的查詢記錄",
+    "filterClear":       "清除篩選",
+    "sortLabel":         "排序",
+    "sortLastUsedDesc":  "最近使用優先",
+    "sortLastUsedAsc":   "最早使用優先",
+    "sortPinnedFirst":   "釘選優先",
+    "empty":             "尚無查詢記錄",
+    "emptyHint":         "在 Consumer 執行的查詢，會自動出現在這裡。",
+    "deleteSearch":      "刪除這筆查詢",
+    "runSearch":         "執行這筆查詢",
+    "pinnedBadge":       "已釘選",
+    "modes": {
+      "basic":   "基本",
+      "date":    "日期",
+      "complex": "複合"
+    },
+    "criteria": {
+      "identifier":   "識別碼：{{value}}",
+      "name":         "姓名：{{value}}",
+      "date":         "日期：{{value}}",
+      "organization": "機構：{{value}}",
+      "author":       "醫師：{{value}}"
+    },
+    "fieldLastUsed":   "最後使用",
+    "fieldCreated":    "建立時間",
+    "exportButton":    "匯出 JSON",
+    "exportSuccess":   "查詢記錄已匯出：{{fileName}}",
+    "exportFileName":  "rxfhir-searches-{{date}}.json"
+  }
+}

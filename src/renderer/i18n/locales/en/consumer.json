@@ -33,7 +33,20 @@
     },
     "middleTabs": {
       "results": "Results",
-      "quickStart": "Shortcuts"
+      "quickStart": "Shortcuts",
+      "history": "History"
+    },
+    "historyTab": {
+      "submissions": "Submissions",
+      "searches": "Searches",
+      "viewDetail": "View Details",
+      "fillSearch": "Fill Search",
+      "runSearch": "Run Search",
+      "noBundleId": "This record has no Bundle ID and cannot be previewed.",
+      "bundleFetchError": "Failed to load this prescription from the server.",
+      "bundleGone": "This prescription could not be found on the server. It may have been removed.",
+      "bundleNotParsed": "The bundle could not be parsed for display.",
+      "searchInstead": "Search by Identifier"
     },
     "searchingGuard": {
       "title": "Search in Progress",
@@ -164,6 +177,19 @@
       "organization": "Identifier {{identifier}} / Organization {{organizationId}}",
       "author": "Identifier {{identifier}} / Author {{authorName}}"
     }
+  },
+  "dashboard": {
+    "title":          "Submission Statistics",
+    "total":          "Total",
+    "bundles":        "Bundles",
+    "patients":       "Patients",
+    "orgs":           "Orgs",
+    "recentActivity": "Recent Activity",
+    "thisWeek":       "7 days",
+    "thisMonth":      "30 days",
+    "topPatients":    "Top Patients",
+    "topOrgs":        "Top Organizations",
+    "toggleLabel":    "Toggle submission statistics"
   },
   "recentFiles": {
     "sourceLabel": "Recent Files",

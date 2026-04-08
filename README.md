@@ -167,13 +167,17 @@ Search and inspect FHIR Bundles on the configured server:
 - **Date search**: patient identifier + bundle date
 - **Complex search**: patient identifier + author or organization
 - The left panel now focuses on search input only, so the query form remains visible even on narrower windows
-- The middle panel now includes `Results` and `Query Helpers` tabs, so recent submissions and saved searches stay available after a query has already been run
+- The middle panel now includes three tabs — `Results`, `Shortcuts`, and `History` — so recent submissions, saved searches, and full query history are always one click away even after a search has been run
+- The **History tab** shows all past Document Bundle submissions and saved searches side by side; clicking a submission record fetches the original bundle from the server and opens it in the detail panel on the right, with no need to re-run a search
+- If a submission's bundle is no longer on the server (e.g. public HAPI resets data periodically), Consumer shows a contextual "Search by Identifier" toast action that auto-fills and runs the basic search as a fallback
+- History submissions only show completed Document Bundle submissions; intermediate resource-creation records are hidden so the list stays focused on full prescriptions
+- Saved searches in the History tab can be re-run, pinned, unpinned, and deleted without navigating away from Consumer
 - Consumer can import local FHIR Bundle JSON files for offline or ad hoc inspection without querying the server
-- Query examples and local Bundle import are now grouped under `Query Helpers`, keeping the main search form focused on real search tasks
+- Query examples and local Bundle import are now grouped under `Shortcuts`, keeping the main search form focused on real search tasks
 - Recent-record magnifier prefills the active search tab instead of forcing a return to basic search
 - Complex search prefills patient identifier and available author / organization context from local submission history, and can backfill missing context by re-reading a stored bundle when needed
 - Search conditions are now stored locally as recent searches, and any search can be pinned into favorites for quick reruns
-- Recent submissions now focus on completed bundle submissions instead of mixing in partial resource history
+- The submission statistics strip in the Shortcuts tab is collapsible to a single summary row showing total, bundle count, patient count, and organization count at a glance
 - Recent submissions and saved searches are shown as separate helper sections with clearer visual hierarchy
 - Query URL display and multi-step trace for compatibility workarounds, with clickable links that open in the system browser
 - Query-step labels and workaround notes now follow the current UI language instead of staying fixed in Chinese after a locale switch
@@ -423,6 +427,7 @@ src/
     │   ├── consumer/
     │   ├── creator/
     │   │   └── forms/
+    │   ├── history/    # Submission + search history components (Consumer History tab)
     │   └── settings/
     ├── i18n/           # zh-TW / en locales
     ├── lib/

@@ -59,7 +59,7 @@ export interface FeatureShowcaseCreatorOverride {
 }
 
 export interface FeatureShowcaseConsumerOverride {
-  middleTab?: 'results' | 'quickstart'
+  middleTab?: 'results' | 'quickstart' | 'history'
   activeTab?: SearchTab
   prefill?: SearchPrefill
   showDetail?: boolean

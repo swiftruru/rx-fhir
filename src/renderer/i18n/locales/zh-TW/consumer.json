@@ -33,7 +33,20 @@
     },
     "middleTabs": {
       "results": "搜尋結果",
-      "quickStart": "查詢輔助"
+      "quickStart": "查詢輔助",
+      "history": "歷史記錄"
+    },
+    "historyTab": {
+      "submissions": "提交記錄",
+      "searches": "查詢記錄",
+      "viewDetail": "查看詳情",
+      "fillSearch": "帶入查詢",
+      "runSearch": "執行查詢",
+      "noBundleId": "此記錄沒有 Bundle ID，無法預覽。",
+      "bundleFetchError": "無法從伺服器載入這筆處方箋。",
+      "bundleGone": "伺服器上找不到這筆處方箋，可能已被移除。",
+      "bundleNotParsed": "Bundle 解析失敗，無法顯示詳情。",
+      "searchInstead": "改用識別碼查詢"
     },
     "searchingGuard": {
       "title": "查詢進行中",
@@ -164,6 +177,19 @@
       "organization": "識別碼 {{identifier}} / 機構 {{organizationId}}",
       "author": "識別碼 {{identifier}} / 醫師 {{authorName}}"
     }
+  },
+  "dashboard": {
+    "title":          "提交統計",
+    "total":          "總計",
+    "bundles":        "Bundle",
+    "patients":       "病人",
+    "orgs":           "機構",
+    "recentActivity": "近期活動",
+    "thisWeek":       "7 天",
+    "thisMonth":      "30 天",
+    "topPatients":    "常用病人",
+    "topOrgs":        "常用機構",
+    "toggleLabel":    "展開或折疊提交統計"
   },
   "recentFiles": {
     "sourceLabel": "最近檔案",

@@ -109,6 +109,13 @@
       "problem": "A single display mode cannot satisfy both non-technical and technical audiences.",
       "role": "Raw JSON provides a direct view into the source bundle structure."
     },
+    "consumerBundleDiff": {
+      "title": "Side-by-Side Prescription Comparison",
+      "summary": "Two prescriptions can be compared field-by-field to instantly spot what differs.",
+      "feature": "Select any result, then click the compare icon on another card to open the Bundle Diff dialog — differences are highlighted amber, identical fields stay neutral, and a count badge shows the total. A Swap A/B button flips the comparison direction.",
+      "problem": "Reviewing two prescriptions sequentially makes it easy to miss subtle differences in medication, dosage, or patient details.",
+      "role": "Bundle Diff turns Consumer from a single-record viewer into a side-by-side audit tool, useful for validating prescription versions and spotting data inconsistencies."
+    },
     "consumerExport": {
       "title": "Export Prescription Data",
       "summary": "The selected Bundle can be exported in three formats to suit different downstream needs.",

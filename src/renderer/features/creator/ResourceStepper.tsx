@@ -250,8 +250,13 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
     clearDraft,
     lastUpdatedResourceKey
   } = useCreatorStore()
-  const latestRequest = useFhirInspectorStore((state) => state.latest)
-  const requestHistory = useFhirInspectorStore((state) => state.history)
+  const allFhirHistory = useFhirInspectorStore((state) => state.history)
+  // Only show requests that originated from the Creator module; Consumer / Settings
+  // requests share the same store but must not bleed into the Creator inspector.
+  const requestHistory = allFhirHistory.filter(
+    (e) => e.module === undefined || e.module === 'creator'
+  )
+  const latestRequest = requestHistory[0]
   const serverUrl = useAppStore((state) => state.serverUrl)
   const announcePolite = useAccessibilityStore((state) => state.announcePolite)
   const showcaseStatus = useFeatureShowcaseStore((state) => state.status)

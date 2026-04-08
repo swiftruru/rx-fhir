@@ -262,7 +262,23 @@
     "filterNoMatch":  "沒有符合篩選條件的結果",
     "filterClear":    "清除篩選",
     "loadMore":      "載入更多結果",
-    "loadingMore":   "載入中…"
+    "loadingMore":   "載入中…",
+    "exportCsvButton": "匯出 CSV",
+    "exportCsvSuccess": "搜尋結果已匯出：{{fileName}}",
+    "exportCsvFileName": "rxfhir-results-{{date}}.csv",
+    "exportCsvPartialHint": "僅匯出已載入的 {{count}} 筆結果",
+    "compareButton": "與已選取的處方比較",
+    "compareShortLabel": "比較",
+    "diffDialog": {
+      "title": "處方比較",
+      "swap": "交換 A / B",
+      "differences": "{{count}} 處不同",
+      "noDifferences": "兩筆處方內容相同",
+      "missingValue": "—",
+      "fieldColumn": "欄位",
+      "bundleA": "處方 A",
+      "bundleB": "處方 B"
+    }
   },
   "detail": {
     "title": "處方箋詳情",

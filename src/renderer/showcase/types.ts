@@ -40,6 +40,7 @@ export type FeatureShowcaseStepId =
   | 'consumerStructuredDetail'
   | 'consumerRawJson'
   | 'consumerExport'
+  | 'consumerBundleDiff'
   | 'settingsServer'
   | 'settingsStatus'
   | 'appControls'
@@ -65,6 +66,7 @@ export interface FeatureShowcaseConsumerOverride {
   showDetail?: boolean
   selectedBundleId?: string
   detailView?: 'structured' | 'json'
+  bundleDiffTargetId?: string
 }
 
 export interface FeatureShowcaseUiOverride {

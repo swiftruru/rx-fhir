@@ -4,7 +4,6 @@ import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useAppStore } from '../store/appStore'
 import { useCreatorStore } from '../store/creatorStore'
 import { useFeatureShowcaseStore } from '../store/featureShowcaseStore'
-import { useHistoryStore } from '../store/historyStore'
 import { useSearchHistoryStore } from '../store/searchHistoryStore'
 import { useFhirInspectorStore } from '../store/fhirInspectorStore'
 import { useToastStore } from '../store/toastStore'
@@ -26,7 +25,6 @@ interface ShowcaseBackup {
     bundleError: ReturnType<typeof useCreatorStore.getState>['bundleError']
     submittingBundle: ReturnType<typeof useCreatorStore.getState>['submittingBundle']
   }
-  history: ReturnType<typeof useHistoryStore.getState>['records']
   savedSearches: ReturnType<typeof useSearchHistoryStore.getState>['records']
   fhirRequests: {
     latest: ReturnType<typeof useFhirInspectorStore.getState>['latest']
@@ -63,29 +61,33 @@ export default function FeatureShowcaseRunner(): null {
   useEffect(() => {
     if (runId === 0) return
 
-    const creatorState = useCreatorStore.getState()
-    backupRef.current = {
-      creator: {
-        currentStep: creatorState.currentStep,
-        resources: creatorState.resources,
-        drafts: creatorState.drafts,
-        feedbacks: creatorState.feedbacks,
-        lastUpdatedResourceKey: creatorState.lastUpdatedResourceKey,
-        draftSavedAt: creatorState.draftSavedAt,
-        draftHydrated: creatorState.draftHydrated,
-        draftRestored: creatorState.draftRestored,
-        draftRevision: creatorState.draftRevision,
-        bundleId: creatorState.bundleId,
-        bundleError: creatorState.bundleError,
-        submittingBundle: creatorState.submittingBundle
-      },
-      history: useHistoryStore.getState().records,
-      savedSearches: useSearchHistoryStore.getState().records,
-      fhirRequests: {
-        latest: useFhirInspectorStore.getState().latest,
-        history: useFhirInspectorStore.getState().history
-      },
-      toastHistory: useToastStore.getState().history
+    // Only take a fresh backup when none exists yet.
+    // Replay increments runId without restoring first, so we must not overwrite
+    // the original backup with mock-state data that is currently in the stores.
+    if (!backupRef.current) {
+      const creatorState = useCreatorStore.getState()
+      backupRef.current = {
+        creator: {
+          currentStep: creatorState.currentStep,
+          resources: creatorState.resources,
+          drafts: creatorState.drafts,
+          feedbacks: creatorState.feedbacks,
+          lastUpdatedResourceKey: creatorState.lastUpdatedResourceKey,
+          draftSavedAt: creatorState.draftSavedAt,
+          draftHydrated: creatorState.draftHydrated,
+          draftRestored: creatorState.draftRestored,
+          draftRevision: creatorState.draftRevision,
+          bundleId: creatorState.bundleId,
+          bundleError: creatorState.bundleError,
+          submittingBundle: creatorState.submittingBundle
+        },
+        savedSearches: useSearchHistoryStore.getState().records,
+        fhirRequests: {
+          latest: useFhirInspectorStore.getState().latest,
+          history: useFhirInspectorStore.getState().history
+        },
+        toastHistory: useToastStore.getState().history
+      }
     }
 
     // Clear toast history so showcase runs in a clean notification state
@@ -105,7 +107,8 @@ export default function FeatureShowcaseRunner(): null {
         bundleError: undefined,
         submittingBundle: false
       })
-      useHistoryStore.setState({ records: snapshot.recentRecords })
+      // historyStore is intentionally NOT overwritten — submission history must
+      // always reflect real user data and must never be polluted by showcase mock records.
       useSearchHistoryStore.setState({ records: snapshot.savedSearches })
       useFhirInspectorStore.setState({
         latest: snapshot.fhirRequests.latest,
@@ -120,7 +123,10 @@ export default function FeatureShowcaseRunner(): null {
   }, [locale, runId, serverUrl])
 
   useEffect(() => {
-    if (status !== 'idle' || !backupRef.current) return
+    // Restore on both 'idle' (stopped/dismissed) and 'completed' (finished naturally).
+    // Restoring on 'completed' ensures localStorage is written back to real user data
+    // immediately, guarding against app-quit before the user explicitly closes the coach.
+    if ((status !== 'idle' && status !== 'completed') || !backupRef.current) return
 
     const backup = backupRef.current
     useCreatorStore.setState({
@@ -137,7 +143,6 @@ export default function FeatureShowcaseRunner(): null {
       bundleError: backup.creator.bundleError,
       submittingBundle: backup.creator.submittingBundle
     })
-    useHistoryStore.setState({ records: backup.history })
     useSearchHistoryStore.setState({ records: backup.savedSearches })
     useFhirInspectorStore.setState({
       latest: backup.fhirRequests.latest,

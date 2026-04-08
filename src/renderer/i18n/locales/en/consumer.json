@@ -262,7 +262,23 @@
     "filterNoMatch":  "No results match the filter",
     "filterClear":    "Clear filter",
     "loadMore":       "Load more results",
-    "loadingMore":    "Loading…"
+    "loadingMore":    "Loading…",
+    "exportCsvButton": "Export CSV",
+    "exportCsvSuccess": "Search results exported: {{fileName}}",
+    "exportCsvFileName": "rxfhir-results-{{date}}.csv",
+    "exportCsvPartialHint": "Only the {{count}} loaded result(s) will be exported",
+    "compareButton": "Compare with selected",
+    "compareShortLabel": "Compare",
+    "diffDialog": {
+      "title": "Bundle Diff",
+      "swap": "Swap A / B",
+      "differences": "{{count}} difference(s)",
+      "noDifferences": "No differences found",
+      "missingValue": "—",
+      "fieldColumn": "Field",
+      "bundleA": "Bundle A",
+      "bundleB": "Bundle B"
+    }
   },
   "detail": {
     "title": "Prescription Details",

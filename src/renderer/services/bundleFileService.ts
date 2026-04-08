@@ -154,6 +154,38 @@ export async function exportBundleHtml(
   ])
 }
 
+function csvEscapeField(value: string | undefined | null): string {
+  const str = value ?? ''
+  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+    return `"${str.replace(/"/g, '""')}"`
+  }
+  return str
+}
+
+export async function exportResultsCsv(results: BundleSummary[]): Promise<SaveFileResult> {
+  const HEADERS = ['Bundle ID', 'Patient Name', 'Patient Identifier', 'Date', 'Organization', 'Conditions', 'Medications', 'Source']
+  const rows = results.map((r) => [
+    r.id,
+    r.patientName,
+    r.patientIdentifier,
+    r.date,
+    r.organizationName,
+    r.conditions?.join('; '),
+    r.medications?.join('; '),
+    r.source
+  ].map(csvEscapeField))
+
+  // Prepend UTF-8 BOM so Excel / Numbers open the file without garbling CJK characters
+  const csv = '\uFEFF' + [HEADERS.map(csvEscapeField), ...rows]
+    .map((row) => row.join(','))
+    .join('\r\n')
+
+  const date = new Date().toISOString().slice(0, 10)
+  return saveFile(csv, `rxfhir-results-${date}.csv`, [
+    { name: 'CSV File', extensions: ['csv'] }
+  ])
+}
+
 export async function importBundleJson(): Promise<ImportedBundleResult | null> {
   const bridge = requireDesktopBridge()
   const result = await bridge.openBundleJson()

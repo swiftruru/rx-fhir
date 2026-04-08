@@ -8,6 +8,14 @@ function trimTrailingSlash(url: string): string {
   return url.replace(/\/+$/, '')
 }
 
+function getCurrentModule(): string {
+  const hash = window.location.hash
+  if (hash.includes('/creator')) return 'creator'
+  if (hash.includes('/consumer')) return 'consumer'
+  if (hash.includes('/settings')) return 'settings'
+  return 'app'
+}
+
 export function getFhirBaseUrl(): string {
   return localStorage.getItem('fhirServerUrl') || DEFAULT_SERVER_URL
 }
@@ -91,7 +99,7 @@ async function performLoggedRequest(
     reasonCode: init.reasonCode,
     requestHeaders: headersToObject(init.headers),
     requestBody: init.body
-  })
+  }, getCurrentModule())
 
   try {
     const response = await fetch(url, {

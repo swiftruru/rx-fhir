@@ -180,6 +180,22 @@ export const FEATURE_SHOWCASE_STEPS: FeatureShowcaseStepDefinition[] = [
     }
   },
   {
+    id: 'consumerBundleDiff',
+    route: '/consumer',
+    targetId: 'consumer.resultsPane',
+    durationMs: 5500,
+    spotlightPadding: 12,
+    highlightStyle: 'pulse',
+    panelPlacement: 'bottom-right',
+    ui: {
+      consumer: {
+        middleTab: 'results',
+        selectedBundleId: 'showcase-bundle-001',
+        bundleDiffTargetId: 'showcase-bundle-002'
+      }
+    }
+  },
+  {
     id: 'settingsServer',
     route: '/settings',
     targetId: 'settings.serverCard',

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FileText, CalendarDays, Building2, Pill, Stethoscope, Lightbulb, SearchX, TriangleAlert, Loader2, Ban, X } from 'lucide-react'
+import { FileText, CalendarDays, Building2, Pill, Stethoscope, Lightbulb, SearchX, TriangleAlert, Loader2, Ban, X, Download, Columns2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { exportResultsCsv } from '../../services/bundleFileService'
+import { useToastStore } from '../../store/toastStore'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
 import { Card, CardContent } from '../../components/ui/card'
@@ -18,6 +20,7 @@ interface Props {
   searchExecution?: ConsumerSearchExecution | null
   selected: BundleSummary | null
   onSelect: (summary: BundleSummary) => void
+  onCompare?: (summary: BundleSummary) => void
   nextUrl?: string | null
   isLoadingMore?: boolean
   onLoadMore?: () => void
@@ -153,12 +156,14 @@ function getSuggestionTexts(execution: ConsumerSearchExecution, t: (key: string,
   return [...suggestions]
 }
 
-export default function ResultList({ results, total, searchExecution, selected, onSelect, nextUrl, isLoadingMore, onLoadMore, isSearching }: Props): React.JSX.Element {
+export default function ResultList({ results, total, searchExecution, selected, onSelect, onCompare, nextUrl, isLoadingMore, onLoadMore, isSearching }: Props): React.JSX.Element {
   const { t } = useTranslation('consumer')
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
+  const pushToast = useToastStore((s) => s.pushToast)
 
   const [sortKey, setSortKey] = useState<SortKey>('date-desc')
   const [filterText, setFilterText] = useState('')
+  const [isExporting, setIsExporting] = useState(false)
 
   // Clear filter text on each new search (searchExecution is a new object each time)
   useEffect(() => {
@@ -187,6 +192,23 @@ export default function ResultList({ results, total, searchExecution, selected, 
 
   const selectedIndex = selected ? sortedAndFiltered.findIndex((s) => s.id === selected.id) : -1
   const isFiltering = filterText.trim().length > 0
+
+  async function handleExportCsv(): Promise<void> {
+    setIsExporting(true)
+    try {
+      const result = await exportResultsCsv(sortedAndFiltered)
+      if (!result.canceled && result.fileName) {
+        pushToast({
+          variant: 'success',
+          description: t('results.exportCsvSuccess', { fileName: result.fileName })
+        })
+      }
+    } catch {
+      // silently ignore (e.g. bridge unavailable in web preview)
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   function focusOption(index: number): void {
     optionRefs.current[index]?.focus()
@@ -343,6 +365,26 @@ export default function ResultList({ results, total, searchExecution, selected, 
         {/* Spacer */}
         <div className="flex-1" />
 
+        {/* Export CSV button */}
+        {sortedAndFiltered.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1 rounded-full px-2.5 text-[11px] text-muted-foreground hover:text-foreground"
+            onClick={() => { void handleExportCsv() }}
+            disabled={isExporting}
+            aria-label={t('results.exportCsvButton')}
+            title={nextUrl
+              ? t('results.exportCsvPartialHint', { count: sortedAndFiltered.length })
+              : t('results.exportCsvButton')}
+          >
+            {isExporting
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <Download className="h-3.5 w-3.5" />
+            }
+          </Button>
+        )}
+
         {/* Filter input */}
         <div className="relative">
           <Input
@@ -492,12 +534,27 @@ export default function ResultList({ results, total, searchExecution, selected, 
                             </div>
                           </div>
 
-                              <code
-                                className="shrink-0 rounded-xl border border-border/70 bg-background/70 px-2 py-1 text-[10px] text-muted-foreground font-mono max-w-[96px] truncate"
-                                title={summary.id}
-                              >
-                                {summary.id}
-                              </code>
+                              <div className="flex shrink-0 flex-col items-end gap-1">
+                                <code
+                                  className="rounded-xl border border-border/70 bg-background/70 px-2 py-1 text-[10px] text-muted-foreground font-mono max-w-[96px] truncate"
+                                  title={summary.id}
+                                >
+                                  {summary.id}
+                                </code>
+                                {onCompare && selected && selected.id !== summary.id && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 rounded-lg px-2 text-[10px] font-medium text-muted-foreground gap-1 hover:text-primary hover:border-primary/60"
+                                    onClick={(e) => { e.stopPropagation(); onCompare(summary) }}
+                                    aria-label={t('results.compareButton')}
+                                    title={t('results.compareButton')}
+                                  >
+                                    <Columns2 className="h-3 w-3" />
+                                    {t('results.compareShortLabel')}
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           </div>
                       </CardContent>

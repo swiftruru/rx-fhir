@@ -256,7 +256,7 @@ export default function FeatureShowcaseCoach(): React.JSX.Element | null {
 
   return (
     <div
-      className={`pointer-events-none fixed z-50 ${
+      className={`pointer-events-none fixed z-[60] ${
         reducedMotion
           ? 'transition-[top,left,right,bottom,opacity] duration-200 ease-out'
           : 'transition-all duration-500 ease-out'

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 
 export interface FhirRequestEntry {
   id: string
+  module?: string
   method: 'GET' | 'POST' | 'PUT'
   url: string
   resourceType?: string
@@ -22,7 +23,7 @@ export interface FhirRequestEntry {
 interface FhirInspectorState {
   latest?: FhirRequestEntry
   history: FhirRequestEntry[]
-  startRequest: (request: Omit<FhirRequestEntry, 'id' | 'startedAt'>) => string
+  startRequest: (request: Omit<FhirRequestEntry, 'id' | 'startedAt'>, module?: string) => string
   finishRequest: (
     id: string,
     result: Pick<
@@ -39,10 +40,11 @@ export const useFhirInspectorStore = create<FhirInspectorState>((set) => ({
   latest: undefined,
   history: [],
 
-  startRequest: (request) => {
+  startRequest: (request, module) => {
     const id = crypto.randomUUID()
     const entry: FhirRequestEntry = {
       id,
+      module,
       method: request.method,
       url: request.url,
       resourceType: request.resourceType,

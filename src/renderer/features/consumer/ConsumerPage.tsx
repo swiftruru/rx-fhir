@@ -9,6 +9,7 @@ import FeatureShowcaseTarget from '../../components/FeatureShowcaseTarget'
 import SearchForm, { type SearchFormHandle } from './SearchForm'
 import ResultList from './ResultList'
 import PrescriptionDetail from './PrescriptionDetail'
+import BundleDiffDialog from './BundleDiffDialog'
 import RecentRecords from './RecentRecords'
 import SavedSearches from './SavedSearches'
 import HistoryDashboard from './HistoryDashboard'
@@ -78,6 +79,7 @@ export default function ConsumerPage(): React.JSX.Element {
   const [results, setResults] = useState<BundleSummary[]>([])
   const [total, setTotal] = useState(0)
   const [selected, setSelected] = useState<BundleSummary | null>(null)
+  const [diffTarget, setDiffTarget] = useState<BundleSummary | null>(null)
   const [hasSearched, setHasSearched] = useState(false)
   const [activeTab, setActiveTab] = useState<SearchTab>('basic')
   const [prefill, setPrefill] = useState<SearchPrefill | null>(null)
@@ -211,6 +213,7 @@ export default function ConsumerPage(): React.JSX.Element {
       setMiddleTab(backup.middleTab)
       setActiveComplexBy(backup.activeComplexBy)
       setPrefillNotice(backup.prefillNotice)
+      setDiffTarget(null)
       showcaseBackupRef.current = undefined
     }
   }, [
@@ -242,6 +245,9 @@ export default function ConsumerPage(): React.JSX.Element {
     const nextSelected = nextSelectedId
       ? showcaseSnapshot.consumer.results.find((summary) => summary.id === nextSelectedId) ?? null
       : null
+    const nextDiffTarget = consumerUi.bundleDiffTargetId
+      ? showcaseSnapshot.consumer.results.find((summary) => summary.id === consumerUi.bundleDiffTargetId) ?? null
+      : null
 
     setResults(showcaseSnapshot.consumer.results)
     setTotal(showcaseSnapshot.consumer.total)
@@ -256,7 +262,8 @@ export default function ConsumerPage(): React.JSX.Element {
     setMiddleTab(nextMiddleTab)
     setActiveComplexBy(nextPrefill.tab === 'complex' ? nextPrefill.complexBy ?? 'organization' : 'organization')
     setPrefillNotice(null)
-    setSelected(consumerUi.showDetail && nextMiddleTab === 'results' ? nextSelected : null)
+    setSelected(consumerUi.showDetail && nextMiddleTab === 'results' ? nextSelected : nextDiffTarget ? nextSelected : null)
+    setDiffTarget(nextDiffTarget)
   }, [showcaseActive, showcaseSnapshot, showcaseUi.consumer])
 
   function handleSearchStart(): void {
@@ -638,6 +645,14 @@ export default function ConsumerPage(): React.JSX.Element {
     })
   }
 
+  function handleCompare(bundle: BundleSummary): void {
+    if (!selected) {
+      setSelected(bundle)
+      return
+    }
+    setDiffTarget(bundle)
+  }
+
   function handleDragEnter(event: React.DragEvent<HTMLDivElement>): void {
     if (!event.dataTransfer.types.includes('Files')) return
     event.preventDefault()
@@ -775,6 +790,7 @@ export default function ConsumerPage(): React.JSX.Element {
                 searchExecution={searchExecution}
                 selected={selected}
                 onSelect={setSelected}
+                onCompare={handleCompare}
                 nextUrl={nextUrl}
                 isLoadingMore={isLoadingMore}
                 onLoadMore={handleLoadMore}
@@ -869,6 +885,16 @@ export default function ConsumerPage(): React.JSX.Element {
           </FeatureShowcaseTarget>
         )}
       </div>
+
+      {/* Bundle Diff Dialog */}
+      {selected && diffTarget && (
+        <BundleDiffDialog
+          bundleA={selected}
+          bundleB={diffTarget}
+          open={Boolean(diffTarget)}
+          onClose={() => setDiffTarget(null)}
+        />
+      )}
 
       {/* Right panel: Detail */}
       {showDetail && selected && (

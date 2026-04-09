@@ -9,6 +9,7 @@ import FhirRequestInspector from '../../components/FhirRequestInspector'
 import FeatureShowcaseTarget from '../../components/FeatureShowcaseTarget'
 import { useReducedMotion } from '../../hooks/useReducedMotion'
 import { cn } from '../../lib/utils'
+import { getActiveLiveDemoSubmitRunId, isLiveDemoRunCurrent } from '../../lib/liveDemoRuntime'
 import { useCreatorStore } from '../../store/creatorStore'
 import { useAppStore } from '../../store/appStore'
 import { exportCreatorPostman } from '../../services/bundleFileService'
@@ -280,6 +281,11 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
   const showcaseActive = showcaseStatus === 'running' || showcaseStatus === 'paused'
 
   function onResourceSuccess(key: string, resource: fhir4.Resource): void {
+    const activeLiveDemoSubmitRun = getActiveLiveDemoSubmitRunId()
+    if (activeLiveDemoSubmitRun !== null && !isLiveDemoRunCurrent(activeLiveDemoSubmitRun)) {
+      return
+    }
+
     useCreatorStore.getState().setResource(key as never, resource as never)
     clearDraft(key as keyof typeof resources)
     setExpandSeq(s => s + 1)

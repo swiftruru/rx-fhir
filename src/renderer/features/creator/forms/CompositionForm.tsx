@@ -14,6 +14,7 @@ import FormErrorSummary from '../../../components/FormErrorSummary'
 import FhirErrorAlert from '../../../components/FhirErrorAlert'
 import JsonViewer from '../../../components/JsonViewer'
 import { buildFormErrorSummaryItems } from '../../../lib/formErrorSummary'
+import { getActiveLiveDemoSubmitRunId, isLiveDemoRunCurrent } from '../../../lib/liveDemoRuntime'
 import { useCreatorMockFill, useLiveDemoTypedMockFill } from '../../../hooks/useCreatorMockFill'
 import { useLiveDemoFormController } from '../../../hooks/useLiveDemoFormController'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../../../hooks/useCreatorDraft'
@@ -138,6 +139,10 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
       const fhirDate = data.date.length === 16 ? `${data.date}:00` : data.date
       const composition = buildComposition(resources, data.title, fhirDate)
       const createdComp = await postResource<fhir4.Composition>('Composition', composition)
+      const activeLiveDemoSubmitRun = getActiveLiveDemoSubmitRunId()
+      if (activeLiveDemoSubmitRun !== null && !isLiveDemoRunCurrent(activeLiveDemoSubmitRun)) {
+        return
+      }
       setResource('composition', createdComp)
       setDraft('composition', { title: data.title, date: data.date })
       setCompId(createdComp.id)
@@ -148,6 +153,9 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
       const bundle = assembleDocumentBundle(resources, { ...composition, id: createdComp.id })
 
       const createdBundle = await postResource<fhir4.Bundle>('Bundle', bundle)
+      if (activeLiveDemoSubmitRun !== null && !isLiveDemoRunCurrent(activeLiveDemoSubmitRun)) {
+        return
+      }
       setBundleResultId(createdBundle.id!)
       markBundleSubmitted(createdBundle.id!, {
         ...drafts,

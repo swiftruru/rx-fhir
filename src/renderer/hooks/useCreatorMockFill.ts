@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import type { ResourceKey } from '../types/fhir.d'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { revealLiveDemoField } from '../lib/liveDemoDom'
+import { waitForLiveDemoDelay, waitForLiveDemoRunning } from '../lib/liveDemoRuntime'
 import { useAppStore } from '../store/appStore'
 import { useLiveDemoStore } from '../store/liveDemoStore'
 import { useMockStore } from '../store/mockStore'
@@ -24,10 +25,6 @@ const INSTANT_KEYS = new Set<string>([
   'ext1Url',
   'ext2Url'
 ])
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
 
 function shouldTypeValue(key: string, value: unknown): value is string {
   if (typeof value !== 'string') return false
@@ -77,6 +74,7 @@ export function useLiveDemoTypedMockFill<T extends Record<string, unknown>>(
   return useCallback(async () => {
     const mock = getMockValues()
     if (!mock) return
+    const runId = useLiveDemoStore.getState().runId
 
     const charDelay = reducedMotion
       ? playMode === 'auto' ? 42 : 28
@@ -92,21 +90,24 @@ export function useLiveDemoTypedMockFill<T extends Record<string, unknown>>(
       : playMode === 'auto' ? 180 : 100
 
     for (const [key, value] of Object.entries(mock)) {
+      await waitForLiveDemoRunning(runId)
       await revealLiveDemoField(resourceKey, key, reducedMotion)
+      await waitForLiveDemoRunning(runId)
 
       if (shouldTypeValue(key, value)) {
         let current = ''
         for (const char of value) {
+          await waitForLiveDemoRunning(runId)
           current += char
           applyValue(key as keyof T, current as T[keyof T])
-          await sleep(char === ' ' ? spaceDelay : charDelay)
+          await waitForLiveDemoDelay(runId, char === ' ' ? spaceDelay : charDelay)
         }
-        await sleep(afterTypedFieldDelay)
+        await waitForLiveDemoDelay(runId, afterTypedFieldDelay)
         continue
       }
 
       applyValue(key as keyof T, value as T[keyof T])
-      await sleep(fieldDelay)
+      await waitForLiveDemoDelay(runId, fieldDelay)
     }
   }, [applyValue, getMockValues, playMode, reducedMotion])
 }

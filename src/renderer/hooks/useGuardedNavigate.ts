@@ -18,8 +18,9 @@ export function useGuardedNavigate(): (to: string, options?: GuardedNavigateOpti
     if (!to || to === location.pathname) return
 
     const { force: _force, label: _label, ...navigateOptions } = options ?? {}
+    const leavingConsumerDuringSearch = location.pathname === '/consumer' && isSearching
 
-    if (isSearching && !options?.force) {
+    if (leavingConsumerDuringSearch && !options?.force) {
       pushToast({
         variant: 'info',
         title: i18n.t('consumer:page.searchingGuard.title'),

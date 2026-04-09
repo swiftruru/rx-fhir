@@ -141,6 +141,7 @@ async function runCreatorStep(runId: number, step: LiveDemoStepDefinition, reduc
     liveDemo.setPhase('filling')
     if (controller?.fillDemo) {
       await controller.fillDemo()
+      await waitUntilRunningOrAbort(runId)
     } else {
       controller?.fillMock?.()
       await waitForDelay(runId, getPlaybackDelay(650, playMode, reducedMotion))
@@ -150,6 +151,7 @@ async function runCreatorStep(runId: number, step: LiveDemoStepDefinition, reduc
   if (step.mode === 'fill-submit' || step.mode === 'submit-only') {
     liveDemo.setPhase('submitting')
     await controller?.submit?.()
+    await waitUntilRunningOrAbort(runId)
   }
 
   if (step.id === 'bundleSubmit') {
@@ -172,7 +174,7 @@ export default function LiveDemoRunner(): null {
   const reducedMotion = useReducedMotion()
 
   useEffect(() => {
-    if (runId === 0) return
+    if (runId === 0 || useLiveDemoStore.getState().status !== 'running') return
 
     let disposed = false
 

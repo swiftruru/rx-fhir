@@ -36,6 +36,7 @@ import type { UpdateCheckResult } from './types/electron'
 import { getRouteNavKey } from './lib/routeMeta'
 import { cn } from './lib/utils'
 import { hasCreatorPersistableWork, useCreatorStore } from './store/creatorStore'
+import { useConsumerSearchStore } from './store/consumerSearchStore'
 import { FEATURE_SHOWCASE_STEPS } from './showcase/featureShowcaseScript'
 
 const THEME_CYCLE: ThemeMode[] = ['light', 'dark', 'system']
@@ -167,6 +168,7 @@ function AppShellContent(): React.JSX.Element {
 
   const routeKey = getRouteNavKey(location.pathname)
   const routeLabel = routeKey ? tn(`items.${routeKey}.label`) : tc('accessibility.appName')
+  const setConsumerSearching = useConsumerSearchStore((state) => state.setIsSearching)
 
   function focusCurrentPage(): void {
     window.requestAnimationFrame(() => {
@@ -253,6 +255,11 @@ function AppShellContent(): React.JSX.Element {
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [creatorHasIncompleteWorkflow, location.pathname])
+
+  useEffect(() => {
+    if (location.pathname === '/consumer') return
+    setConsumerSearching(false)
+  }, [location.pathname, setConsumerSearching])
 
   return (
     <TooltipProvider>

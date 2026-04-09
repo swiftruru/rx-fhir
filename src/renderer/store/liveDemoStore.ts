@@ -81,13 +81,14 @@ export const useLiveDemoStore = create<LiveDemoState>((set) => ({
       currentStepId: undefined,
       currentIndex: 0,
       totalSteps: 0,
+      runId: state.runId + 1,
       advanceToken: state.advanceToken + 1,
       error: undefined,
       consumerSearchReady: false
     })),
 
   dismiss: () =>
-    set({
+    set((state) => ({
       status: 'idle',
       playMode: 'manual',
       coachCollapsed: false,
@@ -95,9 +96,10 @@ export const useLiveDemoStore = create<LiveDemoState>((set) => ({
       currentStepId: undefined,
       currentIndex: 0,
       totalSteps: 0,
+      runId: state.runId + 1,
       error: undefined,
       consumerSearchReady: false
-    }),
+    })),
 
   complete: () => set({ status: 'completed', phase: 'reviewing' }),
   fail: (message) => set({ status: 'error', error: message }),

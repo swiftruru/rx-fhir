@@ -17,6 +17,7 @@ import { useToastStore } from '../../store/toastStore'
 import { useAccessibilityStore } from '../../store/accessibilityStore'
 import type { ConsumerLaunchState } from '../consumer/searchState'
 import { diffCreatorSubmissionSnapshot } from '../../lib/creatorSubmissionDiff'
+import { resetLoggedRequests } from '../../services/fhirClient'
 
 interface CreatorLaunchState {
   quickStartScenario?: 'overview'
@@ -77,6 +78,7 @@ export default function CreatorPage(): React.JSX.Element {
   function handleConfirm(): void {
     reset()
     resetMockScenario()
+    resetLoggedRequests()
     setConfirming(false)
   }
 

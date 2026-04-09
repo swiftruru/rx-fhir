@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import type { FieldValues, SubmitHandler, UseFormHandleSubmit } from 'react-hook-form'
 import type { LiveDemoControllerKey } from '../demo/types'
 import { pressLiveDemoSubmit, revealLiveDemoForm } from '../lib/liveDemoDom'
+import { runWithLiveDemoSubmitContext, waitForLiveDemoRunning } from '../lib/liveDemoRuntime'
 import { useReducedMotion } from './useReducedMotion'
 import { useLiveDemoStore } from '../store/liveDemoStore'
 
@@ -18,16 +19,30 @@ export function useLiveDemoFormController<T extends FieldValues>(
 
   const submit = useMemo(
     () => async () => {
+      const runId = useLiveDemoStore.getState().runId
+      await waitForLiveDemoRunning(runId)
       const clicked = await pressLiveDemoSubmit(key, reducedMotion)
-      if (clicked) return
-      await handleSubmit(onSubmit)()
+      if (clicked) {
+        await waitForLiveDemoRunning(runId)
+        return
+      }
+      await runWithLiveDemoSubmitContext(runId, async () => {
+        await handleSubmit(async (data) => {
+          await waitForLiveDemoRunning(runId)
+          await onSubmit(data)
+          await waitForLiveDemoRunning(runId)
+        })()
+      })
     },
     [handleSubmit, key, onSubmit, reducedMotion]
   )
 
   const reveal = useMemo(
     () => async () => {
+      const runId = useLiveDemoStore.getState().runId
+      await waitForLiveDemoRunning(runId)
       await revealLiveDemoForm(key, reducedMotion)
+      await waitForLiveDemoRunning(runId)
     },
     [key, reducedMotion]
   )

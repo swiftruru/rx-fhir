@@ -35,7 +35,14 @@ function getIconPath(): string {
   if (isDev) {
     return resolveMainPath('../../build/icon.png')
   }
-  return resolveMainPath('../../resources/icon.png')
+  // In production, app.getAppPath() returns the path to app.asar.
+  // One level up is the platform Resources directory where electron-builder
+  // places the icns (macOS) and our extraResources icon.png (all platforms).
+  const resourcesDir = join(app.getAppPath(), '..')
+  if (process.platform === 'darwin') {
+    return join(resourcesDir, 'icon.icns')
+  }
+  return join(resourcesDir, 'icon.png')
 }
 
 interface WindowState {

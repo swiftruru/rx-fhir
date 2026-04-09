@@ -9,10 +9,14 @@ directories:
 files:
   - out/**/*
 
+extraResources:
+  - from: build/icon.png
+    to: icon.png
+
 mac:
   category: public.app-category.healthcare-fitness
   artifactName: ${productName}-macOS-${version}.${ext}
-  icon: build/icon.png
+  icon: build/icon.icns
   target:
     - dmg
     - zip

@@ -35,7 +35,6 @@ import { useToastStore } from './store/toastStore'
 import type { UpdateCheckResult } from './types/electron'
 import { getRouteNavKey } from './lib/routeMeta'
 import { cn } from './lib/utils'
-import { hasCreatorPersistableWork, useCreatorStore } from './store/creatorStore'
 import { useConsumerSearchStore } from './store/consumerSearchStore'
 import { FEATURE_SHOWCASE_STEPS } from './showcase/featureShowcaseScript'
 
@@ -96,7 +95,6 @@ function AppShellContent(): React.JSX.Element {
   const textScale = useAppStore((s) => s.textScale)
   const uiZoom = useAppStore((s) => s.uiZoom)
   const focusPreference = useAppStore((s) => s.focusPreference)
-  const creatorHasIncompleteWorkflow = useCreatorStore((state) => !state.bundleId && hasCreatorPersistableWork(state.resources, state.drafts))
   const location = useLocation()
   const announcePolite = useAccessibilityStore((state) => state.announcePolite)
   const { t } = useTranslation('showcase')
@@ -243,18 +241,6 @@ function AppShellContent(): React.JSX.Element {
 
     previousPathRef.current = location.pathname
   }, [announcePolite, location.pathname, routeKey, routeLabel, tc])
-
-  useEffect(() => {
-    if (location.pathname !== '/creator' || !creatorHasIncompleteWorkflow) return
-
-    function handleBeforeUnload(event: BeforeUnloadEvent): void {
-      event.preventDefault()
-      event.returnValue = ''
-    }
-
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [creatorHasIncompleteWorkflow, location.pathname])
 
   useEffect(() => {
     if (location.pathname === '/consumer') return

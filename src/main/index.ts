@@ -31,17 +31,14 @@ function clampZoomFactor(value: number): number {
   return Math.min(1.25, Math.max(1, value))
 }
 
-function getIconPath(): string {
+function getRuntimeIconPath(): string {
   if (isDev) {
     return resolveMainPath('../../build/icon.png')
   }
-  // In production, app.getAppPath() returns the path to app.asar.
-  // One level up is the platform Resources directory where electron-builder
-  // places the icns (macOS) and our extraResources icon.png (all platforms).
+  // Use the packaged PNG for runtime NativeImage consumers such as the custom
+  // About window, BrowserWindow icon, and dock icon. The macOS bundle icon is
+  // still provided separately via electron-builder's mac.icon setting.
   const resourcesDir = join(app.getAppPath(), '..')
-  if (process.platform === 'darwin') {
-    return join(resourcesDir, 'icon.icns')
-  }
   return join(resourcesDir, 'icon.png')
 }
 
@@ -190,7 +187,7 @@ function getWindowState(mainWindow: ElectronBrowserWindow): WindowState {
 
 // Custom About window — replaces the system About panel so we can show our icon
 async function createAboutWindow(): Promise<void> {
-  const iconPath = getIconPath()
+  const iconPath = getRuntimeIconPath()
   let iconDataUrl = ''
   try {
     const img = nativeImage.createFromPath(iconPath)
@@ -355,7 +352,7 @@ function setupMacMenu(): void {
 }
 
 async function createWindow(): Promise<void> {
-  const rawIcon = nativeImage.createFromPath(getIconPath())
+  const rawIcon = nativeImage.createFromPath(getRuntimeIconPath())
   // Windows title bar requires a square icon; resize to 256×256 to avoid
   // the icon being clipped or distorted when the source PNG is not square.
   const icon = process.platform === 'win32'
@@ -590,7 +587,7 @@ app.whenReady().then(() => {
 
   if (process.platform === 'darwin') {
     // Set dock icon
-    const dockIcon = nativeImage.createFromPath(getIconPath())
+    const dockIcon = nativeImage.createFromPath(getRuntimeIconPath())
     if (!dockIcon.isEmpty()) {
       app.dock.setIcon(dockIcon)
     }

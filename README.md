@@ -341,6 +341,18 @@ The current UI also includes an extra `Extension` step implemented with a `Basic
 
 ## Getting Started
 
+If you only want to use RxFHIR, you do not need to build from source. Download the latest desktop app from GitHub Releases:
+
+### Download Builds
+
+- Latest Release: <https://github.com/swiftruru/rx-fhir/releases/latest>
+- Windows: `RxFHIR-Windows-Setup-...exe` or `RxFHIR-Windows-Portable-...exe`
+- macOS: `RxFHIR-macOS-...dmg`
+- Linux: `RxFHIR-Linux-...AppImage` or `RxFHIR-Linux-...deb`
+- Avoid `Source code (zip)` and `Source code (tar.gz)` if you want the runnable desktop app
+
+If you want to develop RxFHIR locally, continue with the setup steps below.
+
 ### Prerequisites
 
 - Node.js 20+
@@ -352,14 +364,6 @@ The current UI also includes an extra `Extension` step implemented with a `Basic
 npm install
 npm run dev
 ```
-
-### Download Builds
-
-- GitHub Releases: <https://github.com/swiftruru/rx-fhir/releases>
-- Windows: `RxFHIR-Windows-Setup-...exe` or `RxFHIR-Windows-Portable-...exe`
-- macOS: `RxFHIR-macOS-...dmg`
-- Linux: `RxFHIR-Linux-...AppImage` or `RxFHIR-Linux-...deb`
-- Avoid `Source code (zip)` and `Source code (tar.gz)` if you want the runnable desktop app
 
 ### Type Check
 

@@ -60,7 +60,10 @@ export default function FeatureShowcaseRunner(): null {
   const backupRef = useRef<ShowcaseBackup>()
 
   useEffect(() => {
-    if (runId === 0) return
+    // Only (re)build showcase state while a showcase run is actually active.
+    // After STOP, runId remains non-zero so locale/server changes must not
+    // rehydrate the Creator with showcase snapshot data.
+    if (runId === 0 || (status !== 'running' && status !== 'paused')) return
 
     // Stop Live Demo if it is running. The showcase navigates the Creator to the
     // Composition step; if Live Demo is paused mid-run its async loop would detect

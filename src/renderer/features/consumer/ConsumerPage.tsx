@@ -717,10 +717,10 @@ export default function ConsumerPage(): React.JSX.Element {
       <FeatureShowcaseTarget id="consumer.searchPanel" className="flex shrink-0 flex-col border-b lg:w-[22rem] lg:border-b-0 lg:border-r 2xl:w-[23rem]">
         <div className="flex h-full min-h-0 flex-col">
           <div className="border-b bg-background px-4 py-4 shrink-0">
-            <h1 data-page-heading="true" tabIndex={-1} className="text-lg font-bold tracking-tight outline-none">
+            <h1 data-page-heading="true" tabIndex={-1} className="text-xl font-bold tracking-tight outline-none">
               {t('page.title')}
             </h1>
-            <p className="mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">{t('page.description')}</p>
+            <p className="mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">{t('page.description')}</p>
           </div>
           <div className="flex-1 overflow-auto bg-muted/[0.08] px-4 py-4">
             <div className="rounded-[24px] border border-border/70 bg-background/95 p-3 shadow-sm sm:p-4">

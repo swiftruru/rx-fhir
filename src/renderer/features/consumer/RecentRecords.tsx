@@ -1,8 +1,8 @@
 import { ChevronDown, ChevronRight, FileText, Search, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useHistoryStore, type SubmissionRecord } from '../../store/historyStore'
-import { Button } from '../../components/ui/button'
-import { Badge } from '../../components/ui/badge'
+import { useHistoryStore, type SubmissionRecord } from '../../features/history/store/historyStore'
+import { Button } from '../../shared/components/ui/button'
+import { Badge } from '../../shared/components/ui/badge'
 
 interface Props {
   onFill: (record: SubmissionRecord) => void

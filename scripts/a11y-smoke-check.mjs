@@ -30,13 +30,13 @@ function includesAll(source, patterns) {
   return patterns.every((pattern) => pattern.test(source))
 }
 
-const appSource = readProjectFile('src/renderer/App.tsx')
+const appSource = readProjectFile('src/renderer/app/AppShell.tsx')
 const resourceStepperSource = readProjectFile('src/renderer/features/creator/ResourceStepper.tsx')
 const resultListSource = readProjectFile('src/renderer/features/consumer/ResultList.tsx')
 const searchFormSource = readProjectFile('src/renderer/features/consumer/SearchForm.tsx')
-const jsonViewerSource = readProjectFile('src/renderer/components/JsonViewer.tsx')
+const jsonViewerSource = readProjectFile('src/renderer/shared/components/JsonViewer.tsx')
 const settingsSource = readProjectFile('src/renderer/features/settings/SettingsPage.tsx')
-const statusBarSource = readProjectFile('src/renderer/components/StatusBar.tsx')
+const statusBarSource = readProjectFile('src/renderer/app/components/StatusBar.tsx')
 const zhCommon = loadJson('src/renderer/i18n/locales/zh-TW/common.json')
 const enCommon = loadJson('src/renderer/i18n/locales/en/common.json')
 const zhSettings = loadJson('src/renderer/i18n/locales/zh-TW/settings.json')

@@ -116,3 +116,5 @@
 | [settings/preferences-shortcuts-and-productivity.md](./settings/preferences-shortcuts-and-productivity.md) | Settings、shortcuts、個人化偏好與效率工具 |
 | [onboarding/guidance-and-discovery.md](./onboarding/guidance-and-discovery.md) | Live Demo、Feature Showcase、first-run、任務導向引導 |
 | [desktop/desktop-native-behaviors.md](./desktop/desktop-native-behaviors.md) | Electron 原生行為、檔案、視窗、OS 整合 |
+| [manual-testing/checklist.md](./manual-testing/checklist.md) | UX 手動驗收 checklist |
+| [manual-testing/manual-smoke-report.md](./manual-testing/manual-smoke-report.md) | 最新一輪重構後手動 smoke 結果 |

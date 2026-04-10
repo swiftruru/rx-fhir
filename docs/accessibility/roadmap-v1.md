@@ -16,9 +16,9 @@
 目前優先涵蓋下列模組與元件：
 
 - App Shell
-  - `src/renderer/App.tsx`
-  - `src/renderer/components/Sidebar.tsx`
-  - `src/renderer/components/StatusBar.tsx`
+  - `src/renderer/app/AppShell.tsx`
+  - `src/renderer/app/components/Sidebar.tsx`
+  - `src/renderer/app/components/StatusBar.tsx`
 - Creator
   - `src/renderer/features/creator/CreatorPage.tsx`
   - `src/renderer/features/creator/ResourceStepper.tsx`
@@ -30,10 +30,10 @@
 - Settings / Shared
   - `src/renderer/features/settings/SettingsPage.tsx`
   - `src/renderer/features/settings/ShortcutSettingsPanel.tsx`
-  - `src/renderer/components/ShortcutHelpDialog.tsx`
-  - `src/renderer/components/FhirRequestInspector.tsx`
-  - `src/renderer/components/JsonViewer.tsx`
-  - `src/renderer/components/FhirErrorAlert.tsx`
+  - `src/renderer/app/components/ShortcutHelpDialog.tsx`
+  - `src/renderer/features/creator/components/FhirRequestInspector.tsx`
+  - `src/renderer/shared/components/JsonViewer.tsx`
+  - `src/renderer/shared/components/FhirErrorAlert.tsx`
 
 ## 核心原則
 

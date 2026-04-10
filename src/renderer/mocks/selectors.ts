@@ -1,4 +1,4 @@
-import type { ResourceKey } from '../types/fhir.d'
+import type { ResourceKey } from '../types/fhir'
 import { mockResourcePresetSources } from './resourcePresets'
 import { mockScenarioPackSources } from './scenarioPacks'
 import type {

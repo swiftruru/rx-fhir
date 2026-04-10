@@ -1,5 +1,5 @@
 import type { MockScenarioPack } from './types'
-import type { CreatorDraftValues } from '../store/creatorStore'
+import type { CreatorDraftValues } from '../features/creator/store/creatorStore'
 
 function toDateTimeLocalValue(value?: string): string | undefined {
   if (!value) return undefined

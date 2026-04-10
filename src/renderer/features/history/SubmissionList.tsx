@@ -1,18 +1,18 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Trash2, X, FileText, Eye, Search } from 'lucide-react'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
-import { Badge } from '../../components/ui/badge'
+import { Button } from '../../shared/components/ui/button'
+import { Input } from '../../shared/components/ui/input'
+import { Badge } from '../../shared/components/ui/badge'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../components/ui/select'
-import { useHistoryStore, type SubmissionRecord } from '../../store/historyStore'
-import { cn } from '../../lib/utils'
+} from '../../shared/components/ui/select'
+import { useHistoryStore, type SubmissionRecord } from '../../features/history/store/historyStore'
+import { cn } from '../../shared/lib/utils'
 
 type SortKey = 'date-desc' | 'date-asc' | 'name-asc'
 

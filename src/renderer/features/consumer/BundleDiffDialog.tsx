@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { ArrowLeftRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Badge } from '../../components/ui/badge'
-import { Button } from '../../components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog'
-import { ScrollArea } from '../../components/ui/scroll-area'
-import type { BundleSummary } from '../../types/fhir.d'
-import { diffBundles, type DiffField } from '../../lib/bundleDiff'
-import { cn } from '../../lib/utils'
+import { Badge } from '../../shared/components/ui/badge'
+import { Button } from '../../shared/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../shared/components/ui/dialog'
+import { ScrollArea } from '../../shared/components/ui/scroll-area'
+import type { BundleSummary } from '../../types/fhir'
+import { diffBundles, type DiffField } from './lib/bundleDiff'
+import { cn } from '../../shared/lib/utils'
 
 interface Props {
   bundleA: BundleSummary

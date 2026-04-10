@@ -1,4 +1,4 @@
-import type { SearchParams } from '../../types/fhir.d'
+import type { SearchParams } from '../../types/fhir'
 import type { QueryStep } from '../../services/fhirClient'
 
 export type SearchTab = 'basic' | 'date' | 'complex'

@@ -54,6 +54,19 @@ This README reflects the **current implementation** in the repository. When docu
 
 ---
 
+## Architecture
+
+The current renderer is organized into four explicit layers:
+
+- `src/renderer/app`: app shell, routes, dialogs, global orchestration, and app-level stores
+- `src/renderer/features`: feature-owned UI, hooks, libs, and stores for Creator, Consumer, History, Settings, and About
+- `src/renderer/domain`: reusable FHIR business logic and request rules
+- `src/renderer/shared`: shared UI primitives, shared hooks, shared stores, and cross-feature utilities
+
+Electron-native concerns stay in `src/main`, and stable cross-process contracts live in `src/shared/contracts`. For the fuller structure and boundary rules, see [docs/architecture.md](docs/architecture.md).
+
+---
+
 ## Academic Context / 課程背景
 
 本專案為修讀 **醫療資訊系統基礎**（Introduction to Healthcare Information Systems）課程之成果作品。  
@@ -371,6 +384,12 @@ npm run dev
 npm run typecheck
 ```
 
+### Unit Tests
+
+```bash
+npm test
+```
+
 ### Accessibility Smoke Check
 
 ```bash
@@ -424,27 +443,30 @@ Artifact naming now follows explicit platform labels:
 ```text
 src/
 ├── main/
-│   ├── index.ts        # Electron main process
-│   └── preload.ts      # Preload bridge
-└── renderer/
-    ├── App.tsx
-    ├── components/     # Shared UI components
-    ├── features/
-    │   ├── about/
-    │   ├── consumer/
-    │   ├── creator/
-    │   │   └── forms/
-    │   ├── history/    # Submission + search history components (Consumer History tab)
-    │   └── settings/
-    ├── i18n/           # zh-TW / en locales
-    ├── lib/
-    ├── mocks/          # Typed scenario-based mock data + query examples
-    ├── services/       # FHIR client + bundle/search logic
-    ├── store/          # Zustand stores
-    ├── styles/
-    └── types/
+│   ├── index.ts
+│   ├── preload.ts
+│   ├── ipc/           # Typed Electron IPC registration
+│   ├── services/      # Window lifecycle, menu, file, and desktop services
+│   └── updater/       # Update-check IPC helpers
+├── renderer/
+│   ├── App.tsx
+│   ├── app/           # App shell, routes, dialogs, app-level stores
+│   ├── domain/        # FHIR domain logic and pure business rules
+│   ├── features/      # Creator / Consumer / History / Settings / About
+│   ├── shared/        # Shared UI, hooks, stores, utilities
+│   ├── demo/          # Live Demo definitions
+│   ├── i18n/
+│   ├── mocks/         # Typed scenario-based mock data + query examples
+│   ├── services/      # Renderer-facing service facades
+│   ├── showcase/      # Feature Showcase scripts and snapshot builders
+│   ├── styles/
+│   └── types/
+└── shared/
+    └── contracts/     # Stable cross-process and shared domain contracts
 docs/
+├── architecture.md    # Current architecture and ownership rules
 ├── accessibility/      # A11y roadmap, checklist, manual testing
+├── refactor-followups.md
 ├── screenshots/        # Product screenshots used in docs
 └── ux/                 # UX planning, manual testing, Electron debug notes
 scripts/
@@ -462,10 +484,11 @@ scripts/
 Current repository quality signals:
 
 - TypeScript typecheck is available and passes
+- Vitest unit tests are available and pass
 - Accessibility smoke check is available and passes
 - Electron UX smoke and end-to-end verify scripts are available and pass locally
 - Production build is available and passes locally
-- No automated test suite is currently included
+- Manual smoke checklist and report are documented under `docs/ux/manual-testing/`
 
 ---
 

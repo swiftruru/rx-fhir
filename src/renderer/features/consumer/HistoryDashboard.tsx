@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BarChart3, ChevronDown, ChevronUp } from 'lucide-react'
-import { Progress } from '../../components/ui/progress'
-import { useHistoryStore } from '../../store/historyStore'
-import { cn } from '../../lib/utils'
+import { Progress } from '../../shared/components/ui/progress'
+import { useHistoryStore } from '../../features/history/store/historyStore'
+import { cn } from '../../shared/lib/utils'
 
 const DAY_MS = 86_400_000
 

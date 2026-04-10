@@ -1,6 +1,6 @@
 // Pure data-transformation helpers — no I/O, no React imports.
 import QRCode from 'qrcode'
-import type { FhirRequestEntry } from '../store/fhirInspectorStore'
+import type { FhirRequestEntry } from '../features/creator/store/fhirInspectorStore'
 
 // ─── Postman Collection v2.1 ────────────────────────────────────────────────
 

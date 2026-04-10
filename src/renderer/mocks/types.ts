@@ -1,5 +1,5 @@
 import type { SupportedLocale } from '../i18n'
-import type { ResourceKey } from '../types/fhir.d'
+import type { ResourceKey } from '../types/fhir'
 
 export type MockLocale = SupportedLocale
 export type LocalizedString = Record<MockLocale, string>

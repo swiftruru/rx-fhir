@@ -1,7 +1,7 @@
 import { Clock3, FileJson, FolderOpen } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Button } from '../../components/ui/button'
-import { Badge } from '../../components/ui/badge'
+import { Button } from '../../shared/components/ui/button'
+import { Badge } from '../../shared/components/ui/badge'
 import type { RecentBundleFileEntry } from '../../types/electron'
 
 interface Props {

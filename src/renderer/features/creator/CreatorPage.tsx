@@ -1,27 +1,24 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { CheckCircle2, RotateCcw, AlertTriangle, Save, GraduationCap, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Button } from '../../components/ui/button'
-import { Alert, AlertDescription } from '../../components/ui/alert'
+import { Button } from '../../shared/components/ui/button'
+import { Alert, AlertDescription } from '../../shared/components/ui/alert'
 import ResourceStepper from './ResourceStepper'
 import PrescriptionTemplatePanel from './components/PrescriptionTemplatePanel'
-import { RESOURCE_STEPS } from '../../types/fhir.d'
-import { hasCreatorPersistableWork, useCreatorStore } from '../../store/creatorStore'
-import { useMockStore } from '../../store/mockStore'
+import { RESOURCE_STEPS } from '../../types/fhir'
+import { hasCreatorPersistableWork, useCreatorStore } from './store/creatorStore'
+import { useMockStore } from './store/mockStore'
 import { LIVE_DEMO_STEPS } from '../../demo/liveDemoScript'
-import { useLiveDemoStore } from '../../store/liveDemoStore'
-import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
-import { useShortcutActionStore } from '../../store/shortcutActionStore'
-import { useToastStore } from '../../store/toastStore'
-import { useAccessibilityStore } from '../../store/accessibilityStore'
+import { useLiveDemoStore } from '../../app/stores/liveDemoStore'
+import { useFeatureShowcaseStore } from '../../app/stores/featureShowcaseStore'
+import { useShortcutActionStore } from '../../shared/stores/shortcutActionStore'
+import { useToastStore } from '../../shared/stores/toastStore'
+import { useAccessibilityStore } from '../../shared/stores/accessibilityStore'
 import type { ConsumerLaunchState } from '../consumer/searchState'
-import { diffCreatorSubmissionSnapshot } from '../../lib/creatorSubmissionDiff'
+import { diffCreatorSubmissionSnapshot } from './lib/creatorSubmissionDiff'
 import { resetLoggedRequests } from '../../services/fhirClient'
-
-interface CreatorLaunchState {
-  quickStartScenario?: 'overview'
-}
+import { useCreatorPageEffects } from './hooks/useCreatorPageEffects'
 
 export default function CreatorPage(): React.JSX.Element {
   const {
@@ -51,7 +48,6 @@ export default function CreatorPage(): React.JSX.Element {
   const navigate = useNavigate()
   const [confirming, setConfirming] = useState(false)
   const [templatePanelOpen, setTemplatePanelOpen] = useState(false)
-  const lastAnnouncedBundleId = useRef<string | undefined>(undefined)
 
   const formattedDraftTime = useMemo(() => {
     if (!draftSavedAt) return undefined
@@ -115,54 +111,22 @@ export default function CreatorPage(): React.JSX.Element {
   const liveDemoActive = liveDemoStatus === 'running' || liveDemoStatus === 'paused'
   const featureShowcaseActive = featureShowcaseStatus === 'running' || featureShowcaseStatus === 'paused'
 
-  useEffect(() => {
-    setCreatorActions({
-      openTemplates: () => setTemplatePanelOpen(true)
-    })
-
-    return () => {
-      clearCreatorActions(['openTemplates'])
-    }
-  }, [clearCreatorActions, setCreatorActions])
-
-  useEffect(() => {
-    const launchState = location.state as CreatorLaunchState | null
-    if (!launchState?.quickStartScenario) return
-
-    navigate('/creator', { replace: true, state: null })
-
-    if (launchState.quickStartScenario !== 'overview') return
-
-    setTemplatePanelOpen(false)
-    setStep(0)
-
-    const hasExistingWork = Boolean(bundleId || hasCreatorPersistableWork(resources, drafts))
-    const message = hasExistingWork
-      ? t('page.quickStart.creatorOpenedWithDraft')
-      : t('page.quickStart.creatorOpened')
-
-    announcePolite(message)
-    pushToast({
-      variant: 'info',
-      description: message
-    })
-  }, [announcePolite, bundleId, drafts, location.state, navigate, pushToast, resources, setStep, t])
-
-  useEffect(() => {
-    if (!bundleId || bundleId === lastAnnouncedBundleId.current) return
-    lastAnnouncedBundleId.current = bundleId
-    if (featureShowcaseStatus !== 'idle') return
-
-    pushToast({
-      variant: 'success',
-      title: t('page.bundleToastTitle'),
-      description: t('page.bundleToastDescription', { bundleId }),
-      action: {
-        label: t('page.goToConsumer'),
-        onAction: handleGoToConsumer
-      }
-    })
-  }, [bundleId, featureShowcaseStatus, handleGoToConsumer, pushToast, t])
+  useCreatorPageEffects({
+    announcePolite,
+    bundleId,
+    clearCreatorActions,
+    drafts,
+    featureShowcaseStatus,
+    handleGoToConsumer,
+    locationState: location.state,
+    navigate,
+    pushToast,
+    resources,
+    setCreatorActions,
+    setStep,
+    setTemplatePanelOpen,
+    t
+  })
 
   const draftStatusUi = draftStatus === 'saving'
     ? {

@@ -1,16 +1,16 @@
 import { useMemo, useState } from 'react'
 import { LayoutTemplate, Sparkles, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { Badge } from '../../../components/ui/badge'
-import { Button } from '../../../components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'
+import { Alert, AlertDescription } from '../../../shared/components/ui/alert'
+import { Badge } from '../../../shared/components/ui/badge'
+import { Button } from '../../../shared/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../shared/components/ui/card'
 import { getPrescriptionTemplateScenarios } from '../../../mocks/selectors'
 import type { MockPrescriptionTemplate, MockScenarioCategory } from '../../../mocks/types'
 import { buildTemplateDraftsFromScenario } from '../../../mocks/templateDrafts'
-import { useAppStore } from '../../../store/appStore'
-import { useCreatorStore } from '../../../store/creatorStore'
-import { useMockStore } from '../../../store/mockStore'
+import { useAppStore } from '../../../app/stores/appStore'
+import { useCreatorStore } from '../store/creatorStore'
+import { useMockStore } from '../store/mockStore'
 
 interface Props {
   disabled?: boolean

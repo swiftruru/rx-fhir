@@ -1,8 +1,8 @@
 import { Building2, ClipboardList, Pill, Stethoscope, UserRound, UserRoundCog } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'
-import { Separator } from '../../../components/ui/separator'
-import type { CreatedResources } from '../../../types/fhir.d'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../shared/components/ui/card'
+import { Separator } from '../../../shared/components/ui/separator'
+import type { CreatedResources } from '../../../types/fhir'
 
 interface PrescriptionSummaryCardProps {
   resources: CreatedResources

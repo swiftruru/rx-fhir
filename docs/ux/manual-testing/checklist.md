@@ -4,6 +4,15 @@
 
 本文件定義 RxFHIR 的 UX 手動驗證清單，聚焦於主流程、回饋一致性、桌面工作流與新手引導體驗。
 
+目前產品面補充：
+
+- app shell 的主要 route 只有：
+  - Creator
+  - Consumer
+  - Settings
+  - About
+- `History` 相關能力目前位於 Consumer 內的 `History` tab，不是獨立頁面或獨立 route
+
 適用於：
 
 - 版本發佈前驗收
@@ -18,9 +27,10 @@
    - Consumer
    - Settings
    - About
-3. 若要驗 first-run onboarding，請使用乾淨 profile 或清除相關本機 state。
-4. 若要驗 Electron 專屬能力，需使用真正的 Electron 視窗，不可只用 renderer 靜態頁面。
-5. 若要先跑最小自動化基線，可參考 [electron-debug-tools.md](/Users/ruru/Documents/RuData/Devs/ElectronDev/rx-fhir_Dev/rx-fhir/docs/ux/manual-testing/electron-debug-tools.md)。
+3. 確認 `History / Saved Searches` 的驗證將在 Consumer 內完成，而不是使用不存在的 `#/history`。
+4. 若要驗 first-run onboarding，請使用乾淨 profile 或清除相關本機 state。
+5. 若要驗 Electron 專屬能力，需使用真正的 Electron 視窗，不可只用 renderer 靜態頁面。
+6. 若要先跑最小自動化基線，可參考 [electron-debug-tools.md](/Users/ruru/Documents/RuData/Devs/ElectronDev/rx-fhir_Dev/rx-fhir/docs/ux/manual-testing/electron-debug-tools.md)。
 
 ## A. App Shell 與導航
 
@@ -150,6 +160,41 @@
 
 - 成功 / 失敗有清楚提示
 - 匯入後可直接進入 Consumer 結果流程
+
+### D4 搜尋結果與詳情面板
+
+1. 用 example query 或手動條件完成一次真正查詢。
+2. 確認結果列表可正常渲染，且數量提示正確。
+3. 點開任一結果，確認 detail pane 會出現。
+4. 在 detail pane 內切換：
+   - Structured
+   - JSON
+5. 若目前結果數大於 1，打開 Compare / Diff dialog。
+6. 打開 Export dropdown，確認可見匯出格式。
+
+預期結果：
+
+- 查詢後 results list 正常顯示，沒有 undefined state 或空白區塊
+- detail pane 可正常開關，Structured / JSON 可切換
+- diff dialog 可正常打開與關閉
+- export 控制可正常展開，不會卡住或失去焦點
+
+### D5 History / Saved Searches
+
+1. 在 Consumer 內完成至少一次查詢。
+2. 切到 `History` tab。
+3. 驗證 `Searches` 區塊至少出現一筆記錄。
+4. 測試：
+   - rerun search
+   - pin / unpin
+5. 若有 Creator submit 資料，再驗證 `Submissions` 區塊。
+
+預期結果：
+
+- History 驗證在 Consumer 內完成，不依賴獨立 `History` route
+- rerun 會回到 results 並重新執行查詢
+- pin / unpin 會正確更新 saved search 狀態
+- 若有 submission，submission record 可正常開啟或導向後續流程
 
 ## E. Settings 與 Productivity
 

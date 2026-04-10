@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { FileUp, Upload, Wand2 } from 'lucide-react'
-import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs'
-import { Button } from '../../components/ui/button'
-import { Alert, AlertDescription } from '../../components/ui/alert'
-import FeatureShowcaseTarget from '../../components/FeatureShowcaseTarget'
+import { Tabs, TabsList, TabsTrigger } from '../../shared/components/ui/tabs'
+import { Button } from '../../shared/components/ui/button'
+import { Alert, AlertDescription } from '../../shared/components/ui/alert'
+import FeatureShowcaseTarget from '../../app/components/FeatureShowcaseTarget'
 import SearchForm, { type SearchFormHandle } from './SearchForm'
 import ResultList from './ResultList'
 import PrescriptionDetail from './PrescriptionDetail'
@@ -14,17 +14,17 @@ import RecentRecords from './RecentRecords'
 import SavedSearches from './SavedSearches'
 import HistoryDashboard from './HistoryDashboard'
 import RecentBundleFiles from './RecentBundleFiles'
-import type { BundleSummary, SearchParams } from '../../types/fhir.d'
+import type { BundleSummary, SearchParams } from '../../types/fhir'
 import type { RecentBundleFileEntry } from '../../types/electron'
-import { useHistoryStore, type SubmissionRecord } from '../../store/historyStore'
-import { useSearchHistoryStore } from '../../store/searchHistoryStore'
-import { useLiveDemoStore } from '../../store/liveDemoStore'
-import { useFeatureShowcaseStore } from '../../store/featureShowcaseStore'
-import { useShortcutActionStore } from '../../store/shortcutActionStore'
-import { useAccessibilityStore } from '../../store/accessibilityStore'
-import { useToastStore } from '../../store/toastStore'
-import { useAppStore } from '../../store/appStore'
-import { useConsumerSearchStore } from '../../store/consumerSearchStore'
+import { useHistoryStore, type SubmissionRecord } from '../../features/history/store/historyStore'
+import { useSearchHistoryStore } from '../../features/history/store/searchHistoryStore'
+import { useLiveDemoStore } from '../../app/stores/liveDemoStore'
+import { useFeatureShowcaseStore } from '../../app/stores/featureShowcaseStore'
+import { useShortcutActionStore } from '../../shared/stores/shortcutActionStore'
+import { useAccessibilityStore } from '../../shared/stores/accessibilityStore'
+import { useToastStore } from '../../shared/stores/toastStore'
+import { useAppStore } from '../../app/stores/appStore'
+import { useConsumerSearchStore } from './store/consumerSearchStore'
 import { getBundleFileErrorMessage, importBundleJsonFile, listRecentBundleJsonFiles, openRecentBundleJson, rememberRecentBundleJson } from '../../services/bundleFileService'
 import { fetchBundleById, searchBundlesNextPage } from '../../services/fhirClient'
 import { extractBundleHistoryMetadata, extractBundleSummary, extractSearchResults } from '../../services/searchService'
@@ -33,29 +33,12 @@ import SearchList from '../history/SearchList'
 import {
   buildSearchPrefillFromParams,
   getSearchTabFromParams,
-  type ConsumerLaunchState,
   type ConsumerSearchExecution,
   type SearchPrefill,
   type SearchTab
 } from './searchState'
-import { getConsumerBasicMocks } from '../../mocks/mockPools'
-
-interface ConsumerPageBackup {
-  results: BundleSummary[]
-  total: number
-  selected: BundleSummary | null
-  hasSearched: boolean
-  activeTab: SearchTab
-  prefill: SearchPrefill | null
-  autoSearch: SearchParams | null
-  targetBundleId: string | null
-  searchExecution: ConsumerSearchExecution | null
-  dashboardRecentOpen: boolean
-  dashboardSavedOpen: boolean
-  middleTab: 'results' | 'quickstart' | 'history'
-  activeComplexBy: 'organization' | 'author'
-  prefillNotice: { message: string; variant?: 'info' | 'warning' } | null
-}
+import { useConsumerPageSetup } from './hooks/useConsumerPageSetup'
+import { useConsumerShowcaseSync } from './hooks/useConsumerShowcaseSync'
 
 export default function ConsumerPage(): React.JSX.Element {
   const { t } = useTranslation('consumer')
@@ -99,172 +82,71 @@ export default function ConsumerPage(): React.JSX.Element {
   const [lastNameFilter, setLastNameFilter] = useState<string | undefined>(undefined)
   const setIsSearching = useConsumerSearchStore((state) => state.setIsSearching)
   const isSearching = useConsumerSearchStore((state) => state.isSearching)
-  const showcaseBackupRef = useRef<ConsumerPageBackup>()
   const searchFormRef = useRef<SearchFormHandle>(null)
   const showcaseActive = showcaseStatus === 'running' || showcaseStatus === 'paused'
   const dragActive = dragDepth > 0
 
-  useEffect(() => {
-    const launchState = location.state as ConsumerLaunchState | null
-    if (!launchState) return
-    const recentBundleFilePath = launchState.recentBundleFilePath ?? null
-    const quickStartScenario = launchState.quickStartScenario ?? null
+  useConsumerPageSetup({
+    announcePolite,
+    clearConsumerActions,
+    handleOpenRecentFile,
+    historyCount,
+    locale,
+    locationState: location.state,
+    navigate,
+    pushToast,
+    refreshRecentFiles,
+    savedSearchCount,
+    searchFormRef,
+    setActiveTab,
+    setAutoSearch,
+    setConsumerActions,
+    setDashboardRecentOpen,
+    setDashboardSavedOpen,
+    setIsSearching,
+    setMiddleTab,
+    setPrefill,
+    setPrefillNotice,
+    setTargetBundleId,
+    t
+  })
 
-    if (launchState.prefill) {
-      setActiveTab(launchState.prefill.tab)
-      setPrefill(launchState.prefill)
-    }
-    if (launchState.autoSearch) setAutoSearch(launchState.autoSearch)
-    if (launchState.targetBundleId) setTargetBundleId(launchState.targetBundleId)
-
-    navigate('/consumer', { replace: true, state: null })
-
-    if (recentBundleFilePath) {
-      void handleOpenRecentFile(recentBundleFilePath)
-    }
-
-    if (quickStartScenario === 'example-query') {
-      const example = getConsumerBasicMocks(locale)[0]
-      setMiddleTab('quickstart')
-      setActiveTab('basic')
-      if (example) {
-        setPrefill({ tab: 'basic', searchBy: example.searchBy, value: example.value })
-      }
-      const message = t('page.quickStartScenario.exampleLoaded')
-      setPrefillNotice({ variant: 'info', message })
-      announcePolite(message)
-      pushToast({
-        variant: 'info',
-        description: message
-      })
-    }
-  }, [announcePolite, locale, location.state, navigate, pushToast, t])
-
-  useEffect(() => {
-    setDashboardRecentOpen(historyCount > 0)
-  }, [historyCount])
-
-  useEffect(() => {
-    setDashboardSavedOpen(savedSearchCount > 0)
-  }, [savedSearchCount])
-
-  useEffect(() => {
-    void refreshRecentFiles()
-  }, [])
-
-  useEffect(() => {
-    setConsumerActions({
-      focusSearch: () => searchFormRef.current?.focusPrimaryInput(),
-      submitSearch: () => void searchFormRef.current?.submit(),
-      importBundle: () => searchFormRef.current?.importBundle(),
-      fillExample: () => searchFormRef.current?.fillMock(),
-      setSearchTab: setActiveTab,
-      setMiddleTab
-    })
-
-    return () => {
-      clearConsumerActions([
-        'focusSearch',
-        'submitSearch',
-        'importBundle',
-        'fillExample',
-        'setSearchTab',
-        'setMiddleTab'
-      ])
-      // Reset searching flag so navigation guard doesn't linger after unmount
-      setIsSearching(false)
-    }
-  }, [clearConsumerActions, setConsumerActions, setIsSearching])
-
-  useEffect(() => {
-    if (showcaseActive && !showcaseBackupRef.current) {
-      showcaseBackupRef.current = {
-        results,
-        total,
-        selected,
-        hasSearched,
-        activeTab,
-        prefill,
-        autoSearch,
-        targetBundleId,
-        searchExecution,
-        dashboardRecentOpen,
-        dashboardSavedOpen,
-        middleTab,
-        activeComplexBy,
-        prefillNotice
-      }
-      return
-    }
-
-    if (!showcaseActive && showcaseBackupRef.current) {
-      const backup = showcaseBackupRef.current
-      setResults(backup.results)
-      setTotal(backup.total)
-      setSelected(backup.selected)
-      setHasSearched(backup.hasSearched)
-      setActiveTab(backup.activeTab)
-      setPrefill(backup.prefill)
-      setAutoSearch(backup.autoSearch)
-      setTargetBundleId(backup.targetBundleId)
-      setSearchExecution(backup.searchExecution)
-      setDashboardRecentOpen(backup.dashboardRecentOpen)
-      setDashboardSavedOpen(backup.dashboardSavedOpen)
-      setMiddleTab(backup.middleTab)
-      setActiveComplexBy(backup.activeComplexBy)
-      setPrefillNotice(backup.prefillNotice)
-      setDiffTarget(null)
-      showcaseBackupRef.current = undefined
-    }
-  }, [
-    activeComplexBy,
-    activeTab,
-    autoSearch,
-    dashboardRecentOpen,
-    dashboardSavedOpen,
-    hasSearched,
-    middleTab,
-    prefill,
-    prefillNotice,
-    results,
-    searchExecution,
-    selected,
+  useConsumerShowcaseSync({
     showcaseActive,
-    targetBundleId,
-    total
-  ])
-
-  useEffect(() => {
-    if (!showcaseActive || !showcaseSnapshot) return
-
-    const consumerUi = showcaseUi.consumer ?? {}
-    const nextMiddleTab = consumerUi.middleTab ?? 'quickstart'
-    const nextPrefill = consumerUi.prefill ?? showcaseSnapshot.consumer.quickSearchPrefill
-    const nextActiveTab = consumerUi.activeTab ?? nextPrefill.tab
-    const nextSelectedId = consumerUi.selectedBundleId ?? showcaseSnapshot.consumer.selectedBundleId
-    const nextSelected = nextSelectedId
-      ? showcaseSnapshot.consumer.results.find((summary) => summary.id === nextSelectedId) ?? null
-      : null
-    const nextDiffTarget = consumerUi.bundleDiffTargetId
-      ? showcaseSnapshot.consumer.results.find((summary) => summary.id === consumerUi.bundleDiffTargetId) ?? null
-      : null
-
-    setResults(showcaseSnapshot.consumer.results)
-    setTotal(showcaseSnapshot.consumer.total)
-    setSearchExecution(nextMiddleTab === 'results' ? showcaseSnapshot.consumer.quickSearchExecution : null)
-    setHasSearched(nextMiddleTab === 'results')
-    setActiveTab(nextActiveTab)
-    setPrefill(nextPrefill)
-    setAutoSearch(null)
-    setTargetBundleId(null)
-    setDashboardRecentOpen(true)
-    setDashboardSavedOpen(true)
-    setMiddleTab(nextMiddleTab)
-    setActiveComplexBy(nextPrefill.tab === 'complex' ? nextPrefill.complexBy ?? 'organization' : 'organization')
-    setPrefillNotice(null)
-    setSelected(consumerUi.showDetail && nextMiddleTab === 'results' ? nextSelected : nextDiffTarget ? nextSelected : null)
-    setDiffTarget(nextDiffTarget)
-  }, [showcaseActive, showcaseSnapshot, showcaseUi.consumer])
+    showcaseConsumerUi: showcaseUi.consumer,
+    showcaseSnapshot,
+    state: {
+      results,
+      total,
+      selected,
+      hasSearched,
+      activeTab,
+      prefill,
+      autoSearch,
+      targetBundleId,
+      searchExecution,
+      dashboardRecentOpen,
+      dashboardSavedOpen,
+      middleTab,
+      activeComplexBy,
+      prefillNotice
+    },
+    setResults,
+    setTotal,
+    setSelected,
+    setHasSearched,
+    setActiveTab,
+    setPrefill,
+    setAutoSearch,
+    setTargetBundleId,
+    setSearchExecution,
+    setDashboardRecentOpen,
+    setDashboardSavedOpen,
+    setMiddleTab,
+    setActiveComplexBy,
+    setPrefillNotice,
+    setDiffTarget
+  })
 
   function handleSearchStart(): void {
     setResults([])
@@ -686,7 +568,7 @@ export default function ConsumerPage(): React.JSX.Element {
 
   return (
     <div
-      className="relative flex h-full min-h-0 overflow-hidden flex-col lg:flex-row"
+      className="relative flex h-full min-h-0 flex-col overflow-hidden lg:flex-row"
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}

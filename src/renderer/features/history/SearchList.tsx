@@ -1,19 +1,19 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Trash2, Star, X, Search, Play } from 'lucide-react'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
-import { Badge } from '../../components/ui/badge'
+import { Button } from '../../shared/components/ui/button'
+import { Input } from '../../shared/components/ui/input'
+import { Badge } from '../../shared/components/ui/badge'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../components/ui/select'
-import { useSearchHistoryStore, type SavedSearchRecord } from '../../store/searchHistoryStore'
-import type { SearchParams } from '../../types/fhir.d'
-import { cn } from '../../lib/utils'
+} from '../../shared/components/ui/select'
+import { useSearchHistoryStore, type SavedSearchRecord } from '../../features/history/store/searchHistoryStore'
+import type { SearchParams } from '../../types/fhir'
+import { cn } from '../../shared/lib/utils'
 
 type SortKey = 'last-desc' | 'last-asc' | 'pinned-first'
 

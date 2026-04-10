@@ -17,8 +17,8 @@ import {
   type ThemeMode,
   type UiZoomPreference,
   useAppStore
-} from '../store/appStore'
-import { useShortcutStore } from '../store/shortcutStore'
+} from '../app/stores/appStore'
+import { useShortcutStore } from '../app/stores/shortcutStore'
 import { SHORTCUT_DEFINITIONS } from '../shortcuts/defaults'
 import type { ShortcutActionId, ShortcutOverrideMap } from '../shortcuts/types'
 import type { SupportedLocale } from '../i18n'

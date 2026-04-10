@@ -4,7 +4,7 @@ import type { QueryStep } from '../services/fhirClient'
 import { getScenarioById } from '../mocks/selectors'
 import type { MockScenarioPack } from '../mocks/types'
 import type { SupportedLocale } from '../i18n'
-import type { FhirRequestEntry } from '../store/fhirInspectorStore'
+import type { FhirRequestEntry } from '../features/creator/store/fhirInspectorStore'
 import type { FeatureShowcaseSnapshot } from './types'
 
 const PATIENT_IDENTIFIER_SYSTEM = 'https://www.moe.edu.tw/student-id'

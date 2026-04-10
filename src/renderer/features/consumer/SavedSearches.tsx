@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
 import { ChevronDown, ChevronRight, Clock3, Search, Star, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Button } from '../../components/ui/button'
-import { Badge } from '../../components/ui/badge'
-import { useSearchHistoryStore, type SavedSearchRecord } from '../../store/searchHistoryStore'
-import type { SearchParams } from '../../types/fhir.d'
+import { Button } from '../../shared/components/ui/button'
+import { Badge } from '../../shared/components/ui/badge'
+import { useSearchHistoryStore, type SavedSearchRecord } from '../../features/history/store/searchHistoryStore'
+import type { SearchParams } from '../../types/fhir'
 
 interface Props {
   onRun: (params: SearchParams) => void

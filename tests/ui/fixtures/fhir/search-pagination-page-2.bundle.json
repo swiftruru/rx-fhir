@@ -1,0 +1,73 @@
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "total": 2,
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Bundle",
+        "id": "mock-page-bundle-b",
+        "type": "document",
+        "entry": [
+          {
+            "resource": {
+              "resourceType": "Composition",
+              "id": "mock-page-composition-b",
+              "status": "final",
+              "date": "2026-04-10T14:30:00+08:00",
+              "title": "Pagination Bundle B"
+            }
+          },
+          {
+            "resource": {
+              "resourceType": "Patient",
+              "id": "mock-page-patient-b",
+              "identifier": [{ "value": "E2E-PAGE-002" }],
+              "name": [{ "text": "Pagination Patient B" }]
+            }
+          },
+          {
+            "resource": {
+              "resourceType": "Organization",
+              "id": "mock-page-organization-b",
+              "name": "Pagination Clinic B"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Bundle",
+        "id": "mock-page-bundle-c",
+        "type": "document",
+        "entry": [
+          {
+            "resource": {
+              "resourceType": "Composition",
+              "id": "mock-page-composition-c",
+              "status": "final",
+              "date": "2026-04-09T11:15:00+08:00",
+              "title": "Pagination Bundle C"
+            }
+          },
+          {
+            "resource": {
+              "resourceType": "Patient",
+              "id": "mock-page-patient-c",
+              "identifier": [{ "value": "E2E-PAGE-003" }],
+              "name": [{ "text": "Pagination Patient C" }]
+            }
+          },
+          {
+            "resource": {
+              "resourceType": "Organization",
+              "id": "mock-page-organization-c",
+              "name": "Pagination Clinic C"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

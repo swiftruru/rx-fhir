@@ -573,6 +573,7 @@ export default function ResultList({ results, total, searchExecution, selected, 
         {nextUrl && (
           <div className="flex justify-center pb-4">
             <Button
+              data-testid="consumer.results.load-more"
               variant="outline"
               size="sm"
               className="gap-2 rounded-xl text-xs"

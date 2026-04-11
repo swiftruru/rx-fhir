@@ -499,7 +499,15 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
                 {tc('buttons.search')}
               </Button>
               {loading && (
-                <Button type="button" variant="outline" size="icon" className="h-11 w-11 shrink-0 rounded-xl" onClick={cancelSearch} aria-label={t('search.cancelButton')}>
+                <Button
+                  data-testid="consumer.search.cancel.basic"
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-11 shrink-0 rounded-xl"
+                  onClick={cancelSearch}
+                  aria-label={t('search.cancelButton')}
+                >
                   <X className="h-4 w-4" />
                 </Button>
               )}
@@ -518,6 +526,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
             <div className="space-y-2">
               <Label htmlFor="date-id">{t('search.date.identifierLabel')}</Label>
               <Input
+                data-testid="consumer.search.input.date-identifier"
                 id="date-id"
                 aria-invalid={Boolean(dateIdentifierError)}
                 aria-describedby={joinDescribedBy(dateIdentifierError && 'date-id-error')}
@@ -533,6 +542,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
             <div className="space-y-2">
               <Label htmlFor="search-date">{t('search.date.dateLabel')}</Label>
               <Input
+                data-testid="consumer.search.input.date-value"
                 id="search-date"
                 type="date"
                 aria-invalid={Boolean(dateValueError)}
@@ -546,12 +556,20 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
               )}
             </div>
             <div className="flex gap-2">
-              <Button type="submit" disabled={isBusy} className="h-11 flex-1 gap-2 rounded-xl">
+              <Button data-testid="consumer.search.submit.date" type="submit" disabled={isBusy} className="h-11 flex-1 gap-2 rounded-xl">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 {t('search.date.submitButton')}
               </Button>
               {loading && (
-                <Button type="button" variant="outline" size="icon" className="h-11 w-11 shrink-0 rounded-xl" onClick={cancelSearch} aria-label={t('search.cancelButton')}>
+                <Button
+                  data-testid="consumer.search.cancel.date"
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-11 shrink-0 rounded-xl"
+                  onClick={cancelSearch}
+                  aria-label={t('search.cancelButton')}
+                >
                   <X className="h-4 w-4" />
                 </Button>
               )}
@@ -570,6 +588,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
             <div className="space-y-2">
               <Label htmlFor="complex-id">{t('search.complex.identifierLabel')}</Label>
               <Input
+                data-testid="consumer.search.input.complex-identifier"
                 id="complex-id"
                 aria-invalid={Boolean(complexIdentifierError)}
                 aria-describedby={joinDescribedBy(complexIdentifierError && 'complex-id-error')}
@@ -591,7 +610,11 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
                   onComplexByChange?.(v as 'organization' | 'author')
                 }}
               >
-                <SelectTrigger id="complex-extra" aria-labelledby="complex-extra-label">
+                <SelectTrigger
+                  id="complex-extra"
+                  data-testid="consumer.search.input.complex-by"
+                  aria-labelledby="complex-extra-label"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -604,6 +627,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
               <div className="space-y-2">
                 <Label htmlFor="org-id-search">{t('search.complex.orgCodeLabel')}</Label>
                 <Input
+                  data-testid="consumer.search.input.complex-org-id"
                   key="complex-org-id"
                   id="org-id-search"
                   placeholder={t('search.complex.orgCodePlaceholder')}
@@ -614,6 +638,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
               <div className="space-y-2">
                 <Label htmlFor="author-name">{t('search.complex.authorNameLabel')}</Label>
                 <Input
+                  data-testid="consumer.search.input.complex-author-name"
                   key="complex-author-name"
                   id="author-name"
                   placeholder={t('search.complex.authorNamePlaceholder')}
@@ -622,12 +647,20 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
               </div>
             )}
             <div className="flex gap-2">
-              <Button type="submit" disabled={isBusy} className="h-11 flex-1 gap-2 rounded-xl">
+              <Button data-testid="consumer.search.submit.complex" type="submit" disabled={isBusy} className="h-11 flex-1 gap-2 rounded-xl">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 {complexBy === 'organization' ? t('search.complex.submitButtonOrg') : t('search.complex.submitButtonAuthor')}
               </Button>
               {loading && (
-                <Button type="button" variant="outline" size="icon" className="h-11 w-11 shrink-0 rounded-xl" onClick={cancelSearch} aria-label={t('search.cancelButton')}>
+                <Button
+                  data-testid="consumer.search.cancel.complex"
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-11 shrink-0 rounded-xl"
+                  onClick={cancelSearch}
+                  aria-label={t('search.cancelButton')}
+                >
                   <X className="h-4 w-4" />
                 </Button>
               )}

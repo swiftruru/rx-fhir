@@ -254,7 +254,7 @@ export default function CreatorPage(): React.JSX.Element {
 
       {/* Success banner */}
       {bundleId && (
-        <div className="px-4 py-3 bg-emerald-50 border-b border-emerald-200 shrink-0 sm:px-6">
+        <div data-testid="creator.bundle-success" className="px-4 py-3 bg-emerald-50 border-b border-emerald-200 shrink-0 sm:px-6">
           <Alert variant="success">
             <CheckCircle2 className="h-4 w-4" />
             <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -265,7 +265,7 @@ export default function CreatorPage(): React.JSX.Element {
                   {t('page.successHint')}
                 </span>
               </div>
-              <Button size="sm" variant="outline" onClick={handleGoToConsumer}>
+              <Button data-testid="creator.go-to-consumer" size="sm" variant="outline" onClick={handleGoToConsumer}>
                 {t('page.goToConsumer')}
               </Button>
             </AlertDescription>

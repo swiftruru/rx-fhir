@@ -440,12 +440,14 @@ More details:
 
 Current UI automation coverage includes:
 
-- About update and external-link bridge flows
+- About update state branches and external-link bridge flows
 - app shell and route navigation
-- Creator draft restore after relaunch
-- Consumer import, search, history, and saved-search flows
-- mocked empty/error search states
-- Settings accessibility persistence
+- Creator draft restore and Creator-to-Consumer submit handoff
+- Consumer local Bundle import and recent-record maintenance flows
+- Consumer basic, date, and complex search modes
+- Consumer mocked empty / error / cancelled states and load-more pagination
+- Consumer history, submission-history, and saved-search flows
+- Settings accessibility persistence and FHIR server settings flow
 
 The current UI automation scope is intentionally treated as the stable v1
 delivery boundary for demo/classroom use. See
@@ -527,6 +529,8 @@ Current repository quality signals:
 - Vitest unit tests are available and pass
 - Accessibility smoke check is available and passes
 - Electron UX smoke and end-to-end verify scripts are available and pass locally
+- Playwright Electron UI automation is available and currently passes locally with 22 tests
+- GitHub Actions runs a dedicated `UI Automation` workflow for the Electron UI suite
 - Production build is available and passes locally
 - Manual smoke checklist and report are documented under `docs/ux/manual-testing/`
 

@@ -2,6 +2,35 @@ import { closeRxFhir, expect, test } from '../helpers/launchElectron'
 import { emitE2EUpdateResult, getE2EBridgeCalls, resetE2EBridge, setE2EUpdateMocks } from '../helpers/e2eBridge'
 import { selectors } from '../helpers/selectors'
 
+test('shows a cached update result on initial About page load without re-checking', async ({ launchApp }) => {
+  const app = await launchApp()
+
+  try {
+    await resetE2EBridge(app.page)
+    await setE2EUpdateMocks(app.page, {
+      cachedUpdateResult: {
+        status: 'update-available',
+        currentVersion: '1.0.35',
+        latestVersion: '9.9.8',
+        releaseUrl: 'https://example.test/releases/9.9.8',
+        releaseName: 'RxFHIR v9.9.8'
+      },
+      checkForUpdatesResult: null
+    })
+
+    await app.page.getByTestId(selectors.app.nav.about).click()
+
+    await expect(app.page.getByTestId(selectors.about.update.indicator)).toBeVisible()
+    await expect(app.page.getByTestId(selectors.about.update.statuses.available)).toBeVisible()
+    await expect(app.page.getByTestId(selectors.about.update.openReleases)).toBeVisible()
+
+    const calls = await getE2EBridgeCalls(app.page)
+    expect(calls.checkForUpdatesCount).toBe(0)
+  } finally {
+    await closeRxFhir(app)
+  }
+})
+
 test('shows the up-to-date state after a stubbed update check', async ({ launchApp }) => {
   const app = await launchApp()
 
@@ -18,6 +47,32 @@ test('shows the up-to-date state after a stubbed update check', async ({ launchA
     await app.page.getByTestId(selectors.about.update.check).click()
 
     await expect(app.page.getByTestId(selectors.about.update.statuses.upToDate)).toBeVisible()
+
+    const calls = await getE2EBridgeCalls(app.page)
+    expect(calls.checkForUpdatesCount).toBe(1)
+  } finally {
+    await closeRxFhir(app)
+  }
+})
+
+test('shows the error state after a failed update check', async ({ launchApp }) => {
+  const app = await launchApp()
+
+  try {
+    await resetE2EBridge(app.page)
+    await setE2EUpdateMocks(app.page, {
+      checkForUpdatesResult: {
+        status: 'check-failed',
+        currentVersion: '1.0.35',
+        error: 'Network unavailable'
+      }
+    })
+
+    await app.page.getByTestId(selectors.app.nav.about).click()
+    await app.page.getByTestId(selectors.about.update.check).click()
+
+    await expect(app.page.getByTestId(selectors.about.update.statuses.error)).toBeVisible()
+    await expect(app.page.getByTestId(selectors.about.update.statuses.available)).toBeHidden()
 
     const calls = await getE2EBridgeCalls(app.page)
     expect(calls.checkForUpdatesCount).toBe(1)
@@ -63,6 +118,39 @@ test('routes external links and update actions through the stubbed desktop bridg
       'https://example.test/releases/9.9.9'
     ])
     expect(calls.skippedUpdateVersions).toEqual(['9.9.9'])
+  } finally {
+    await closeRxFhir(app)
+  }
+})
+
+test('allows dismissing an available update with remind later without skipping the version', async ({ launchApp }) => {
+  const app = await launchApp()
+
+  try {
+    await resetE2EBridge(app.page)
+    await setE2EUpdateMocks(app.page, {
+      cachedUpdateResult: null,
+      checkForUpdatesResult: null
+    })
+
+    await app.page.getByTestId(selectors.app.nav.about).click()
+
+    await emitE2EUpdateResult(app.page, {
+      status: 'update-available',
+      currentVersion: '1.0.35',
+      latestVersion: '9.9.7',
+      releaseUrl: 'https://example.test/releases/9.9.7',
+      releaseName: 'RxFHIR v9.9.7'
+    })
+
+    await expect(app.page.getByTestId(selectors.about.update.statuses.available)).toBeVisible()
+    await app.page.getByTestId(selectors.about.update.remindLater).click()
+
+    await expect(app.page.getByTestId(selectors.about.update.statuses.available)).toBeHidden()
+    await expect(app.page.getByTestId(selectors.about.update.indicator)).toBeHidden()
+
+    const calls = await getE2EBridgeCalls(app.page)
+    expect(calls.skippedUpdateVersions).toEqual([])
   } finally {
     await closeRxFhir(app)
   }

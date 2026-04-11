@@ -578,7 +578,7 @@ export default function SettingsPage(): React.JSX.Element {
                   </div>
                   <CardDescription>{t('server.description')}</CardDescription>
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={handleResetServerSection} className="w-full sm:w-auto">
+                <Button data-testid="settings.server.reset" type="button" variant="outline" size="sm" onClick={handleResetServerSection} className="w-full sm:w-auto">
                   <RotateCcw className="h-4 w-4" />
                   {t('actions.resetSection')}
                 </Button>
@@ -591,6 +591,7 @@ export default function SettingsPage(): React.JSX.Element {
                     {t('server.urlHint')}
                   </p>
                   <Input
+                    data-testid="settings.server.url-input"
                     id="server-url"
                     className="font-mono text-sm"
                     aria-invalid={Boolean(errors.serverUrl)}
@@ -627,6 +628,7 @@ export default function SettingsPage(): React.JSX.Element {
 
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Button
+                    data-testid="settings.server.test-connection"
                     type="button"
                     variant="outline"
                     onClick={handleTest}
@@ -645,14 +647,14 @@ export default function SettingsPage(): React.JSX.Element {
                     )}
                     {tc('buttons.test')}
                   </Button>
-                  <Button type="submit" className="w-full sm:w-auto">
+                  <Button data-testid="settings.server.save" type="submit" className="w-full sm:w-auto">
                     <Save className="h-4 w-4" />
                     {tc('buttons.save')}
                   </Button>
                 </div>
 
                 {testStatus === 'ok' && (
-                  <Alert variant="success">
+                  <Alert data-testid="settings.server.test-success" variant="success">
                     <CheckCircle2 className="h-4 w-4" />
                     <AlertDescription>
                       {t('server.testSuccess')}
@@ -662,13 +664,13 @@ export default function SettingsPage(): React.JSX.Element {
                   </Alert>
                 )}
                 {testStatus === 'fail' && (
-                  <Alert variant="destructive">
+                  <Alert data-testid="settings.server.test-fail" variant="destructive">
                     <WifiOff className="h-4 w-4" />
                     <AlertDescription>{t('server.testFail')}</AlertDescription>
                   </Alert>
                 )}
                 {saved && (
-                  <Alert variant="success">
+                  <Alert data-testid="settings.server.saved" variant="success">
                     <CheckCircle2 className="h-4 w-4" />
                     <AlertDescription>{t('server.saved')}</AlertDescription>
                   </Alert>
@@ -685,8 +687,8 @@ export default function SettingsPage(): React.JSX.Element {
               <CardHeader>
                 <CardTitle className="text-base">{t('status.title')}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 text-sm">
-                <div className="flex items-center gap-2">
+              <CardContent data-testid="settings.server.status-card" className="space-y-4 text-sm">
+                <div data-testid="settings.server.status-indicator" className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${
                     serverStatus === 'online' ? 'bg-green-500' :
                     serverStatus === 'offline' ? 'bg-red-500' :

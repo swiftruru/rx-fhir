@@ -29,9 +29,10 @@ export default function RecentRecords({
   if (bundleRecords.length === 0) return <></>
 
   return (
-    <div className={rootClassName}>
+    <div className={rootClassName} data-testid={`consumer.recent-records.${variant}`}>
       <div className="flex items-start gap-3 px-3 py-3">
         <button
+          data-testid={`consumer.recent-records.toggle.${variant}`}
           type="button"
           onClick={onToggle}
           aria-expanded={open}
@@ -58,6 +59,7 @@ export default function RecentRecords({
           </span>
         </button>
         <button
+          data-testid={`consumer.recent-records.clear-all.${variant}`}
           type="button"
           onClick={(e) => { e.stopPropagation(); clearHistory() }}
           aria-label={t('recent.clearAll')}
@@ -73,6 +75,9 @@ export default function RecentRecords({
           {bundleRecords.map((rec) => (
             <div
               key={rec.id}
+              data-testid="consumer.recent-record.row"
+              data-record-id={rec.id}
+              data-patient-identifier={rec.patientIdentifier}
               className="group flex items-center justify-between gap-2 rounded-lg border border-primary/15 bg-background/85 px-3 py-2 transition-colors hover:bg-background"
             >
               <div className="min-w-0 flex-1">
@@ -91,6 +96,7 @@ export default function RecentRecords({
               </div>
               <div className="flex items-center gap-1 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">
                 <Button
+                  data-testid="consumer.recent-record.fill"
                   type="button"
                   variant="ghost"
                   size="icon"
@@ -102,6 +108,7 @@ export default function RecentRecords({
                   <Search className="h-3 w-3" />
                 </Button>
                 <Button
+                  data-testid="consumer.recent-record.delete"
                   type="button"
                   variant="ghost"
                   size="icon"

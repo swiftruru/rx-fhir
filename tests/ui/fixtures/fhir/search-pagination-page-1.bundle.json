@@ -1,0 +1,46 @@
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "total": 3,
+  "link": [
+    {
+      "relation": "next",
+      "url": "https://hapi.fhir.org/baseR4/Bundle?_page=2"
+    }
+  ],
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Bundle",
+        "id": "mock-page-bundle-a",
+        "type": "document",
+        "entry": [
+          {
+            "resource": {
+              "resourceType": "Composition",
+              "id": "mock-page-composition-a",
+              "status": "final",
+              "date": "2026-04-11T09:00:00+08:00",
+              "title": "Pagination Bundle A"
+            }
+          },
+          {
+            "resource": {
+              "resourceType": "Patient",
+              "id": "mock-page-patient-a",
+              "identifier": [{ "value": "E2E-PAGE-001" }],
+              "name": [{ "text": "Pagination Patient A" }]
+            }
+          },
+          {
+            "resource": {
+              "resourceType": "Organization",
+              "id": "mock-page-organization-a",
+              "name": "Pagination Clinic A"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

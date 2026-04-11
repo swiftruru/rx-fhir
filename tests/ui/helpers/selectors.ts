@@ -10,7 +10,9 @@ export const selectors = {
   },
   creator: {
     draftStatus: 'creator.draft-status',
-    draftRestored: 'creator.draft-restored'
+    draftRestored: 'creator.draft-restored',
+    bundleSuccess: 'creator.bundle-success',
+    goToConsumer: 'creator.go-to-consumer'
   },
   consumer: {
     dropzoneRoot: 'consumer.dropzone.root',
@@ -56,19 +58,43 @@ export const selectors = {
       pin: 'consumer.saved-search.pin',
       delete: 'consumer.saved-search.delete'
     },
+    recentRecords: {
+      dashboard: 'consumer.recent-records.dashboard',
+      sidebar: 'consumer.recent-records.sidebar',
+      toggle: (variant: 'dashboard' | 'sidebar') => `consumer.recent-records.toggle.${variant}`,
+      clearAll: (variant: 'dashboard' | 'sidebar') => `consumer.recent-records.clear-all.${variant}`,
+      row: 'consumer.recent-record.row',
+      fill: 'consumer.recent-record.fill',
+      delete: 'consumer.recent-record.delete'
+    },
     search: {
       root: 'consumer.search.root',
       basicForm: 'consumer.search.form.basic',
       basicInput: 'consumer.search.input.basic-value',
-      basicSubmit: 'consumer.search.submit.basic'
+      basicSubmit: 'consumer.search.submit.basic',
+      basicCancel: 'consumer.search.cancel.basic',
+      dateForm: 'consumer.search.form.date',
+      dateIdentifier: 'consumer.search.input.date-identifier',
+      dateValue: 'consumer.search.input.date-value',
+      dateSubmit: 'consumer.search.submit.date',
+      dateCancel: 'consumer.search.cancel.date',
+      complexForm: 'consumer.search.form.complex',
+      complexIdentifier: 'consumer.search.input.complex-identifier',
+      complexBy: 'consumer.search.input.complex-by',
+      complexOrgId: 'consumer.search.input.complex-org-id',
+      complexAuthorName: 'consumer.search.input.complex-author-name',
+      complexSubmit: 'consumer.search.submit.complex',
+      complexCancel: 'consumer.search.cancel.complex'
     },
     results: {
       root: 'consumer.results.root',
       loading: 'consumer.results.loading',
+      cancelled: 'consumer.results.cancelled',
       empty: 'consumer.results.empty',
       error: 'consumer.results.error',
       list: 'consumer.results.list',
-      compare: (bundleId: string) => `consumer.results.compare.${bundleId}`
+      compare: (bundleId: string) => `consumer.results.compare.${bundleId}`,
+      loadMore: 'consumer.results.load-more'
     },
     detail: {
       root: 'consumer.detail',
@@ -85,6 +111,17 @@ export const selectors = {
       server: 'settings.tab.server',
       accessibility: 'settings.tab.accessibility',
       shortcuts: 'settings.tab.shortcuts'
+    },
+    server: {
+      urlInput: 'settings.server.url-input',
+      testConnection: 'settings.server.test-connection',
+      save: 'settings.server.save',
+      reset: 'settings.server.reset',
+      testSuccess: 'settings.server.test-success',
+      testFail: 'settings.server.test-fail',
+      saved: 'settings.server.saved',
+      statusCard: 'settings.server.status-card',
+      statusIndicator: 'settings.server.status-indicator'
     },
     accessibility: {
       motion: (option: string) => `settings.accessibility.motion.${option}`,

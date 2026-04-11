@@ -218,7 +218,7 @@ export default function CreatorPage(): React.JSX.Element {
       </div>
 
       {!bundleId && hasDraftWork && (
-        <div className={`border-b px-4 py-2 shrink-0 sm:px-6 ${draftStatusUi.className}`}>
+        <div data-testid="creator.draft-status" className={`border-b px-4 py-2 shrink-0 sm:px-6 ${draftStatusUi.className}`}>
           <div
             role={draftStatus === 'error' ? 'alert' : 'status'}
             aria-live={draftStatus === 'error' ? 'assertive' : 'polite'}
@@ -232,7 +232,7 @@ export default function CreatorPage(): React.JSX.Element {
       )}
 
       {draftHydrated && draftRestored && (
-        <div className="px-4 py-3 border-b bg-muted/30 shrink-0 sm:px-6">
+        <div data-testid="creator.draft-restored" className="px-4 py-3 border-b bg-muted/30 shrink-0 sm:px-6">
           <Alert>
             <Save className="h-4 w-4" />
             <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

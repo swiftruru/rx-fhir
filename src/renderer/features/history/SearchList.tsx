@@ -77,11 +77,12 @@ export default function SearchList({ onRunSearch }: SearchListProps): React.JSX.
   }
 
   return (
-    <div className="space-y-3">
+    <div data-testid="consumer.history.search-list" className="space-y-3">
       {/* Filter + Sort toolbar */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Input
+            data-testid="consumer.history.search-list.filter"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder={t('searches.filterPlaceholder')}
@@ -99,7 +100,11 @@ export default function SearchList({ onRunSearch }: SearchListProps): React.JSX.
           )}
         </div>
         <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
-          <SelectTrigger className="h-8 w-40 text-xs" aria-label={t('searches.sortLabel')}>
+          <SelectTrigger
+            data-testid="consumer.history.search-list.sort"
+            className="h-8 w-40 text-xs"
+            aria-label={t('searches.sortLabel')}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -171,7 +176,12 @@ function SearchCard({
       record.pinned
         ? 'border-amber-300/50 bg-amber-50/20 hover:bg-amber-50/30 dark:bg-amber-900/10 dark:hover:bg-amber-900/20'
         : 'border-border/60 bg-card/60 hover:bg-card/90'
-    )}>
+    )}
+      data-testid="consumer.history.search-card"
+      data-search-identifier={record.params.identifier ?? ''}
+      data-search-mode={record.params.mode}
+      data-pinned={record.pinned ? 'true' : 'false'}
+    >
       {/* Main content */}
       <div className="min-w-0 flex-1 space-y-1.5">
         {/* Row 1: Mode badge + pinned badge */}
@@ -180,7 +190,10 @@ function SearchCard({
             {t(`searches.modes.${record.params.mode}`)}
           </Badge>
           {record.pinned && (
-            <Badge className="text-[10px] px-1.5 py-0 bg-amber-400/20 text-amber-700 dark:text-amber-400 border-amber-400/40 font-normal">
+            <Badge
+              data-testid="consumer.history.search-pinned-badge"
+              className="text-[10px] px-1.5 py-0 bg-amber-400/20 text-amber-700 dark:text-amber-400 border-amber-400/40 font-normal"
+            >
               {t('searches.pinnedBadge')}
             </Badge>
           )}
@@ -208,6 +221,7 @@ function SearchCard({
       <div className="flex shrink-0 items-center gap-1 pt-0.5">
         {onRunSearch && (
           <Button
+            data-testid="consumer.history.search-run"
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-primary"
@@ -219,6 +233,7 @@ function SearchCard({
           </Button>
         )}
         <Button
+          data-testid="consumer.history.search-pin"
           variant="ghost"
           size="icon"
           className={cn(
@@ -234,6 +249,7 @@ function SearchCard({
           <Star className={cn('h-3.5 w-3.5', record.pinned && 'fill-current')} />
         </Button>
         <Button
+          data-testid="consumer.history.search-delete"
           variant="ghost"
           size="icon"
           className="h-7 w-7 text-muted-foreground hover:text-destructive"

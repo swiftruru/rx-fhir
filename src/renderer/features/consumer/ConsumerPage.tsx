@@ -568,6 +568,7 @@ export default function ConsumerPage(): React.JSX.Element {
 
   return (
     <div
+      data-testid="consumer.dropzone.root"
       className="relative flex h-full min-h-0 flex-col overflow-hidden lg:flex-row"
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
@@ -575,7 +576,7 @@ export default function ConsumerPage(): React.JSX.Element {
       onDrop={handleDrop}
     >
       {dragActive && (
-        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-background/65 px-6 backdrop-blur-sm">
+        <div data-testid="consumer.dropzone.overlay" className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-background/65 px-6 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-3xl border border-primary/30 bg-card/95 p-6 shadow-2xl">
             <div className="flex items-start gap-4">
               <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3 text-primary">
@@ -642,9 +643,9 @@ export default function ConsumerPage(): React.JSX.Element {
           }}>
             <div className="flex items-center justify-between gap-2">
               <TabsList className="grid shrink-0 grid-cols-3 rounded-xl bg-muted/45 p-1">
-                <TabsTrigger value="results" disabled={isSearching} className="rounded-lg">{t('page.middleTabs.results')}</TabsTrigger>
-                <TabsTrigger value="quickstart" disabled={isSearching} className="rounded-lg">{t('page.middleTabs.quickStart')}</TabsTrigger>
-                <TabsTrigger value="history" disabled={isSearching} className="rounded-lg">{t('page.middleTabs.history')}</TabsTrigger>
+                <TabsTrigger data-testid="consumer.middle-tab.results" value="results" disabled={isSearching} className="rounded-lg">{t('page.middleTabs.results')}</TabsTrigger>
+                <TabsTrigger data-testid="consumer.middle-tab.quickstart" value="quickstart" disabled={isSearching} className="rounded-lg">{t('page.middleTabs.quickStart')}</TabsTrigger>
+                <TabsTrigger data-testid="consumer.middle-tab.history" value="history" disabled={isSearching} className="rounded-lg">{t('page.middleTabs.history')}</TabsTrigger>
               </TabsList>
               {!showDetail && (
                 <div className="flex flex-nowrap items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -816,12 +817,16 @@ function HistoryTabPane({
   const [innerTab, setInnerTab] = useState<'submissions' | 'searches'>('submissions')
 
   return (
-    <div className="flex-1 min-h-0 overflow-auto bg-muted/[0.08]">
+    <div data-testid="consumer.history.tab-pane" className="flex-1 min-h-0 overflow-auto bg-muted/[0.08]">
       <div className="p-4 sm:p-5 space-y-4">
         {/* Inner sub-tabs */}
         <Tabs value={innerTab} onValueChange={(v) => setInnerTab(v as 'submissions' | 'searches')}>
           <TabsList className="grid w-full grid-cols-2 rounded-xl bg-muted/45 p-1">
-            <TabsTrigger value="submissions" className="rounded-lg text-xs">
+            <TabsTrigger
+              data-testid="consumer.history.inner-tab.submissions"
+              value="submissions"
+              className="rounded-lg text-xs"
+            >
               {t('page.historyTab.submissions')}
               {historyCount > 0 && (
                 <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">
@@ -829,7 +834,11 @@ function HistoryTabPane({
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="searches" className="rounded-lg text-xs">
+            <TabsTrigger
+              data-testid="consumer.history.inner-tab.searches"
+              value="searches"
+              className="rounded-lg text-xs"
+            >
               {t('page.historyTab.searches')}
               {savedSearchCount > 0 && (
                 <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">

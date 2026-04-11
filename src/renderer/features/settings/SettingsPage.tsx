@@ -533,7 +533,7 @@ export default function SettingsPage(): React.JSX.Element {
               </div>
 
               <TabsList className="h-auto w-full flex-wrap justify-start gap-2 rounded-2xl bg-muted/45 p-2">
-                <TabsTrigger value="server" className="min-h-10 flex-1 basis-[calc(50%-0.25rem)] gap-2 rounded-xl sm:basis-auto sm:flex-none">
+                <TabsTrigger data-testid="settings.tab.server" value="server" className="min-h-10 flex-1 basis-[calc(50%-0.25rem)] gap-2 rounded-xl sm:basis-auto sm:flex-none">
             <span>{t('tabs.server')}</span>
             {serverHasUnsavedChanges ? (
               <Badge variant="warning" className="px-2 py-0 text-[10px]">{t('badges.unsaved')}</Badge>
@@ -541,13 +541,13 @@ export default function SettingsPage(): React.JSX.Element {
               <Badge variant="outline" className="px-2 py-0 text-[10px]">{t('badges.customized')}</Badge>
             ) : null}
                 </TabsTrigger>
-                <TabsTrigger value="accessibility" className="min-h-10 flex-1 basis-[calc(50%-0.25rem)] gap-2 rounded-xl sm:basis-auto sm:flex-none">
+                <TabsTrigger data-testid="settings.tab.accessibility" value="accessibility" className="min-h-10 flex-1 basis-[calc(50%-0.25rem)] gap-2 rounded-xl sm:basis-auto sm:flex-none">
             <span>{t('tabs.accessibility')}</span>
             {accessibilityCustomized && (
               <Badge variant="outline" className="px-2 py-0 text-[10px]">{t('badges.customized')}</Badge>
             )}
                 </TabsTrigger>
-                <TabsTrigger value="shortcuts" className="min-h-10 flex-1 basis-full gap-2 rounded-xl sm:basis-auto sm:flex-none">
+                <TabsTrigger data-testid="settings.tab.shortcuts" value="shortcuts" className="min-h-10 flex-1 basis-full gap-2 rounded-xl sm:basis-auto sm:flex-none">
             <span>{t('tabs.shortcuts')}</span>
             {shortcutOverrideCount > 0 && (
               <Badge variant="outline" className="px-2 py-0 text-[10px]">
@@ -751,6 +751,7 @@ export default function SettingsPage(): React.JSX.Element {
                       <button
                         key={option}
                         type="button"
+                        data-testid={`settings.accessibility.motion.${option}`}
                         aria-pressed={selected}
                         onClick={() => handleMotionPreferenceChange(option)}
                         className={`rounded-xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
@@ -802,6 +803,7 @@ export default function SettingsPage(): React.JSX.Element {
                       <button
                         key={option}
                         type="button"
+                        data-testid={`settings.accessibility.text-scale.${option}`}
                         aria-pressed={selected}
                         onClick={() => handleTextScaleChange(option)}
                         className={`rounded-xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
@@ -857,6 +859,7 @@ export default function SettingsPage(): React.JSX.Element {
                       <button
                         key={option}
                         type="button"
+                        data-testid={`settings.accessibility.zoom.${option}`}
                         aria-pressed={selected}
                         onClick={() => handleZoomChange(option)}
                         className={`rounded-xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
@@ -912,6 +915,7 @@ export default function SettingsPage(): React.JSX.Element {
                       <button
                         key={option}
                         type="button"
+                        data-testid={`settings.accessibility.focus.${option}`}
                         aria-pressed={selected}
                         onClick={() => handleFocusChange(option)}
                         className={`rounded-xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${

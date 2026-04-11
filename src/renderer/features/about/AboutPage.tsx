@@ -87,7 +87,11 @@ export default function AboutPage(): React.JSX.Element {
               v{APP_VERSION}
             </span>
             {updateStatus === 'update-available' && (
-              <span className="h-2 w-2 rounded-full bg-amber-400" aria-label="Update available" />
+              <span
+                data-testid="about.update.indicator"
+                className="h-2 w-2 rounded-full bg-amber-400"
+                aria-label="Update available"
+              />
             )}
           </div>
         </div>
@@ -155,6 +159,7 @@ export default function AboutPage(): React.JSX.Element {
                   <p className="text-[11px] text-muted-foreground font-mono mt-0.5">{t('about.githubRepo')}</p>
                 </div>
                 <Button
+                  data-testid="about.external.github"
                   variant="outline"
                   size="sm"
                   className="h-7 gap-1.5 px-3 text-xs shrink-0"
@@ -170,6 +175,7 @@ export default function AboutPage(): React.JSX.Element {
                   <p className="text-[11px] text-muted-foreground mt-0.5">{t('about.homepageUrl')}</p>
                 </div>
                 <Button
+                  data-testid="about.external.homepage"
                   variant="outline"
                   size="sm"
                   className="h-7 gap-1.5 px-3 text-xs shrink-0"
@@ -198,6 +204,7 @@ export default function AboutPage(): React.JSX.Element {
                 <p className="font-mono text-sm font-medium mt-0.5">v{APP_VERSION}</p>
               </div>
               <Button
+                data-testid="about.update.check"
                 variant="outline"
                 size="sm"
                 className="h-7 gap-1.5 px-3 text-xs shrink-0"
@@ -213,7 +220,7 @@ export default function AboutPage(): React.JSX.Element {
 
             {/* Up-to-date */}
             {updateStatus === 'up-to-date' && (
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+              <div data-testid="about.update.status.up-to-date" className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
                 <span className="text-xs">{t('about.update.upToDate')}</span>
               </div>
@@ -221,12 +228,16 @@ export default function AboutPage(): React.JSX.Element {
 
             {/* Update available */}
             {updateStatus === 'update-available' && updateResult?.latestVersion && (
-              <div className="rounded-lg border border-amber-300/60 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/10 px-3 py-2.5 space-y-2">
+              <div
+                data-testid="about.update.status.available"
+                className="rounded-lg border border-amber-300/60 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/10 px-3 py-2.5 space-y-2"
+              >
                 <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
                   {t('about.update.available', { version: updateResult.latestVersion })}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Button
+                    data-testid="about.update.open-releases"
                     variant="outline"
                     size="sm"
                     className="h-7 gap-1.5 px-3 text-xs border-amber-400/60 text-amber-800 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-500/20"
@@ -236,6 +247,7 @@ export default function AboutPage(): React.JSX.Element {
                     {t('about.update.openReleases')}
                   </Button>
                   <Button
+                    data-testid="about.update.remind-later"
                     variant="ghost"
                     size="sm"
                     className="h-7 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60"
@@ -247,6 +259,7 @@ export default function AboutPage(): React.JSX.Element {
                     {t('about.update.remindLater')}
                   </Button>
                   <Button
+                    data-testid="about.update.skip-version"
                     variant="ghost"
                     size="sm"
                     className="h-7 px-3 text-xs text-amber-700/70 hover:text-amber-900 hover:bg-amber-100/60 dark:text-amber-400/70 dark:hover:text-amber-300 dark:hover:bg-amber-500/10"
@@ -264,7 +277,7 @@ export default function AboutPage(): React.JSX.Element {
 
             {/* Error */}
             {updateStatus === 'error' && (
-              <div className="flex items-start gap-2 text-destructive">
+              <div data-testid="about.update.status.error" className="flex items-start gap-2 text-destructive">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                 <span className="text-xs">{t('about.update.failed')}</span>
               </div>

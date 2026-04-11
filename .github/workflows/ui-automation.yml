@@ -1,0 +1,69 @@
+name: UI Automation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/ui-automation.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'playwright.config.ts'
+      - 'vitest.config.ts'
+      - 'tests/ui/**'
+      - 'src/**'
+      - 'scripts/**'
+      - 'docs/testing/ui-automation.md'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/ui-automation.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'playwright.config.ts'
+      - 'vitest.config.ts'
+      - 'tests/ui/**'
+      - 'src/**'
+      - 'scripts/**'
+      - 'docs/testing/ui-automation.md'
+
+jobs:
+  electron-ui-tests:
+    name: Electron UI Tests
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: node scripts/npm-ci-with-retry.js
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run Vitest
+        run: npm test
+
+      - name: Run Electron UI automation
+        run: npm run test:ui
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 14

@@ -120,6 +120,7 @@ export default function ExportDropdown({ bundle, onSuccess, onError }: Props): R
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          data-testid="consumer.detail.export.trigger"
           type="button"
           variant="outline"
           size="sm"
@@ -147,18 +148,21 @@ export default function ExportDropdown({ bundle, onSuccess, onError }: Props): R
             icon={<FileJson className="h-3.5 w-3.5" />}
             label={t('detail.exportJson')}
             loading={isLoading('json')}
+            testId="consumer.detail.export.json"
             onClick={() => void handleExport('json')}
           />
           <ExportItem
             icon={<Braces className="h-3.5 w-3.5" />}
             label={t('detail.exportPostman')}
             loading={isLoading('postman')}
+            testId="consumer.detail.export.postman"
             onClick={() => void handleExport('postman')}
           />
           <ExportItem
             icon={<FileText className="h-3.5 w-3.5" />}
             label={t('detail.exportHtml')}
             loading={isLoading('html')}
+            testId="consumer.detail.export.html"
             onClick={() => void handleExport('html')}
           />
         </div>
@@ -171,15 +175,18 @@ function ExportItem({
   icon,
   label,
   loading,
+  testId,
   onClick
 }: {
   icon: React.ReactNode
   label: string
   loading: boolean
+  testId?: string
   onClick: () => void
 }): React.JSX.Element {
   return (
     <button
+      data-testid={testId}
       type="button"
       disabled={loading}
       onClick={onClick}

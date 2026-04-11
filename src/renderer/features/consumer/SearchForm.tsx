@@ -418,7 +418,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   }), [activeTab, basicForm, complexForm, consumerBasicMocks, consumerComplexMocks, consumerDateMocks, dateForm, importing, loading])
 
   return (
-    <div className="space-y-4" aria-busy={isBusy}>
+    <div data-testid="consumer.search.root" className="space-y-4" aria-busy={isBusy}>
       {importMessage && (
         <Alert variant="success">
           <AlertDescription>{importMessage}</AlertDescription>
@@ -437,19 +437,20 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
           className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl bg-muted/45 p-1.5"
         >
           <TabsTrigger value="basic" disabled={isBusy} className="rounded-xl px-3 py-2 text-xs sm:text-sm">
-            {t('search.tabs.basic')}
+            <span data-testid="consumer.search.tab.basic">{t('search.tabs.basic')}</span>
           </TabsTrigger>
           <TabsTrigger value="date" disabled={isBusy} className="rounded-xl px-3 py-2 text-xs sm:text-sm">
-            {t('search.tabs.date')}
+            <span data-testid="consumer.search.tab.date">{t('search.tabs.date')}</span>
           </TabsTrigger>
           <TabsTrigger value="complex" disabled={isBusy} className="rounded-xl px-3 py-2 text-xs sm:text-sm">
-            {t('search.tabs.complex')}
+            <span data-testid="consumer.search.tab.complex">{t('search.tabs.complex')}</span>
           </TabsTrigger>
         </TabsList>
 
         {/* Tab 1: Basic search */}
         <TabsContent value="basic" className="mt-4">
           <form
+            data-testid="consumer.search.form.basic"
             noValidate
             onSubmit={basicForm.handleSubmit(handleBasicSubmit)}
             className="space-y-4 rounded-[22px] border border-border/70 bg-background/90 p-4 shadow-sm"
@@ -474,6 +475,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
                 {searchByValue === 'identifier' ? t('search.basic.identifierLabel') : t('search.basic.nameLabel')}
               </Label>
               <Input
+                data-testid="consumer.search.input.basic-value"
                 id="basic-value"
                 aria-invalid={Boolean(basicValueError)}
                 aria-describedby={joinDescribedBy(basicValueError && 'basic-value-error')}
@@ -492,7 +494,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
             </div>
 
             <div className="flex gap-2">
-              <Button type="submit" disabled={isBusy} className="h-11 flex-1 gap-2 rounded-xl">
+              <Button data-testid="consumer.search.submit.basic" type="submit" disabled={isBusy} className="h-11 flex-1 gap-2 rounded-xl">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 {tc('buttons.search')}
               </Button>
@@ -508,6 +510,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
         {/* Tab 2: Date search */}
         <TabsContent value="date" className="mt-4">
           <form
+            data-testid="consumer.search.form.date"
             noValidate
             onSubmit={dateForm.handleSubmit(handleDateSubmit)}
             className="space-y-4 rounded-[22px] border border-border/70 bg-background/90 p-4 shadow-sm"
@@ -559,6 +562,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
         {/* Tab 3: Complex search */}
         <TabsContent value="complex" className="mt-4">
           <form
+            data-testid="consumer.search.form.complex"
             noValidate
             onSubmit={complexForm.handleSubmit(handleComplexSubmit)}
             className="space-y-4 rounded-[22px] border border-border/70 bg-background/90 p-4 shadow-sm"

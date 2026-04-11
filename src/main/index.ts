@@ -6,6 +6,12 @@ import { setupMacMenu } from './services/macMenuService'
 import { registerDesktopIpc } from './ipc/registerDesktopIpc'
 
 const { app, BrowserWindow, nativeImage } = electron
+const isE2eMode = process.env.RXFHIR_E2E === '1'
+const customUserDataDir = process.env.RXFHIR_USER_DATA_DIR?.trim()
+
+if (customUserDataDir) {
+  app.setPath('userData', customUserDataDir)
+}
 
 app.name = 'RxFHIR'
 
@@ -30,13 +36,17 @@ app.whenReady().then(() => {
 
   setupUpdateIpc()
   void createMainWindow().then(() => {
-    scheduleStartupUpdateCheck()
+    if (!isE2eMode) {
+      scheduleStartupUpdateCheck()
+    }
   })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       void createMainWindow().then(() => {
-        scheduleStartupUpdateCheck()
+        if (!isE2eMode) {
+          scheduleStartupUpdateCheck()
+        }
       })
     }
   })

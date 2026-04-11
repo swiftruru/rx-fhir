@@ -108,6 +108,7 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
 
   return (
     <section
+      data-testid="consumer.detail"
       aria-labelledby="prescription-detail-heading"
       className="flex h-full min-h-0 flex-col overflow-hidden border-t bg-muted/[0.08] xl:border-l xl:border-t-0"
     >
@@ -146,6 +147,7 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
                 className="inline-flex items-center rounded-xl border border-border/70 bg-muted/40 p-1"
               >
                 <Button
+                  data-testid="consumer.detail.view.structured"
                   type="button"
                   variant={!showJson ? 'secondary' : 'ghost'}
                   size="sm"
@@ -157,6 +159,7 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
                   {t('detail.toggleStructured')}
                 </Button>
                 <Button
+                  data-testid="consumer.detail.view.json"
                   type="button"
                   variant={showJson ? 'secondary' : 'ghost'}
                   size="sm"

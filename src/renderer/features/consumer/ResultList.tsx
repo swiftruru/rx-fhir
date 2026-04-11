@@ -235,7 +235,7 @@ export default function ResultList({ results, total, searchExecution, selected, 
 
   if (isSearching) {
     return (
-      <div className="h-full overflow-auto bg-muted/[0.08] p-4">
+      <div data-testid="consumer.results.loading" className="h-full overflow-auto bg-muted/[0.08] p-4">
         <Card className="rounded-[24px] border-dashed border-border/70 bg-background/85 shadow-sm">
           <CardContent className="p-5">
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground gap-3 py-4">
@@ -262,7 +262,7 @@ export default function ResultList({ results, total, searchExecution, selected, 
 
   if (results.length === 0 && searchExecution?.cancelled) {
     return (
-      <div className="h-full overflow-auto bg-muted/[0.08] p-4">
+      <div data-testid="consumer.results.cancelled" className="h-full overflow-auto bg-muted/[0.08] p-4">
         <Card className="rounded-[24px] border-dashed border-border/70 bg-background/85 shadow-sm">
           <CardContent className="p-5">
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground gap-3 py-4">
@@ -283,7 +283,7 @@ export default function ResultList({ results, total, searchExecution, selected, 
     const hasError = Boolean(searchExecution?.error)
 
     return (
-      <div className="h-full overflow-auto bg-muted/[0.08] p-4">
+      <div data-testid={hasError ? 'consumer.results.error' : 'consumer.results.empty'} className="h-full overflow-auto bg-muted/[0.08] p-4">
         <Card className="rounded-[24px] border-dashed border-border/70 bg-background/85 shadow-sm">
           <CardContent className="space-y-5 p-5">
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground gap-2 py-2">
@@ -335,9 +335,10 @@ export default function ResultList({ results, total, searchExecution, selected, 
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div data-testid="consumer.results.root" className="flex flex-col h-full">
       {/* Header: count + filter match badge + filter input + sort */}
       <div
+        data-testid="consumer.results.status"
         role="status"
         aria-live="polite"
         className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-background/85 px-4 py-2.5 backdrop-blur"
@@ -370,6 +371,7 @@ export default function ResultList({ results, total, searchExecution, selected, 
           <Button
             variant="ghost"
             size="sm"
+            data-testid="consumer.results.export-csv"
             className="h-7 gap-1 rounded-full px-2.5 text-[11px] text-muted-foreground hover:text-foreground"
             onClick={() => { void handleExportCsv() }}
             disabled={isExporting}
@@ -436,6 +438,7 @@ export default function ResultList({ results, total, searchExecution, selected, 
           </div>
         ) : (
           <ul
+            data-testid="consumer.results.list"
             role="listbox"
             aria-label={t('results.listLabel')}
             aria-describedby="consumer-results-keyboard-hint"
@@ -545,6 +548,7 @@ export default function ResultList({ results, total, searchExecution, selected, 
                                   <Button
                                     variant="outline"
                                     size="sm"
+                                    data-testid={`consumer.results.compare.${summary.id}`}
                                     className="h-6 rounded-lg px-2 text-[10px] font-medium text-muted-foreground gap-1 hover:text-primary hover:border-primary/60"
                                     onClick={(e) => { e.stopPropagation(); onCompare(summary) }}
                                     aria-label={t('results.compareButton')}

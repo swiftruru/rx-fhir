@@ -66,7 +66,13 @@ function SearchRow({
     : 'opacity-60 group-hover:opacity-100'
 
   return (
-    <div className={`group flex items-center justify-between gap-2 rounded-lg border px-3 py-2 transition-colors ${rowClassName}`}>
+    <div
+      className={`group flex items-center justify-between gap-2 rounded-lg border px-3 py-2 transition-colors ${rowClassName}`}
+      data-testid="consumer.saved-search.row"
+      data-search-identifier={record.params.identifier ?? ''}
+      data-search-mode={record.params.mode}
+      data-pinned={record.pinned ? 'true' : 'false'}
+    >
       <button
         type="button"
         onClick={() => onRun(record.params)}
@@ -82,6 +88,7 @@ function SearchRow({
           variant="ghost"
           size="icon"
           className="h-6 w-6"
+          data-testid="consumer.saved-search.run"
           aria-label={t('saved.runSearch')}
           title={t('saved.runSearch')}
           onClick={() => onRun(record.params)}
@@ -93,6 +100,7 @@ function SearchRow({
           variant="ghost"
           size="icon"
           className={`h-6 w-6 ${record.pinned ? 'text-amber-500 hover:text-amber-600' : 'text-muted-foreground/70'}`}
+          data-testid="consumer.saved-search.pin"
           aria-label={record.pinned ? t('saved.unpin') : t('saved.pin')}
           title={record.pinned ? t('saved.unpin') : t('saved.pin')}
           onClick={() => togglePinned(record.id)}
@@ -104,6 +112,7 @@ function SearchRow({
           variant="ghost"
           size="icon"
           className="h-6 w-6 text-muted-foreground/60 hover:text-destructive"
+          data-testid="consumer.saved-search.delete"
           aria-label={t('saved.deleteSearch')}
           title={t('saved.deleteSearch')}
           onClick={() => removeSearch(record.id)}
@@ -137,9 +146,10 @@ export default function SavedSearches({
   if (records.length === 0) return <></>
 
   return (
-    <div className={rootClassName}>
+    <div className={rootClassName} data-testid={`consumer.saved-searches.${variant}`}>
       <div className="flex items-start gap-3 px-3 py-3">
         <button
+          data-testid={`consumer.saved-searches.toggle.${variant}`}
           type="button"
           onClick={onToggle}
           aria-expanded={open}
@@ -171,6 +181,7 @@ export default function SavedSearches({
         </button>
         {recentRecords.length > 0 && (
           <button
+            data-testid={`consumer.saved-searches.clear-recent.${variant}`}
             type="button"
             onClick={(event) => {
               event.stopPropagation()

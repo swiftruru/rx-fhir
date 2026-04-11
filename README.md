@@ -412,6 +412,46 @@ Runs `build`, launches a clean Electron test instance, performs the repo's Elect
 npm run ux:electron:verify -- --skip-build
 ```
 
+### Electron UI Automation
+
+Runs the Playwright-based Electron UI suite with mocked FHIR responses and isolated app state:
+
+```bash
+npm run test:ui
+```
+
+For local demo mode:
+
+```bash
+npm run test:ui:headed
+```
+
+To inspect the HTML report after a run:
+
+```bash
+npm run test:ui:report
+```
+
+More details:
+
+- [docs/testing/ui-automation.md](docs/testing/ui-automation.md)
+- [docs/testing/ui-automation-demo-script.md](docs/testing/ui-automation-demo-script.md)
+- [`.github/workflows/ui-automation.yml`](.github/workflows/ui-automation.yml)
+
+Current UI automation coverage includes:
+
+- About update and external-link bridge flows
+- app shell and route navigation
+- Creator draft restore after relaunch
+- Consumer import, search, history, and saved-search flows
+- mocked empty/error search states
+- Settings accessibility persistence
+
+The current UI automation scope is intentionally treated as the stable v1
+delivery boundary for demo/classroom use. See
+[`docs/testing/ui-automation.md`](docs/testing/ui-automation.md) for the
+current scope and intentionally out-of-scope items.
+
 ### Electron CDP Eval
 
 Evaluate a quick expression inside the live Electron renderer:

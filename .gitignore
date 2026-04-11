@@ -1,6 +1,8 @@
 node_modules
 dist
 out
+playwright-report
+test-results
 .DS_Store
 *.local
 build/icon.iconset/

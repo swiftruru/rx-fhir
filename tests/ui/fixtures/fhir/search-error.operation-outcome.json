@@ -1,0 +1,10 @@
+{
+  "resourceType": "OperationOutcome",
+  "issue": [
+    {
+      "severity": "error",
+      "code": "exception",
+      "diagnostics": "E2E mock search failed"
+    }
+  ]
+}

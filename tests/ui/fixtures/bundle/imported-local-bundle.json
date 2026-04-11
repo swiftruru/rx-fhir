@@ -1,0 +1,44 @@
+{
+  "resourceType": "Bundle",
+  "id": "local-import-bundle-001",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "patient-1",
+        "identifier": [
+          {
+            "value": "LOCAL-123456"
+          }
+        ],
+        "name": [
+          {
+            "text": "Local Import Patient"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Organization",
+        "id": "organization-1",
+        "identifier": [
+          {
+            "value": "ORG-LOCAL-01"
+          }
+        ],
+        "name": "Local Import Clinic"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "id": "composition-1",
+        "status": "final",
+        "date": "2026-04-11T09:00:00+08:00",
+        "title": "Imported Local Prescription"
+      }
+    }
+  ]
+}

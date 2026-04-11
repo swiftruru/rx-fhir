@@ -39,6 +39,7 @@ export default function Sidebar(): React.JSX.Element {
       )}
     >
       <aside
+        data-testid="app.sidebar"
         aria-label={tc('accessibility.sidebar')}
         className="flex h-full flex-col bg-sidebar text-sidebar-foreground"
       >
@@ -64,6 +65,7 @@ export default function Sidebar(): React.JSX.Element {
           <button
             type="button"
             onClick={toggleSidebarMode}
+            data-testid="app.sidebar.toggle"
             className={cn(
               'rounded-md p-1.5 text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
               compact && 'mt-2'
@@ -84,6 +86,7 @@ export default function Sidebar(): React.JSX.Element {
             key={to}
             type="button"
             onClick={() => navigate(to, { label: t(`items.${key}.label`) })}
+            data-testid={`app.sidebar.nav.${key}`}
             aria-current={location.pathname === to ? 'page' : undefined}
             aria-label={compact ? t(`items.${key}.label`) : undefined}
             className={
@@ -112,6 +115,7 @@ export default function Sidebar(): React.JSX.Element {
       {/* Server info */}
       <div className={cn('border-t border-sidebar-border', compact ? 'px-2 py-3' : 'px-4 py-3')}>
         <div
+          data-testid="app.sidebar.server-status"
           className={cn(
             'text-[11px] text-sidebar-foreground/50',
             compact ? 'flex items-center justify-center' : 'flex items-center gap-1.5'

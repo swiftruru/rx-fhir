@@ -73,11 +73,12 @@ export default function SubmissionList({ onSelect, onFill }: SubmissionListProps
   }
 
   return (
-    <div className="space-y-3">
+    <div data-testid="consumer.history.submission-list" className="space-y-3">
       {/* Filter + Sort toolbar */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Input
+            data-testid="consumer.history.submission-list.filter"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder={t('submissions.filterPlaceholder')}
@@ -95,7 +96,11 @@ export default function SubmissionList({ onSelect, onFill }: SubmissionListProps
           )}
         </div>
         <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
-          <SelectTrigger className="h-8 w-36 text-xs" aria-label={t('submissions.sortLabel')}>
+          <SelectTrigger
+            data-testid="consumer.history.submission-list.sort"
+            className="h-8 w-36 text-xs"
+            aria-label={t('submissions.sortLabel')}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -148,7 +153,13 @@ function SubmissionCard({
     <div className={cn(
       'rounded-[16px] border border-border/60 bg-card/60 px-4 py-3',
       'transition-colors hover:bg-card/90'
-    )}>
+    )}
+      data-testid="consumer.history.submission-card"
+      data-record-id={record.id}
+      data-bundle-id={record.bundleId ?? ''}
+      data-patient-identifier={record.patientIdentifier}
+      data-record-type={record.type}
+    >
       <div className="flex items-start justify-between gap-3">
         {/* Main content — clickable if onSelect is provided */}
         <button
@@ -206,6 +217,7 @@ function SubmissionCard({
         <div className="flex shrink-0 items-center gap-1 pt-0.5">
           {onSelect && record.bundleId && (
             <Button
+              data-testid="consumer.history.submission-view"
               variant="ghost"
               size="icon"
               className="h-7 w-7 text-muted-foreground hover:text-primary"
@@ -218,6 +230,7 @@ function SubmissionCard({
           )}
           {onFill && (
             <Button
+              data-testid="consumer.history.submission-fill"
               variant="ghost"
               size="icon"
               className="h-7 w-7 text-muted-foreground hover:text-foreground"
@@ -229,6 +242,7 @@ function SubmissionCard({
             </Button>
           )}
           <Button
+            data-testid="consumer.history.submission-delete"
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-destructive"

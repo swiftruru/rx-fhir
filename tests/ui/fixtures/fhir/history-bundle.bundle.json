@@ -1,0 +1,75 @@
+{
+  "resourceType": "Bundle",
+  "id": "mock-history-bundle-1",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "id": "history-composition-1",
+        "status": "final",
+        "date": "2026-04-11T09:30:00+08:00",
+        "title": "History Detail Bundle"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "history-patient-1",
+        "identifier": [
+          {
+            "value": "E2E-SUB-0001"
+          }
+        ],
+        "name": [
+          {
+            "text": "E2E Submission Patient"
+          }
+        ],
+        "gender": "female",
+        "birthDate": "2003-08-09"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Organization",
+        "id": "history-organization-1",
+        "name": "E2E Submission Clinic",
+        "identifier": [
+          {
+            "value": "ORG-E2E-SUB-1"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "history-practitioner-1",
+        "name": [
+          {
+            "text": "Dr. Submission"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "history-condition-1",
+        "code": {
+          "text": "Mock Follow-up Visit"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Medication",
+        "id": "history-medication-1",
+        "code": {
+          "text": "Ibuprofen 200mg"
+        }
+      }
+    }
+  ]
+}

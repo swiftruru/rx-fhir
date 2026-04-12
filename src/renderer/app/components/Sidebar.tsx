@@ -5,6 +5,7 @@ import { cn } from '../../shared/lib/utils'
 import { useAppStore } from '../stores/appStore'
 import { useGuardedNavigate } from '../../shared/hooks/useGuardedNavigate'
 import FeatureShowcaseTarget from './FeatureShowcaseTarget'
+import { useConsumerSessionStore } from '../../features/consumer/store/consumerSessionStore'
 
 type NavKey = 'creator' | 'consumer' | 'settings' | 'about'
 
@@ -21,6 +22,9 @@ export default function Sidebar(): React.JSX.Element {
   const { t: tc } = useTranslation('common')
   const location = useLocation()
   const navigate = useGuardedNavigate()
+  const consumerPreviewActive = useConsumerSessionStore((state) => (
+    state.selected?.source === 'preview' || state.results.some((summary) => summary.source === 'preview')
+  ))
 
   const shortUrl = serverUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
   const compact = sidebarMode === 'compact'
@@ -28,6 +32,19 @@ export default function Sidebar(): React.JSX.Element {
 
   function toggleSidebarMode(): void {
     setSidebarMode(compact ? 'expanded' : 'compact')
+  }
+
+  function handleNavigate(to: string, key: NavKey): void {
+    if (key === 'consumer' && location.pathname === '/consumer' && consumerPreviewActive) {
+      navigate(to, {
+        replace: true,
+        state: { resetView: 'initial' },
+        label: t(`items.${key}.label`)
+      })
+      return
+    }
+
+    navigate(to, { label: t(`items.${key}.label`) })
   }
 
   return (
@@ -85,7 +102,7 @@ export default function Sidebar(): React.JSX.Element {
           <button
             key={to}
             type="button"
-            onClick={() => navigate(to, { label: t(`items.${key}.label`) })}
+            onClick={() => handleNavigate(to, key)}
             data-testid={`app.sidebar.nav.${key}`}
             aria-current={location.pathname === to ? 'page' : undefined}
             aria-label={compact ? t(`items.${key}.label`) : undefined}

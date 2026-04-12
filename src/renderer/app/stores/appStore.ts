@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { getFhirBaseUrl, setFhirBaseUrl } from '../../services/fhirClient'
 import type { SupportedLocale } from '../../i18n'
+import type { ServerCapabilities } from '../../../shared/contracts/electron'
 
 type ServerStatus = 'unknown' | 'online' | 'offline' | 'checking'
 type AppMode = 'creator' | 'consumer' | 'settings'
@@ -36,6 +37,7 @@ interface AppState {
   serverStatus: ServerStatus
   serverName?: string
   serverVersion?: string
+  serverCapabilities?: ServerCapabilities
   currentMode: AppMode
   theme: ThemeMode
   locale: SupportedLocale
@@ -46,7 +48,7 @@ interface AppState {
   sidebarMode: SidebarMode
   hasSeenOnboarding: boolean
   setServerUrl: (url: string) => void
-  setServerStatus: (status: ServerStatus, name?: string, version?: string) => void
+  setServerStatus: (status: ServerStatus, name?: string, version?: string, capabilities?: ServerCapabilities) => void
   setCurrentMode: (mode: AppMode) => void
   setTheme: (theme: ThemeMode) => void
   setLocale: (locale: SupportedLocale) => void
@@ -65,6 +67,7 @@ export const useAppStore = create<AppState>()(
       serverStatus: 'unknown',
       serverName: undefined,
       serverVersion: undefined,
+      serverCapabilities: undefined,
       currentMode: 'creator',
       theme: 'system',
       locale: 'zh-TW',
@@ -77,11 +80,17 @@ export const useAppStore = create<AppState>()(
 
       setServerUrl: (url: string) => {
         setFhirBaseUrl(url)
-        set({ serverUrl: url, serverStatus: 'unknown' })
+        set({
+          serverUrl: url,
+          serverStatus: 'unknown',
+          serverName: undefined,
+          serverVersion: undefined,
+          serverCapabilities: undefined
+        })
       },
 
-      setServerStatus: (status, name, version) => {
-        set({ serverStatus: status, serverName: name, serverVersion: version })
+      setServerStatus: (status, name, version, serverCapabilities) => {
+        set({ serverStatus: status, serverName: name, serverVersion: version, serverCapabilities })
       },
 
       setCurrentMode: (mode) => set({ currentMode: mode }),

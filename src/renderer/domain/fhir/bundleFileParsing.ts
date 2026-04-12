@@ -1,5 +1,5 @@
-import type { BundleSummary } from '../../types/fhir'
 import { extractBundleSummary } from './searchResults'
+import { runLocalBundleAudit, type AuditedBundleSummary } from './validation'
 
 export type BundleFileErrorCode =
   | 'bridge-unavailable'
@@ -17,7 +17,8 @@ export class BundleFileError extends Error {
 export interface ImportedBundleResult {
   bundle: fhir4.Bundle
   fileName: string
-  summary: BundleSummary
+  filePath?: string
+  summary: AuditedBundleSummary
 }
 
 export type Translate = (key: string, options?: Record<string, unknown>) => string
@@ -111,7 +112,8 @@ export function parseImportedBundleJson(content: string, fileName: string): Impo
     summary: {
       ...summary,
       source: 'imported',
-      fileName
+      fileName,
+      auditReport: runLocalBundleAudit(bundle)
     }
   }
 }

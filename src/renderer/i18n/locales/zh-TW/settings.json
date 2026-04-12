@@ -79,7 +79,22 @@
   "status": {
     "title":      "目前連線狀態",
     "serverInfo": "Server",
-    "fhirVersion": "FHIR"
+    "fhirVersion": "FHIR",
+    "capabilities": {
+      "title": "示範相容性",
+      "description": "依 `/metadata` 解析目前伺服器能力，快速判斷它是否適合做驗證與展示。",
+      "bundleValidate": "Bundle $validate",
+      "support": {
+        "available": "可用",
+        "unavailable": "未提供",
+        "unknown": "未知"
+      },
+      "notes": {
+        "available": "這台伺服器有宣告 Bundle 驗證能力，因此 hybrid audit 與送出前驗證預期可正常使用。",
+        "unavailable": "這台伺服器沒有宣告 Bundle 驗證能力。需要驗證時，RxFHIR 會回退成僅本機稽核。",
+        "unknown": "這台伺服器沒有清楚宣告 Bundle 驗證能力。RxFHIR 會先嘗試探測，不可用時再自動回退。"
+      }
+    }
   },
   "accessibility": {
     "title": "Accessibility",

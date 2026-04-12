@@ -37,6 +37,7 @@ import {
   getPreferencesFileErrorMessage,
   importPreferencesJson
 } from '../../services/preferencesService'
+import type { ServerCapabilities, ServerCapabilitySupport } from '../../../shared/contracts/electron'
 
 const PRESET_SERVERS = [
   { label: 'HAPI FHIR (International)', url: 'https://hapi.fhir.org/baseR4' },
@@ -64,6 +65,19 @@ interface SettingsLaunchState {
   quickStartScenario?: 'accessibility'
 }
 
+function getCapabilityBadgeVariant(
+  support: ServerCapabilitySupport
+): 'success' | 'warning' | 'outline' {
+  switch (support) {
+    case 'available':
+      return 'success'
+    case 'unavailable':
+      return 'warning'
+    default:
+      return 'outline'
+  }
+}
+
 export default function SettingsPage(): React.JSX.Element {
   const {
     serverUrl,
@@ -71,6 +85,7 @@ export default function SettingsPage(): React.JSX.Element {
     serverStatus,
     serverName,
     serverVersion,
+    serverCapabilities,
     setServerStatus,
     motionPreference,
     setMotionPreference,
@@ -96,7 +111,7 @@ export default function SettingsPage(): React.JSX.Element {
   const clearSettingsActions = useShortcutActionStore((state) => state.clearSettingsActions)
   const shortcutOverrideCount = useShortcutStore((state) => Object.keys(state.overrides).length)
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle')
-  const [testResult, setTestResult] = useState<{ name?: string; version?: string }>({})
+  const [testResult, setTestResult] = useState<{ name?: string; version?: string; capabilities?: ServerCapabilities }>({})
   const [saved, setSaved] = useState(false)
   const [activeTab, setActiveTab] = useState<SettingsShortcutTab>('server')
   const [settingsQuery, setSettingsQuery] = useState('')
@@ -123,6 +138,8 @@ export default function SettingsPage(): React.JSX.Element {
   const normalizedSettingsQuery = normalizeQuery(settingsQuery)
   const serverHasUnsavedChanges = normalizedCurrentUrl !== normalizedSavedServerUrl
   const serverUsesCustomUrl = normalizedSavedServerUrl !== normalizedDefaultServerUrl
+  const effectiveCapabilities = testResult.capabilities ?? serverCapabilities
+  const bundleValidateSupport = effectiveCapabilities?.bundleValidate ?? 'unknown'
   const accessibilityCustomized =
     motionPreference !== DEFAULT_MOTION_PREFERENCE
     || textScale !== DEFAULT_TEXT_SCALE
@@ -146,7 +163,13 @@ export default function SettingsPage(): React.JSX.Element {
       t('tabs.server'),
       t('status.title'),
       t('status.serverInfo'),
-      t('status.fhirVersion')
+      t('status.fhirVersion'),
+      t('status.capabilities.title'),
+      t('status.capabilities.description'),
+      t('status.capabilities.bundleValidate'),
+      t('status.capabilities.support.available'),
+      t('status.capabilities.support.unavailable'),
+      t('status.capabilities.support.unknown')
     ].some((value) => value.toLowerCase().includes(normalizedSettingsQuery))
   }, [normalizedSettingsQuery, t])
 
@@ -267,7 +290,7 @@ export default function SettingsPage(): React.JSX.Element {
       setServerStatus('checking')
     }
     const result = await checkServerHealth(currentUrl)
-    setTestResult({ name: result.name, version: result.version })
+    setTestResult({ name: result.name, version: result.version, capabilities: result.capabilities })
     setTestStatus(result.online ? 'ok' : 'fail')
     const message = result.online ? t('server.testSuccessAnnouncement') : t('server.testFailAnnouncement')
     announcePolite(message)
@@ -276,7 +299,7 @@ export default function SettingsPage(): React.JSX.Element {
       description: message
     })
     if (shouldSyncGlobalStatus) {
-      setServerStatus(result.online ? 'online' : 'offline', result.name, result.version)
+      setServerStatus(result.online ? 'online' : 'offline', result.name, result.version, result.capabilities)
     }
   }
 
@@ -292,7 +315,7 @@ export default function SettingsPage(): React.JSX.Element {
       description: message
     })
     if (sameUrl && testStatus !== 'idle' && testStatus !== 'testing') {
-      setServerStatus(testStatus === 'ok' ? 'online' : 'offline', testResult.name, testResult.version)
+      setServerStatus(testStatus === 'ok' ? 'online' : 'offline', testResult.name, testResult.version, testResult.capabilities)
     } else {
       setServerStatus('unknown')
     }
@@ -455,7 +478,7 @@ export default function SettingsPage(): React.JSX.Element {
     return () => {
       clearSettingsActions(['save', 'testConnection', 'setTab'])
     }
-  }, [clearSettingsActions, handleSubmit, setSettingsActions, currentUrl, serverUrl, testStatus, testResult.name, testResult.version])
+  }, [clearSettingsActions, handleSubmit, setSettingsActions, currentUrl, serverUrl, testStatus, testResult.capabilities, testResult.name, testResult.version])
 
   return (
     <div className="h-full overflow-auto">
@@ -656,10 +679,26 @@ export default function SettingsPage(): React.JSX.Element {
                 {testStatus === 'ok' && (
                   <Alert data-testid="settings.server.test-success" variant="success">
                     <CheckCircle2 className="h-4 w-4" />
-                    <AlertDescription>
-                      {t('server.testSuccess')}
-                      {testResult.name && <> — {testResult.name}</>}
-                      {testResult.version && <> (FHIR {testResult.version})</>}
+                    <AlertDescription className="space-y-3">
+                      <p>
+                        {t('server.testSuccess')}
+                        {testResult.name && <> — {testResult.name}</>}
+                        {testResult.version && <> (FHIR {testResult.version})</>}
+                      </p>
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-medium text-muted-foreground">{t('status.capabilities.title')}</span>
+                          <Badge
+                            variant={getCapabilityBadgeVariant(testResult.capabilities?.bundleValidate ?? 'unknown')}
+                            className="text-[10px]"
+                          >
+                            {t('status.capabilities.bundleValidate')}: {t(`status.capabilities.support.${testResult.capabilities?.bundleValidate ?? 'unknown'}`)}
+                          </Badge>
+                        </div>
+                        <p className="text-xs leading-relaxed text-muted-foreground">
+                          {t(`status.capabilities.notes.${testResult.capabilities?.bundleValidate ?? 'unknown'}`)}
+                        </p>
+                      </div>
                     </AlertDescription>
                   </Alert>
                 )}
@@ -701,6 +740,25 @@ export default function SettingsPage(): React.JSX.Element {
                 </div>
                 {serverName && <div className="text-muted-foreground">{t('status.serverInfo')}: {serverName}</div>}
                 {serverVersion && <div className="text-muted-foreground">{t('status.fhirVersion')}: R{serverVersion}</div>}
+                <div data-testid="settings.server.capabilities" className="space-y-2 rounded-2xl border border-border/70 bg-background/70 px-3 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{t('status.capabilities.title')}</p>
+                    <p className="text-xs leading-relaxed text-muted-foreground">{t('status.capabilities.description')}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{t('status.capabilities.bundleValidate')}</span>
+                    <Badge
+                      data-testid="settings.server.capability.bundle-validate"
+                      variant={getCapabilityBadgeVariant(bundleValidateSupport)}
+                      className="text-[10px]"
+                    >
+                      {t(`status.capabilities.support.${bundleValidateSupport}`)}
+                    </Badge>
+                  </div>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    {t(`status.capabilities.notes.${bundleValidateSupport}`)}
+                  </p>
+                </div>
               </CardContent>
             </Card>
             </FeatureShowcaseTarget>

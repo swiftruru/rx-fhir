@@ -52,6 +52,12 @@
       "title": "查詢進行中",
       "toastDescription": "查詢尚未完成，現在離開將中斷查詢。",
       "leaveAction": "仍要離開"
+    },
+    "previewReturn": {
+      "title": "這是 Creator 的本機預覽 Bundle",
+      "description": "右側正在顯示這份 Bundle 的預覽與稽核結果。你可以先在 Consumer 檢視內容；若要正式送出，隨時可回到 Creator 繼續提交。",
+      "action": "回到 Creator 提交 Bundle",
+      "announcement": "已返回 Creator，可繼續提交目前的 Bundle。"
     }
   },
   "search": {
@@ -243,13 +249,15 @@
       "searchCompletedFiltered": "查詢完成，目前顯示 {{count}} 筆結果，總共找到 {{total}} 筆。",
       "noResults": "查詢完成，但沒有找到符合的結果。",
       "searchFailed": "查詢失敗，未能載入結果。",
-      "bundleImported": "已匯入 {{patient}} 的 Bundle。"
+      "bundleImported": "已匯入 {{patient}} 的 Bundle。",
+      "previewLoaded": "已切換到 Consumer 預覽。這份 Bundle 尚未送出到伺服器。"
     },
     "count":        "共找到 {{total}} 筆",
     "showing":      "顯示 {{count}} 筆",
     "selectedBadge": "已選取",
     "unknownPatient": "未知病人",
     "importedBadge": "本機匯入",
+    "previewBadge": "預覽",
     "cancelled":     "查詢已取消",
     "cancelledHint": "查詢已被中斷，請調整條件後重新查詢。",
     "sortLabel":      "排序",
@@ -298,6 +306,15 @@
     "exportPostmanSuccess": "Postman Collection 已匯出：{{fileName}}",
     "exportHtmlSuccess": "HTML 報告已匯出：{{fileName}}",
     "importedBadge": "本機匯入",
+    "previewBadge": "尚未送出",
+    "audit": {
+      "title": "Bundle 稽核",
+      "description": "RxFHIR 會先用本機規則檢查目前選取的 Bundle，之後再在可用時合併伺服器 $validate 的結果。",
+      "importedDescription": "匯入的 Bundle JSON 會先做本機稽核，若伺服器支援，再補上 $validate 結果。",
+      "previewDescription": "這是 Creator 的本機預覽 Bundle。RxFHIR 會先立即做本機稽核，若目前伺服器支援，再補上 $validate 結果。",
+      "emptyTitle": "目前還沒有稽核報告",
+      "emptyDescription": "開啟、預覽或搜尋任一 Bundle 後，這裡會顯示它的稽核結果。"
+    },
     "sections": {
       "prescription": {
         "title":        "處方箋資訊",

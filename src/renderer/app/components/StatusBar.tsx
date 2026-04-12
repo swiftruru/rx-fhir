@@ -18,10 +18,10 @@ export default function StatusBar(): React.JSX.Element {
 
   useEffect(() => {
     setServerStatus('checking')
-    checkServerHealth(serverUrl).then(({ online, name, version }) => {
-      setServerStatus(online ? 'online' : 'offline', name, version)
+    checkServerHealth(serverUrl).then(({ online, name, version, capabilities }) => {
+      setServerStatus(online ? 'online' : 'offline', name, version, capabilities)
     })
-  }, [serverUrl])
+  }, [serverUrl, setServerStatus])
 
   const modeKey = getRouteNavKey(location.pathname)
 

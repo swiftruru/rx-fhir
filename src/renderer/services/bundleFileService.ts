@@ -118,12 +118,20 @@ export async function importBundleJson(): Promise<ImportedBundleResult | null> {
     return null
   }
 
-  return parseImportedBundleJson(result.content, result.fileName)
+  const imported = parseImportedBundleJson(result.content, result.fileName)
+  return {
+    ...imported,
+    filePath: result.filePath
+  }
 }
 
 export async function importBundleJsonFile(file: File): Promise<ImportedBundleResult> {
   const content = await file.text()
-  return parseImportedBundleJson(content, file.name)
+  const imported = parseImportedBundleJson(content, file.name)
+  return {
+    ...imported,
+    filePath: (file as File & { path?: string }).path
+  }
 }
 
 function parseBridgeOpenResult(result: BundleJsonOpenResult): ImportedBundleResult | null {
@@ -131,7 +139,11 @@ function parseBridgeOpenResult(result: BundleJsonOpenResult): ImportedBundleResu
     return null
   }
 
-  return parseImportedBundleJson(result.content, result.fileName)
+  const imported = parseImportedBundleJson(result.content, result.fileName)
+  return {
+    ...imported,
+    filePath: result.filePath
+  }
 }
 
 export async function openRecentBundleJson(filePath: string): Promise<ImportedBundleResult | null> {

@@ -15,7 +15,7 @@ export function useGuardedNavigate(): (to: string, options?: GuardedNavigateOpti
   const pushToast = useToastStore((state) => state.pushToast)
 
   return (to: string, options?: GuardedNavigateOptions) => {
-    if (!to || to === location.pathname) return
+    if (!to || (to === location.pathname && options?.state === undefined)) return
 
     const { force: _force, label: _label, ...navigateOptions } = options ?? {}
     const leavingConsumerDuringSearch = location.pathname === '/consumer' && isSearching

@@ -29,4 +29,4 @@ export {
   type SearchBundlesOptions
 } from '../domain/fhir/searchApi'
 
-export { checkServerHealth } from '../domain/fhir/serverHealthApi'
+export { checkServerHealth, parseServerCapabilities, type ServerHealthResult } from '../domain/fhir/serverHealthApi'

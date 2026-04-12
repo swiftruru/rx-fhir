@@ -93,6 +93,8 @@ function getFlowTitle(
       return t(singleStep ? 'stepper.requestFlow.singleUpdate' : 'stepper.requestFlow.stepUpdate', { index: index + 1, resourceType })
     case 'search':
       return t(singleStep ? 'stepper.requestFlow.singleSearch' : 'stepper.requestFlow.stepSearch', { index: index + 1, resourceType })
+    case 'validate':
+      return t(singleStep ? 'stepper.requestFlow.singleValidate' : 'stepper.requestFlow.stepValidate', { index: index + 1, resourceType })
     default:
       return t(singleStep ? 'stepper.requestFlow.singleRequest' : 'stepper.requestFlow.stepRequest', { index: index + 1, resourceType })
   }
@@ -129,6 +131,10 @@ function getFlowNote(
         : t('stepper.requestFlow.noteUpdateFailed', { resourceType })
     case 'search':
       return t('stepper.requestFlow.noteSearch')
+    case 'validate':
+      return entry.ok
+        ? t('stepper.requestFlow.noteValidate')
+        : t('stepper.requestFlow.noteValidateFailed')
     default:
       return undefined
   }
@@ -213,7 +219,9 @@ export default function FhirRequestInspector({ request, history }: Props): React
         ? t('stepper.requestReason.create')
         : request.reasonCode === 'update'
           ? t('stepper.requestReason.update')
-          : t('stepper.requestReason.search')
+          : request.reasonCode === 'validate'
+            ? t('stepper.requestReason.validate')
+            : t('stepper.requestReason.search')
     : undefined
 
   return (

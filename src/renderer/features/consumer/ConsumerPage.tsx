@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { FileUp, Upload, Wand2 } from 'lucide-react'
+import { ArrowLeft, FileUp, Upload, Wand2 } from 'lucide-react'
+import { useShallow } from 'zustand/react/shallow'
 import { Tabs, TabsList, TabsTrigger } from '../../shared/components/ui/tabs'
 import { Button } from '../../shared/components/ui/button'
-import { Alert, AlertDescription } from '../../shared/components/ui/alert'
+import { Alert, AlertDescription, AlertTitle } from '../../shared/components/ui/alert'
 import FeatureShowcaseTarget from '../../app/components/FeatureShowcaseTarget'
 import SearchForm, { type SearchFormHandle } from './SearchForm'
 import ResultList from './ResultList'
@@ -25,11 +26,16 @@ import { useAccessibilityStore } from '../../shared/stores/accessibilityStore'
 import { useToastStore } from '../../shared/stores/toastStore'
 import { useAppStore } from '../../app/stores/appStore'
 import { useConsumerSearchStore } from './store/consumerSearchStore'
+import { DEFAULT_CONSUMER_SESSION, useConsumerSessionStore } from './store/consumerSessionStore'
+import { useConsumerWorkspaceStore } from './store/consumerWorkspaceStore'
 import { getBundleFileErrorMessage, importBundleJsonFile, listRecentBundleJsonFiles, openRecentBundleJson, rememberRecentBundleJson } from '../../services/bundleFileService'
 import { fetchBundleById, searchBundlesNextPage } from '../../services/fhirClient'
 import { extractBundleHistoryMetadata, extractBundleSummary, extractSearchResults } from '../../services/searchService'
+import { runHybridBundleAudit, type AuditedBundleSummary, type FhirAuditReport } from '../../domain/fhir/validation'
+import { attachServerContext, buildBundleAuditCacheKey, buildPreviewBundleSummary, shouldAuditConsumerBundle, withLocalAudit } from './lib/bundleAudit'
 import SubmissionList from '../history/SubmissionList'
 import SearchList from '../history/SearchList'
+import { useCreatorStore } from '../creator/store/creatorStore'
 import {
   buildSearchPrefillFromParams,
   getSearchTabFromParams,
@@ -39,15 +45,43 @@ import {
 } from './searchState'
 import { useConsumerPageSetup } from './hooks/useConsumerPageSetup'
 import { useConsumerShowcaseSync } from './hooks/useConsumerShowcaseSync'
+import { RESOURCE_STEPS } from '../../types/fhir'
 
 export default function ConsumerPage(): React.JSX.Element {
   const { t } = useTranslation('consumer')
   const { t: tc } = useTranslation('common')
   const locale = useAppStore((state) => state.locale)
+  const serverUrl = useAppStore((state) => state.serverUrl)
   const location = useLocation()
+  const hasLaunchState = Boolean(location.state)
   const navigate = useNavigate()
   const announcePolite = useAccessibilityStore((state) => state.announcePolite)
   const pushToast = useToastStore((state) => state.pushToast)
+  const workspaceSnapshot = useConsumerWorkspaceStore(useShallow((state) => ({
+    serverUrl: state.serverUrl,
+    activeTab: state.activeTab,
+    activeComplexBy: state.activeComplexBy,
+    middleTab: state.middleTab,
+    prefill: state.prefill,
+    autoSearch: state.autoSearch,
+    targetBundleId: state.targetBundleId,
+    recentBundleFilePath: state.recentBundleFilePath
+  })))
+  const workspaceHydrated = useConsumerWorkspaceStore((state) => state.hasHydrated)
+  const sessionSnapshot = useConsumerSessionStore(useShallow((state) => ({
+    results: state.results,
+    total: state.total,
+    selected: state.selected,
+    diffTarget: state.diffTarget,
+    hasSearched: state.hasSearched,
+    searchExecution: state.searchExecution,
+    nextUrl: state.nextUrl,
+    lastNameFilter: state.lastNameFilter
+  })))
+  const setWorkspace = useConsumerWorkspaceStore((state) => state.setWorkspace)
+  const clearWorkspace = useConsumerWorkspaceStore((state) => state.clearWorkspace)
+  const setSessionSnapshot = useConsumerSessionStore((state) => state.setSnapshot)
+  const clearConsumerSession = useConsumerSessionStore((state) => state.clearSession)
   const records = useHistoryStore((state) => state.records)
   const updateRecord = useHistoryStore((state) => state.updateRecord)
   const historyCount = records.filter((record) => record.type === 'bundle').length
@@ -59,16 +93,16 @@ export default function ConsumerPage(): React.JSX.Element {
   const showcaseSnapshot = useFeatureShowcaseStore((state) => state.snapshot)
   const setConsumerActions = useShortcutActionStore((state) => state.setConsumerActions)
   const clearConsumerActions = useShortcutActionStore((state) => state.clearConsumerActions)
-  const [results, setResults] = useState<BundleSummary[]>([])
-  const [total, setTotal] = useState(0)
-  const [selected, setSelected] = useState<BundleSummary | null>(null)
-  const [diffTarget, setDiffTarget] = useState<BundleSummary | null>(null)
-  const [hasSearched, setHasSearched] = useState(false)
+  const [results, setResults] = useState<AuditedBundleSummary[]>(hasLaunchState ? DEFAULT_CONSUMER_SESSION.results : sessionSnapshot.results)
+  const [total, setTotal] = useState(hasLaunchState ? DEFAULT_CONSUMER_SESSION.total : sessionSnapshot.total)
+  const [selected, setSelected] = useState<AuditedBundleSummary | null>(hasLaunchState ? DEFAULT_CONSUMER_SESSION.selected : sessionSnapshot.selected)
+  const [diffTarget, setDiffTarget] = useState<AuditedBundleSummary | null>(hasLaunchState ? DEFAULT_CONSUMER_SESSION.diffTarget : sessionSnapshot.diffTarget)
+  const [hasSearched, setHasSearched] = useState(hasLaunchState ? DEFAULT_CONSUMER_SESSION.hasSearched : sessionSnapshot.hasSearched)
   const [activeTab, setActiveTab] = useState<SearchTab>('basic')
   const [prefill, setPrefill] = useState<SearchPrefill | null>(null)
   const [autoSearch, setAutoSearch] = useState<SearchParams | null>(null)
   const [targetBundleId, setTargetBundleId] = useState<string | null>(null)
-  const [searchExecution, setSearchExecution] = useState<ConsumerSearchExecution | null>(null)
+  const [searchExecution, setSearchExecution] = useState<ConsumerSearchExecution | null>(hasLaunchState ? DEFAULT_CONSUMER_SESSION.searchExecution : sessionSnapshot.searchExecution)
   const [dashboardRecentOpen, setDashboardRecentOpen] = useState(false)
   const [dashboardSavedOpen, setDashboardSavedOpen] = useState(false)
   const [middleTab, setMiddleTab] = useState<'results' | 'quickstart' | 'history'>('quickstart')
@@ -77,19 +111,378 @@ export default function ConsumerPage(): React.JSX.Element {
   const [dragDepth, setDragDepth] = useState(0)
   const [dropFeedback, setDropFeedback] = useState<{ message: string; variant: 'success' | 'destructive' } | null>(null)
   const [recentFiles, setRecentFiles] = useState<RecentBundleFileEntry[]>([])
-  const [nextUrl, setNextUrl] = useState<string | null>(null)
+  const [nextUrl, setNextUrl] = useState<string | null>(hasLaunchState ? DEFAULT_CONSUMER_SESSION.nextUrl : sessionSnapshot.nextUrl)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const [lastNameFilter, setLastNameFilter] = useState<string | undefined>(undefined)
+  const [lastNameFilter, setLastNameFilter] = useState<string | undefined>(hasLaunchState ? DEFAULT_CONSUMER_SESSION.lastNameFilter : sessionSnapshot.lastNameFilter)
   const setIsSearching = useConsumerSearchStore((state) => state.setIsSearching)
   const isSearching = useConsumerSearchStore((state) => state.isSearching)
   const searchFormRef = useRef<SearchFormHandle>(null)
+  const auditCacheRef = useRef<Map<string, Promise<FhirAuditReport> | FhirAuditReport>>(new Map())
+  const previewSessionActiveRef = useRef(false)
   const showcaseActive = showcaseStatus === 'running' || showcaseStatus === 'paused'
   const dragActive = dragDepth > 0
+  const hasSessionState = sessionSnapshot.hasSearched
+    || sessionSnapshot.results.length > 0
+    || sessionSnapshot.selected !== null
+    || sessionSnapshot.diffTarget !== null
+    || sessionSnapshot.searchExecution !== null
+    || sessionSnapshot.nextUrl !== null
+
+  useEffect(() => {
+    setSessionSnapshot({
+      results,
+      total,
+      selected,
+      diffTarget,
+      hasSearched,
+      searchExecution,
+      nextUrl,
+      lastNameFilter
+    })
+  }, [diffTarget, hasSearched, lastNameFilter, nextUrl, results, searchExecution, selected, setSessionSnapshot, total])
+
+  useEffect(() => {
+    if (!workspaceHydrated) return
+
+    setWorkspace({
+      serverUrl,
+      activeTab,
+      activeComplexBy,
+      middleTab
+    })
+  }, [activeComplexBy, activeTab, middleTab, serverUrl, setWorkspace, workspaceHydrated])
+
+  const previewSessionActive = selected?.source === 'preview' || results.some((summary) => summary.source === 'preview')
+
+  useEffect(() => {
+    previewSessionActiveRef.current = previewSessionActive
+  }, [previewSessionActive])
+
+  useEffect(() => () => {
+    if (!previewSessionActiveRef.current) return
+    clearConsumerSession()
+    clearWorkspace()
+  }, [clearConsumerSession, clearWorkspace])
+
+  const updateSummaryAudit = useCallback((summary: AuditedBundleSummary, auditReport: FhirAuditReport): void => {
+    setResults((current) => current.map((item) => (
+      item.source === summary.source && item.id === summary.id && item.fileName === summary.fileName
+        ? { ...item, auditReport }
+        : item
+    )))
+    setSelected((current) => (
+      current && current.source === summary.source && current.id === summary.id && current.fileName === summary.fileName
+        ? { ...current, auditReport }
+        : current
+    ))
+    setDiffTarget((current) => (
+      current && current.source === summary.source && current.id === summary.id && current.fileName === summary.fileName
+        ? { ...current, auditReport }
+        : current
+    ))
+  }, [])
+
+  const ensureLocalAudit = useCallback((summary: AuditedBundleSummary): AuditedBundleSummary => {
+    if (!shouldAuditConsumerBundle(summary)) {
+      return summary
+    }
+
+    const nextSummary = withLocalAudit(summary)
+    if (nextSummary.auditReport !== summary.auditReport) {
+      updateSummaryAudit(summary, nextSummary.auditReport!)
+    }
+    return nextSummary
+  }, [updateSummaryAudit])
+
+  const resetConsumerView = useCallback((): void => {
+    setResults(DEFAULT_CONSUMER_SESSION.results)
+    setTotal(DEFAULT_CONSUMER_SESSION.total)
+    setSelected(DEFAULT_CONSUMER_SESSION.selected)
+    setDiffTarget(DEFAULT_CONSUMER_SESSION.diffTarget)
+    setHasSearched(DEFAULT_CONSUMER_SESSION.hasSearched)
+    setSearchExecution(DEFAULT_CONSUMER_SESSION.searchExecution)
+    setNextUrl(DEFAULT_CONSUMER_SESSION.nextUrl)
+    setLastNameFilter(DEFAULT_CONSUMER_SESSION.lastNameFilter)
+    setActiveTab('basic')
+    setActiveComplexBy('organization')
+    setPrefill(null)
+    setAutoSearch(null)
+    setTargetBundleId(null)
+    setPrefillNotice(null)
+    setMiddleTab('quickstart')
+    clearConsumerSession()
+    clearWorkspace()
+  }, [clearConsumerSession, clearWorkspace])
+
+  const hydrateBundleAudit = useCallback((summary: AuditedBundleSummary): void => {
+    if (!shouldAuditConsumerBundle(summary)) {
+      return
+    }
+
+    const auditKey = buildBundleAuditCacheKey(summary)
+    const cached = auditCacheRef.current.get(auditKey)
+
+    if (cached) {
+      if (cached instanceof Promise) {
+        void cached.then((auditReport) => {
+          updateSummaryAudit(summary, auditReport)
+        })
+      } else {
+        updateSummaryAudit(summary, cached)
+      }
+      return
+    }
+
+    const pending = runHybridBundleAudit(summary.raw, summary.serverUrl).then((auditReport) => {
+      auditCacheRef.current.set(auditKey, auditReport)
+      updateSummaryAudit(summary, auditReport)
+      return auditReport
+    }).catch((error) => {
+      auditCacheRef.current.delete(auditKey)
+      throw error
+    })
+
+    auditCacheRef.current.set(auditKey, pending)
+    void pending.catch(() => undefined)
+  }, [updateSummaryAudit])
+
+  const openBundleDetail = useCallback((summary: AuditedBundleSummary): void => {
+    const hydratedSummary = ensureLocalAudit(summary)
+    setSelected(hydratedSummary)
+    setWorkspace({
+      serverUrl,
+      targetBundleId: hydratedSummary.source === 'server' ? hydratedSummary.id : null
+    })
+    hydrateBundleAudit(hydratedSummary)
+  }, [ensureLocalAudit, hydrateBundleAudit, serverUrl, setWorkspace])
+
+  const handlePreviewBundle = useCallback((bundle: fhir4.Bundle): void => {
+    const previewSummary = buildPreviewBundleSummary(bundle, serverUrl)
+    setResults([previewSummary])
+    setTotal(1)
+    setSelected(previewSummary)
+    setDiffTarget(null)
+    setHasSearched(true)
+    setSearchExecution(null)
+    setTargetBundleId(null)
+    setMiddleTab('results')
+    setPrefillNotice({
+      variant: 'info',
+      message: t('results.announcements.previewLoaded')
+    })
+    setWorkspace({
+      serverUrl,
+      autoSearch: null,
+      targetBundleId: null,
+      recentBundleFilePath: null,
+      middleTab: 'results'
+    })
+    announcePolite(t('results.announcements.previewLoaded'))
+    hydrateBundleAudit(previewSummary)
+  }, [announcePolite, hydrateBundleAudit, serverUrl, setWorkspace, t])
+
+  function handleSearchStart(): void {
+    setResults([])
+    setTotal(0)
+    setSelected(null)
+    setNextUrl(null)
+    setSearchExecution(null)
+    setMiddleTab('results')
+    setWorkspace({
+      serverUrl,
+      recentBundleFilePath: null,
+      targetBundleId: null
+    })
+  }
+
+  function handleResults(r: BundleSummary[], totalCount: number, execution: ConsumerSearchExecution): void {
+    const nextResults = r.map((summary) => attachServerContext(summary, serverUrl))
+    setResults(nextResults)
+    setTotal(totalCount)
+    setSearchExecution(execution)
+    setNextUrl(execution.nextUrl ?? null)
+    setLastNameFilter(execution.params.mode === 'basic' ? execution.params.name : undefined)
+    recordSearch(execution.params)
+    setMiddleTab('results')
+    setPrefillNotice(null)
+    if (targetBundleId) {
+      const target = nextResults.find((summary) => summary.id === targetBundleId) ?? (nextResults.length === 1 ? nextResults[0] : null)
+      if (target) {
+        const nextSelected = ensureLocalAudit(target)
+        setSelected(nextSelected)
+        hydrateBundleAudit(nextSelected)
+      } else {
+        setSelected(null)
+      }
+      setTargetBundleId(null)
+    } else {
+      setSelected(null)
+    }
+    setHasSearched(true)
+    markConsumerSearchReady()
+    setWorkspace({
+      serverUrl,
+      autoSearch: execution.cancelled ? null : execution.params,
+      prefill: buildSearchPrefillFromParams(execution.params),
+      recentBundleFilePath: null,
+      targetBundleId: null,
+      middleTab: 'results'
+    })
+
+    if (execution.error) {
+      announcePolite(t('results.announcements.searchFailed'))
+      return
+    }
+
+    if (r.length === 0) {
+      announcePolite(t('results.announcements.noResults'))
+      return
+    }
+
+    announcePolite(
+      t(
+        totalCount !== r.length
+          ? 'results.announcements.searchCompletedFiltered'
+          : 'results.announcements.searchCompleted',
+        totalCount !== r.length
+          ? { count: r.length, total: totalCount }
+          : { count: r.length }
+      )
+    )
+  }
+
+  const refreshRecentFiles = useCallback(async (): Promise<void> => {
+    try {
+      const files = await listRecentBundleJsonFiles()
+      setRecentFiles(files)
+    } catch {
+      setRecentFiles([])
+    }
+  }, [])
+
+  const handleImportedBundle = useCallback((summary: AuditedBundleSummary, recentBundleFilePath?: string): void => {
+    const nextSummary = ensureLocalAudit(attachServerContext(summary, serverUrl))
+    setResults([nextSummary])
+    setTotal(1)
+    setSelected(nextSummary)
+    setDiffTarget(null)
+    setHasSearched(true)
+    setSearchExecution(null)
+    setTargetBundleId(null)
+    setMiddleTab('results')
+    setPrefillNotice(null)
+    announcePolite(
+      t('results.announcements.bundleImported', {
+        patient: nextSummary.patientName || t('results.unknownPatient')
+      })
+    )
+    setWorkspace({
+      serverUrl,
+      autoSearch: null,
+      targetBundleId: null,
+      recentBundleFilePath: recentBundleFilePath ?? null,
+      middleTab: 'results'
+    })
+    void refreshRecentFiles()
+    hydrateBundleAudit(nextSummary)
+  }, [announcePolite, ensureLocalAudit, hydrateBundleAudit, refreshRecentFiles, serverUrl, setWorkspace, t])
+
+  async function handleLoadMore(): Promise<void> {
+    if (!nextUrl || isLoadingMore) return
+    setIsLoadingMore(true)
+    try {
+      const more = await searchBundlesNextPage(nextUrl, lastNameFilter)
+      const moreResults = extractSearchResults(more, { serverUrl })
+      const moreNextUrl = more.link?.find((l: { relation: string; url: string }) => l.relation === 'next')?.url ?? null
+      setResults((prev) => {
+        const existingIds = new Set(prev.map((r) => r.id))
+        const deduplicated = moreResults.filter((r) => !existingIds.has(r.id))
+        return [...prev, ...deduplicated]
+      })
+      setNextUrl(moreNextUrl)
+    } catch {
+      // silently ignore load-more errors; user can retry
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }
+
+  async function handleDropImport(files: FileList | File[]): Promise<void> {
+    const firstFile = Array.from(files)[0]
+    if (!firstFile) return
+
+    setDropFeedback(null)
+
+    try {
+      const imported = await importBundleJsonFile(firstFile)
+      const filePath = (firstFile as File & { path?: string }).path
+      if (filePath) {
+        await rememberRecentBundleJson(filePath)
+      }
+      handleImportedBundle(imported.summary, filePath)
+      const message = t('search.importSuccess', { fileName: imported.fileName })
+      setDropFeedback({ message, variant: 'success' })
+      announcePolite(message)
+      pushToast({
+        variant: 'success',
+        description: message
+      })
+      await refreshRecentFiles()
+    } catch (error) {
+      const message = getBundleFileErrorMessage(error, tc)
+      setDropFeedback({ message, variant: 'destructive' })
+      announcePolite(message)
+      pushToast({
+        variant: 'error',
+        description: message
+      })
+    }
+  }
+
+  const handleOpenRecentFile = useCallback(async (filePath: string): Promise<void> => {
+    try {
+      const imported = await openRecentBundleJson(filePath)
+      if (!imported) return
+      handleImportedBundle(imported.summary, filePath)
+      const message = t('recentFiles.opened', { fileName: imported.fileName })
+      setDropFeedback({ message, variant: 'success' })
+      announcePolite(message)
+      pushToast({
+        variant: 'success',
+        description: message
+      })
+      await refreshRecentFiles()
+    } catch (error) {
+      const message = getBundleFileErrorMessage(error, tc)
+      setDropFeedback({ message, variant: 'destructive' })
+      announcePolite(message)
+      pushToast({
+        variant: 'error',
+        description: message
+      })
+      await refreshRecentFiles()
+    }
+  }, [announcePolite, handleImportedBundle, pushToast, refreshRecentFiles, tc, t])
+
+  const handleFormStateChange = useCallback((nextPrefill: SearchPrefill, complexBy: 'organization' | 'author') => {
+    if (!workspaceHydrated) return
+
+    setWorkspace({
+      serverUrl,
+      prefill: nextPrefill,
+      activeComplexBy: complexBy
+    })
+  }, [serverUrl, setWorkspace, workspaceHydrated])
 
   useConsumerPageSetup({
     announcePolite,
+    clearWorkspace,
+    clearSession: clearConsumerSession,
+    hasSessionState,
     clearConsumerActions,
     handleOpenRecentFile,
+    handlePreviewBundle,
+    resetConsumerView,
     historyCount,
     locale,
     locationState: location.state,
@@ -98,6 +491,10 @@ export default function ConsumerPage(): React.JSX.Element {
     refreshRecentFiles,
     savedSearchCount,
     searchFormRef,
+    serverUrl,
+    workspaceHydrated,
+    workspaceSnapshot,
+    setActiveComplexBy,
     setActiveTab,
     setAutoSearch,
     setConsumerActions,
@@ -147,158 +544,6 @@ export default function ConsumerPage(): React.JSX.Element {
     setPrefillNotice,
     setDiffTarget
   })
-
-  function handleSearchStart(): void {
-    setResults([])
-    setTotal(0)
-    setSelected(null)
-    setNextUrl(null)
-    setSearchExecution(null)
-    setMiddleTab('results')
-  }
-
-  function handleResults(r: BundleSummary[], totalCount: number, execution: ConsumerSearchExecution): void {
-    setResults(r)
-    setTotal(totalCount)
-    setSearchExecution(execution)
-    setNextUrl(execution.nextUrl ?? null)
-    setLastNameFilter(execution.params.mode === 'basic' ? execution.params.name : undefined)
-    recordSearch(execution.params)
-    setMiddleTab('results')
-    setPrefillNotice(null)
-    if (targetBundleId) {
-      setSelected(r.find((summary) => summary.id === targetBundleId) ?? (r.length === 1 ? r[0] : null))
-      setTargetBundleId(null)
-    } else {
-      setSelected(null)
-    }
-    setHasSearched(true)
-    markConsumerSearchReady()
-
-    if (execution.error) {
-      announcePolite(t('results.announcements.searchFailed'))
-      return
-    }
-
-    if (r.length === 0) {
-      announcePolite(t('results.announcements.noResults'))
-      return
-    }
-
-    announcePolite(
-      t(
-        totalCount !== r.length
-          ? 'results.announcements.searchCompletedFiltered'
-          : 'results.announcements.searchCompleted',
-        totalCount !== r.length
-          ? { count: r.length, total: totalCount }
-          : { count: r.length }
-      )
-    )
-  }
-
-  function handleImportedBundle(summary: BundleSummary): void {
-    setResults([summary])
-    setTotal(1)
-    setSelected(summary)
-    setHasSearched(true)
-    setSearchExecution(null)
-    setTargetBundleId(null)
-    setMiddleTab('results')
-    setPrefillNotice(null)
-    announcePolite(
-      t('results.announcements.bundleImported', {
-        patient: summary.patientName || t('results.unknownPatient')
-      })
-    )
-    void refreshRecentFiles()
-  }
-
-  async function handleLoadMore(): Promise<void> {
-    if (!nextUrl || isLoadingMore) return
-    setIsLoadingMore(true)
-    try {
-      const more = await searchBundlesNextPage(nextUrl, lastNameFilter)
-      const moreResults = extractSearchResults(more)
-      const moreNextUrl = more.link?.find((l: { relation: string; url: string }) => l.relation === 'next')?.url ?? null
-      setResults((prev) => {
-        const existingIds = new Set(prev.map((r) => r.id))
-        const deduplicated = moreResults.filter((r) => !existingIds.has(r.id))
-        return [...prev, ...deduplicated]
-      })
-      setNextUrl(moreNextUrl)
-    } catch {
-      // silently ignore load-more errors; user can retry
-    } finally {
-      setIsLoadingMore(false)
-    }
-  }
-
-  async function refreshRecentFiles(): Promise<void> {
-    try {
-      const files = await listRecentBundleJsonFiles()
-      setRecentFiles(files)
-    } catch {
-      setRecentFiles([])
-    }
-  }
-
-  async function handleDropImport(files: FileList | File[]): Promise<void> {
-    const firstFile = Array.from(files)[0]
-    if (!firstFile) return
-
-    setDropFeedback(null)
-
-    try {
-      const imported = await importBundleJsonFile(firstFile)
-      const filePath = (firstFile as File & { path?: string }).path
-      if (filePath) {
-        await rememberRecentBundleJson(filePath)
-      }
-      handleImportedBundle(imported.summary)
-      const message = t('search.importSuccess', { fileName: imported.fileName })
-      setDropFeedback({ message, variant: 'success' })
-      announcePolite(message)
-      pushToast({
-        variant: 'success',
-        description: message
-      })
-      await refreshRecentFiles()
-    } catch (error) {
-      const message = getBundleFileErrorMessage(error, tc)
-      setDropFeedback({ message, variant: 'destructive' })
-      announcePolite(message)
-      pushToast({
-        variant: 'error',
-        description: message
-      })
-    }
-  }
-
-  async function handleOpenRecentFile(filePath: string): Promise<void> {
-    try {
-      const imported = await openRecentBundleJson(filePath)
-      if (!imported) return
-      handleImportedBundle(imported.summary)
-      const message = t('recentFiles.opened', { fileName: imported.fileName })
-      setDropFeedback({ message, variant: 'success' })
-      announcePolite(message)
-      pushToast({
-        variant: 'success',
-        description: message
-      })
-      await refreshRecentFiles()
-    } catch (error) {
-      const message = getBundleFileErrorMessage(error, tc)
-      setDropFeedback({ message, variant: 'destructive' })
-      announcePolite(message)
-      pushToast({
-        variant: 'error',
-        description: message
-      })
-      await refreshRecentFiles()
-    }
-  }
 
   function getSearchIdentifier(rec: SubmissionRecord): string {
     return rec.patientIdentifier || rec.bundleId || ''
@@ -456,6 +701,14 @@ export default function ConsumerPage(): React.JSX.Element {
     setAutoSearch(params)
     setPrefillNotice(null)
     setMiddleTab('results')
+    setWorkspace({
+      serverUrl,
+      prefill: buildSearchPrefillFromParams(params),
+      autoSearch: params,
+      recentBundleFilePath: null,
+      targetBundleId: null,
+      middleTab: 'results'
+    })
   }
 
   async function handleOpenHistoryBundle(record: SubmissionRecord): Promise<void> {
@@ -466,9 +719,9 @@ export default function ConsumerPage(): React.JSX.Element {
     }
     try {
       const bundle = await fetchBundleById(record.bundleId, record.serverUrl)
-      const summary = extractBundleSummary(bundle)
+      const summary = extractBundleSummary(bundle, { serverUrl: record.serverUrl, source: 'server' })
       if (summary) {
-        setSelected(summary)
+        openBundleDetail(summary)
       } else {
         pushToast({ variant: 'error', description: t('page.historyTab.bundleNotParsed') })
       }
@@ -516,9 +769,21 @@ export default function ConsumerPage(): React.JSX.Element {
     pushToast({ variant: 'success', description: message })
   }
 
+  const handleReturnToCreator = useCallback((): void => {
+    clearConsumerSession()
+    clearWorkspace()
+    useCreatorStore.getState().setStep(RESOURCE_STEPS.length - 1)
+    navigate('/creator')
+    announcePolite(t('page.previewReturn.announcement'))
+  }, [announcePolite, clearConsumerSession, clearWorkspace, navigate, t])
+
   function handleCloseDetail(): void {
     const closingId = selected?.id
     setSelected(null)
+    setWorkspace({
+      serverUrl,
+      targetBundleId: null
+    })
 
     if (!closingId) return
 
@@ -527,9 +792,9 @@ export default function ConsumerPage(): React.JSX.Element {
     })
   }
 
-  function handleCompare(bundle: BundleSummary): void {
+  function handleCompare(bundle: AuditedBundleSummary): void {
     if (!selected) {
-      setSelected(bundle)
+      openBundleDetail(bundle)
       return
     }
     setDiffTarget(bundle)
@@ -565,11 +830,14 @@ export default function ConsumerPage(): React.JSX.Element {
   }
 
   const showDetail = (middleTab === 'results' || middleTab === 'history') && Boolean(selected)
+  const previewSummary = selected?.source === 'preview'
+    ? selected
+    : results.find((summary) => summary.source === 'preview') ?? null
 
   return (
     <div
       data-testid="consumer.dropzone.root"
-      className="relative flex h-full min-h-0 flex-col overflow-hidden lg:flex-row"
+      className="relative flex min-h-full flex-col overflow-x-hidden overflow-y-visible lg:h-full lg:min-h-0 lg:flex-row lg:overflow-hidden"
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -597,7 +865,7 @@ export default function ConsumerPage(): React.JSX.Element {
       )}
 
       {/* Left panel: Search form */}
-      <FeatureShowcaseTarget id="consumer.searchPanel" className="flex shrink-0 flex-col border-b lg:w-[22rem] lg:border-b-0 lg:border-r 2xl:w-[23rem]">
+      <FeatureShowcaseTarget id="consumer.searchPanel" className="order-1 flex shrink-0 flex-col border-b lg:w-[22rem] lg:border-b-0 lg:border-r 2xl:w-[23rem]">
         <div className="flex h-full min-h-0 flex-col">
           <div className="border-b bg-background px-4 py-4 shrink-0">
             <h1 data-page-heading="true" tabIndex={-1} className="text-xl font-bold tracking-tight outline-none">
@@ -605,7 +873,32 @@ export default function ConsumerPage(): React.JSX.Element {
             </h1>
             <p className="mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">{t('page.description')}</p>
           </div>
-          <div className="flex-1 overflow-auto bg-muted/[0.08] px-4 py-4">
+          <div className="flex-1 overflow-visible bg-muted/[0.08] px-4 py-4 lg:overflow-auto">
+            {previewSummary && (
+              <Alert
+                data-testid="consumer.preview-return.root"
+                variant="info"
+                className="mb-4 rounded-[24px] border-primary/25 bg-primary/[0.08] text-foreground shadow-sm"
+              >
+                <div className="space-y-3">
+                  <AlertTitle className="text-sm font-semibold leading-snug text-foreground">
+                    {t('page.previewReturn.title')}
+                  </AlertTitle>
+                  <Button
+                    type="button"
+                    data-testid="consumer.preview-return.action"
+                    className="w-full justify-center"
+                    onClick={handleReturnToCreator}
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    {t('page.previewReturn.action')}
+                  </Button>
+                  <AlertDescription className="leading-relaxed text-muted-foreground">
+                    {t('page.previewReturn.description')}
+                  </AlertDescription>
+                </div>
+              </Alert>
+            )}
             <div className="rounded-[24px] border border-border/70 bg-background/95 p-3 shadow-sm sm:p-4">
               {dropFeedback && (
                 <Alert variant={dropFeedback.variant}>
@@ -619,21 +912,39 @@ export default function ConsumerPage(): React.JSX.Element {
                 onComplexByChange={setActiveComplexBy}
                 onResults={handleResults}
                 onImportBundle={handleImportedBundle}
+                onFormStateChange={handleFormStateChange}
                 onSearchStart={handleSearchStart}
                 onBusyChange={setIsSearching}
                 prefill={prefill}
-                prefillNotice={prefillNotice}
+                prefillNotice={previewSummary ? null : prefillNotice}
                 onPrefillConsumed={() => setPrefill(null)}
                 autoSearch={autoSearch}
-                onAutoSearchConsumed={() => setAutoSearch(null)}
+                onAutoSearchConsumed={() => {
+                  setAutoSearch(null)
+                }}
               />
             </div>
           </div>
         </div>
       </FeatureShowcaseTarget>
 
+      {/* Detail panel: stacked on narrow widths, right pane on wide widths */}
+      {showDetail && selected && (
+        <FeatureShowcaseTarget
+          id="consumer.detailPane"
+          className="order-2 flex h-[min(48vh,30rem)] w-full min-w-0 shrink-0 flex-col overflow-hidden lg:order-3 lg:h-auto lg:min-h-0 lg:w-[min(36%,32rem)] lg:max-w-[32rem] lg:shrink xl:w-[min(38%,36rem)] xl:max-w-[36rem]"
+        >
+          <div className="flex h-full min-h-0 flex-col">
+            <PrescriptionDetail
+              summary={selected}
+              onClose={handleCloseDetail}
+            />
+          </div>
+        </FeatureShowcaseTarget>
+      )}
+
       {/* Middle panel: Result list */}
-      <div className="flex min-w-0 flex-1 shrink-0 flex-col lg:border-r">
+      <div className="order-3 flex min-w-0 shrink-0 flex-col lg:order-2 lg:min-h-0 lg:flex-1 lg:border-r">
         <div className="border-b bg-background px-4 py-3 shrink-0">
           <Tabs value={middleTab} onValueChange={(value) => {
             const next = value as 'results' | 'quickstart' | 'history'
@@ -672,7 +983,7 @@ export default function ConsumerPage(): React.JSX.Element {
                 total={total}
                 searchExecution={searchExecution}
                 selected={selected}
-                onSelect={setSelected}
+                onSelect={openBundleDetail}
                 onCompare={handleCompare}
                 nextUrl={nextUrl}
                 isLoadingMore={isLoadingMore}
@@ -777,18 +1088,6 @@ export default function ConsumerPage(): React.JSX.Element {
           open={Boolean(diffTarget)}
           onClose={() => setDiffTarget(null)}
         />
-      )}
-
-      {/* Right panel: Detail */}
-      {showDetail && selected && (
-        <FeatureShowcaseTarget id="consumer.detailPane" className="flex w-full shrink-0 flex-col overflow-hidden border-t lg:w-[clamp(22rem,35vw,40rem)] lg:min-w-0 lg:max-w-[40rem] lg:border-t-0">
-          <div className="flex h-full min-h-0 flex-col">
-            <PrescriptionDetail
-              summary={selected}
-              onClose={handleCloseDetail}
-            />
-          </div>
-        </FeatureShowcaseTarget>
       )}
 
     </div>

@@ -27,9 +27,9 @@ interface Props {
 }
 
 const TYPE_MAP = {
-  hospital: { code: 'HOSP' },
-  clinic: { code: 'PROV' },
-  pharmacy: { code: 'PHARM' }
+  hospital: { code: 'prov', display: 'Healthcare Provider' },
+  clinic: { code: 'prov', display: 'Healthcare Provider' },
+  pharmacy: { code: 'prov', display: 'Healthcare Provider' }
 }
 
 export default function OrganizationForm({ onSuccess, defaultValues }: Props): React.JSX.Element {
@@ -101,11 +101,15 @@ export default function OrganizationForm({ onSuccess, defaultValues }: Props): R
     clearFeedback('organization')
     try {
       const typeCode = TYPE_MAP[data.type].code
-      const typeDisplay = t(`forms.organization.type.options.${data.type}`)
+      const typeDisplay = TYPE_MAP[data.type].display
+      const typeText = t(`forms.organization.type.options.${data.type}`)
       const resource: Omit<fhir4.Organization, 'id'> = {
         resourceType: 'Organization',
         active: true,
-        type: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/organization-type', code: typeCode, display: typeDisplay }] }],
+        type: [{
+          coding: [{ system: 'http://terminology.hl7.org/CodeSystem/organization-type', code: typeCode, display: typeDisplay }],
+          text: typeText
+        }],
         name: data.name,
         identifier: [{ system: 'https://twcore.mohw.gov.tw/ig/emr/CodeSystem/organization-identifier', value: data.identifier }],
         meta: { profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Organization-EP'] }

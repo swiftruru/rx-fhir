@@ -19,6 +19,7 @@ import { useSearchHistoryStore } from '../../features/history/store/searchHistor
 import { useAccessibilityStore } from '../../shared/stores/accessibilityStore'
 import { useToastStore } from '../../shared/stores/toastStore'
 import type { BundleSummary, SearchParams } from '../../types/fhir'
+import type { AuditedBundleSummary } from '../../domain/fhir/validation'
 import type { ConsumerSearchExecution, SearchPrefill, SearchTab } from './searchState'
 import { getConsumerBasicMocks, getConsumerDateMocks, getConsumerComplexMocks } from '../../mocks/mockPools'
 
@@ -27,7 +28,8 @@ interface Props {
   onTabChange: (tab: SearchTab) => void
   onComplexByChange?: (value: 'organization' | 'author') => void
   onResults: (results: BundleSummary[], total: number, execution: ConsumerSearchExecution) => void
-  onImportBundle: (summary: BundleSummary) => void
+  onImportBundle: (summary: AuditedBundleSummary, filePath?: string) => void
+  onFormStateChange?: (prefill: SearchPrefill, activeComplexBy: 'organization' | 'author') => void
   onSearchStart?: () => void
   onBusyChange?: (busy: boolean) => void
   prefill?: SearchPrefill | null
@@ -97,6 +99,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   onComplexByChange,
   onResults,
   onImportBundle,
+  onFormStateChange,
   onSearchStart,
   onBusyChange,
   prefill,
@@ -348,7 +351,7 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
       const imported = await importBundleJson()
       if (!imported) return
 
-      onImportBundle(imported.summary)
+      onImportBundle(imported.summary, imported.filePath)
       const message = t('search.importSuccess', { fileName: imported.fileName })
       setImportMessage(message)
       announcePolite(message)
@@ -399,7 +402,13 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   }
 
   const searchByValue = basicForm.watch('searchBy')
+  const basicValue = basicForm.watch('value')
+  const dateIdentifier = dateForm.watch('identifier')
+  const dateValue = dateForm.watch('date')
   const complexBy = complexForm.watch('complexBy')
+  const complexIdentifier = complexForm.watch('identifier')
+  const complexOrgId = complexForm.watch('orgId')
+  const complexAuthorName = complexForm.watch('authorName')
   const isBusy = loading || importing
   const basicValueError = basicForm.formState.errors.value?.message
   const dateIdentifierError = dateForm.formState.errors.identifier?.message
@@ -409,6 +418,43 @@ const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm({
   useEffect(() => {
     onComplexByChange?.(complexBy ?? 'organization')
   }, [complexBy, onComplexByChange])
+
+  useEffect(() => {
+    if (!onFormStateChange) return
+
+    const nextPrefill: SearchPrefill = activeTab === 'date'
+      ? {
+          tab: 'date',
+          identifier: dateIdentifier ?? '',
+          date: dateValue ?? ''
+        }
+      : activeTab === 'complex'
+        ? {
+            tab: 'complex',
+            identifier: complexIdentifier ?? '',
+            complexBy,
+            orgId: complexOrgId ?? '',
+            authorName: complexAuthorName ?? ''
+          }
+        : {
+            tab: 'basic',
+            searchBy: searchByValue ?? 'identifier',
+            value: basicValue ?? ''
+          }
+
+    onFormStateChange(nextPrefill, complexBy ?? 'organization')
+  }, [
+    activeTab,
+    basicValue,
+    complexAuthorName,
+    complexBy,
+    complexIdentifier,
+    complexOrgId,
+    dateIdentifier,
+    dateValue,
+    onFormStateChange,
+    searchByValue
+  ])
 
   useImperativeHandle(ref, () => ({
     fillMock,

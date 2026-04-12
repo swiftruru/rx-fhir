@@ -52,6 +52,62 @@
       "invalidSummary": "Import failed: this Bundle does not contain enough data to build a usable summary."
     }
   },
+  "audit": {
+    "severity": {
+      "error": "Error",
+      "warning": "Warning",
+      "info": "Info"
+    },
+    "source": {
+      "local": "Local Rule",
+      "server": "Server $validate"
+    },
+    "status": {
+      "localOnly": "Local audit result",
+      "hybrid": "Hybrid audit result"
+    },
+    "server": {
+      "completed": "Server validation included",
+      "unavailable": "Server validation unavailable",
+      "skipped": "Server validation not run yet",
+      "environmentDowngraded": "Some server validation messages were downgraded to info because they reflect validator environment limits or best-practice recommendations, not Bundle structural errors."
+    },
+    "summary": {
+      "errors": "{{count}} error(s)",
+      "warnings": "{{count}} warning(s)",
+      "info": "{{count}} info",
+      "noIssues": "No audit issues were found in the current report."
+    },
+    "issue": {
+      "step": "Step: {{step}}",
+      "rawServerMessage": "Raw server message: {{message}}"
+    },
+    "serverIssueSummary": {
+      "missingCodeSystem": "The FHIR Server is missing the {{system}} terminology package, so it could not expand the value set for validation.",
+      "unknownCodeSystem": "The FHIR Server does not recognize {{system}}, so it could not verify codes from that code system.",
+      "documentTypeValueSet": "The FHIR Server could not confirm that this document type code belongs to the expected value set; this is usually related to missing terminology packages.",
+      "documentSectionValueSet": "The FHIR Server could not confirm that this section code matches the expected document section value set. Check the section code and fixed display first.",
+      "profileNotAvailable": "The FHIR Server could not find or load the profile `{{profile}}`, so it could not validate against that profile.",
+      "profileFetchFailed": "The FHIR Server failed to fetch the profile `{{profile}}`, so this validation result is incomplete.",
+      "profileReferenceUnresolved": "The FHIR Server could not resolve the profile `{{profile}}`, so related reference target validation may be incomplete.",
+      "targetTypeValidationBlocked": "This target-type validation message may be a downstream effect of unresolved profiles. Check profile support on the server first.",
+      "slicingProfileValidationBlocked": "The FHIR Server could not resolve the profile `{{profile}}` required for slicing, so this slicing validation result may be incomplete.",
+      "slicingMinimumCheckBlocked": "Because the FHIR Server could not complete slicing validation, it cannot confirm the minimum required `{{entryType}}` entries in the `{{section}}` section yet. Only {{found}} recognizable match(es) were seen.",
+      "unknownExtension": "The FHIR Server does not recognize the extension definition `{{url}}`, so it could not validate its content.",
+      "bestPractice": "This is a best-practice recommendation rather than a structural error.",
+      "sectionSliceMismatch": "The Composition section does not align with the `{{slice}}` slice rules. Check the section code, display, and entry resource types.",
+      "missingRequiredSection": "The Composition is missing the required `{{section}}` section. The profile requires at least {{required}}, but only {{found}} was found.",
+      "fixedValueMismatch": "This field does not match the profile's fixed value. It is currently `{{actual}}`, but must be `{{expected}}`.",
+      "unreachableEntry": "The resource `{{entry}}` is present in the Bundle but is not correctly linked from the Composition document structure.",
+      "unknownCode": "The code `{{code}}` does not match the definition of CodeSystem `{{system}}`.",
+      "fallback": "The FHIR Server returned a validation message; see the raw text below."
+    },
+    "serverEnvironment": {
+      "title": "Server Validation Context",
+      "onlyEnvironmentIssues": "These {{count}} server validation messages mainly reflect terminology packages, profiles, or best-practice guidance, and do not indicate a Bundle structural error.",
+      "partialEnvironmentIssues": "Among the current server validation results, {{count}} messages mainly reflect validator environment limits. Prioritize any remaining errors or warnings shown above."
+    }
+  },
   "theme": {
     "light": "Light",
     "dark": "Dark",

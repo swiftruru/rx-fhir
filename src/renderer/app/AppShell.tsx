@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Bell, Sun, Moon, Monitor, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import i18n from '../i18n'
@@ -93,6 +93,7 @@ export default function AppShell(): React.JSX.Element {
   const uiZoom = useAppStore((s) => s.uiZoom)
   const focusPreference = useAppStore((s) => s.focusPreference)
   const location = useLocation()
+  const navigate = useNavigate()
   const announcePolite = useAccessibilityStore((state) => state.announcePolite)
   const { t } = useTranslation('showcase')
   const { t: tc } = useTranslation('common')
@@ -145,6 +146,14 @@ export default function AppShell(): React.JSX.Element {
     })
   }, [pushToast, ts])
 
+  const openPendingBundleInConsumer = useCallback((filePath: string) => {
+    navigate('/consumer', {
+      state: {
+        recentBundleFilePath: filePath
+      }
+    })
+  }, [navigate])
+
   useEffect(() => {
     void window.rxfhir?.getCachedUpdateResult?.().then((result) => {
       if (result) showUpdateToast(result)
@@ -152,6 +161,20 @@ export default function AppShell(): React.JSX.Element {
     const unsubscribe = window.rxfhir?.onUpdateResult?.(showUpdateToast)
     return unsubscribe
   }, [showUpdateToast])
+
+  useEffect(() => {
+    void window.rxfhir?.consumePendingBundleJsonOpen?.().then((filePath) => {
+      if (filePath) {
+        openPendingBundleInConsumer(filePath)
+      }
+    })
+
+    const unsubscribe = window.rxfhir?.onPendingBundleJsonOpen?.((filePath) => {
+      openPendingBundleInConsumer(filePath)
+    })
+
+    return unsubscribe
+  }, [openPendingBundleInConsumer])
 
   useKeyboardShortcuts()
 

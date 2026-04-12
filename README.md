@@ -3,7 +3,7 @@
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.37-d4779a?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.38-d4779a?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/github/license/swiftruru/rx-fhir?style=flat-square&color=d4779a" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-8e8e93?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
@@ -148,6 +148,7 @@ Current Creator capabilities:
 - Final submission now includes a structured prescription summary review card before bundle assembly
 - Composition-first, then document bundle submission
 - The final Creator step can export the assembled FHIR Bundle as local JSON
+- The final Creator step can also open the assembled Bundle directly in Consumer as a clearly labeled local preview, so export, diff, and audit flows can be demonstrated even when the server should not be written to; preview mode now also shows a prominent "return to Creator" action, the preview session is treated as temporary so leaving Consumer, or explicitly clicking Consumer again from the sidebar, reopens the normal query workspace instead of preserving the preview audit state, and the assembled document bundle now stays aligned with the TW EMR document scope by excluding standalone supplemental `Basic` extension records from Bundle entries
 - After a successful bundle submission, Creator can jump directly into Consumer, auto-run the query, and focus the newly created bundle
 - Recent submission history stored locally for later query prefill
 
@@ -200,6 +201,7 @@ Search and inspect FHIR Bundles on the configured server:
 - Empty-result states now explain likely causes and suggest next actions based on the actual search mode
 - Prescription detail view now uses a fixed-width detail pane with a clearer `Structured / JSON` toggle in the header
 - Structured detail view and raw JSON viewer — the JSON panel stays within the detail pane width and scrolls internally; switching results auto-expands the viewer
+- Bundle detail now always shows a local-first FHIR audit card for server results, imported files, and Creator previews, then upgrades to hybrid server `$validate` feedback when the current server supports it; validator environment limitations and best-practice recommendations are separated from true structural errors more clearly, common server messages now include a localized plain-language summary while preserving the raw server text, and the card explicitly explains when the remaining server results mainly reflect validator environment limits instead of Bundle structure problems, including TW EMR slicing checks that fail only because the current validator cannot resolve the referenced profiles
 - Bundle detail now includes an **Export dropdown** with three formats: FHIR JSON, Postman Collection v2.1, and HTML report
 - **Postman Collection export** probes the FHIR server for each resource to determine whether PUT or POST is correct (using HAPI-2840 duplicate detection and identifier-based search), then generates a ready-to-run collection with four query requests covering basic, date, and complex search modes, each with a client-side filter test script that mirrors the app's own workaround logic; a cancel button appears during server probing so long-running exports can be aborted without showing an error
 - **HTML report export** generates a self-contained, printable prescription summary with embedded CSS, including: a clinical timeline showing key clinical events in chronological order; a medication summary table before the detailed cards; Observation lab value badges (Normal / High / Low) derived from reference ranges; a color-coded Composition status banner (final / draft / amended / entered-in-error); a global full-text search bar with ↑↓ navigation and match count; and a print layout with A4 margins and fixed page header/footer
@@ -213,6 +215,7 @@ Search and inspect FHIR Bundles on the configured server:
 - **Consumer search isolation**: Consumer queries no longer appear in Creator's FHIR Request Inspector panel — each module tags its HTTP requests with the originating route, and the Creator inspector filters to its own entries only
 - **Result CSV export**: the results toolbar includes a one-click CSV export button that generates an RFC 4180-compliant file with UTF-8 BOM for Excel and Numbers compatibility; only the currently filtered and sorted results are exported, and the filename includes the export date
 - **Side-by-side Bundle Diff**: after selecting a prescription, every other result card shows a labeled "Compare" button (icon + text, outline style for discoverability); clicking it opens a full-screen diff dialog with all structured fields — patient, practitioner, organization, encounter, condition, observation, coverage, and medication — aligned side by side; differing fields are highlighted in amber, identical ones are neutral, and a badge shows the total difference count; a Swap A/B button flips the comparison direction without reopening the dialog
+- Consumer workspace now persists the latest search tab, query inputs, auto-search target, selected server bundle, and recent imported file across relaunch, while automatically clearing incompatible state when the configured server changes
 - Feature Showcase now clears Activity Center notification history on start and restores it on exit, keeping showcase runs visually clean; showcase runs no longer write mock records into the user's submission history store
 - **FHIR 410 Gone recovery**: when HAPI's search index points to a soft-deleted resource and the subsequent `fetchResourceById` receives 410, the client now automatically issues a `PUT` to the same ID to resurrect it — eliminating the "Resource was deleted" error that previously surfaced during Creator Extension and other resource steps on the public HAPI server
 - Supports Creator-to-Consumer handoff with automatic query prefill, auto-search, and newly created bundle focus
@@ -222,6 +225,7 @@ Search and inspect FHIR Bundles on the configured server:
 - FHIR Server URL configuration with preset servers
 - Live server health check via `/metadata`
 - Testing the currently active server now immediately syncs the global connection status shown in Settings and the status bar
+- Settings now parse `/metadata` into a lightweight demo-readiness view, including whether the current server appears to advertise `Bundle $validate`
 - A dedicated Keyboard Shortcuts settings tab lets users inspect active bindings, customize selected shortcuts, detect conflicts, and restore defaults
 - Accessibility preferences now include motion behavior, text scale, full-app zoom, and enhanced keyboard focus visibility
 - Preference import / export is now available from Settings, including app preferences and shortcut overrides
@@ -231,6 +235,7 @@ Search and inspect FHIR Bundles on the configured server:
 - First-run onboarding and task-based Quick Start scenarios now provide guided entry points into Creator, Consumer, and Accessibility settings, with a blank Creator starting point that no longer auto-loads sample data unexpectedly
 - The macOS title-bar utility controls now use a more consistent spacing model, including a cleaner unread badge for Activity Center
 - Electron window size and position are now persisted locally between launches
+- Opening a local Bundle JSON file from the OS, app startup arguments, or macOS recent documents now routes directly into Consumer and reuses the same recent-file tracking as in-app import flows
 - App shell accessibility now includes a skip link, route-aware focus management, screen-reader announcements, and clearer status semantics
 - High-contrast, forced-colors, stronger disabled states, and clearer selected-state indicators are now supported across shared UI components
 - Light / Dark / System theme toggle
@@ -337,14 +342,15 @@ The current repository now uses a typed, scenario-driven mock data design instea
 
 Based on [TW Core EMR-IG Electronic Prescription 2.5](https://twcore.mohw.gov.tw/ig/emr/profiles.html):
 
+- `Bundle-EP`
 - `Composition-EP`
 - `Patient-EP`
 - `Organization-EP`
 - `Practitioner-EP`
 - `Encounter-EP`
 - `Condition-EP`
-- `Observation-EP`
-- `Coverage-EP`
+- `Observation-EP-BodyWeight`
+- `Coverage-EMR`
 - `Medication-EP`
 - `MedicationRequest-EP`
 
@@ -420,11 +426,17 @@ Runs the Playwright-based Electron UI suite with mocked FHIR responses and isola
 npm run test:ui
 ```
 
-For local demo mode:
+For a visible local automation run:
 
 ```bash
 npm run test:ui:headed
 ```
+
+`test:ui:headed` opens the real Electron window, but it still runs the normal
+fast automation suite. It is useful for local observation and classroom proof
+that the automation is real, not as a dedicated slow-motion walkthrough mode.
+For human-paced product demos, use the in-app **Live Demo** or **Feature
+Showcase** flows instead.
 
 To inspect the HTML report after a run:
 
@@ -441,13 +453,13 @@ More details:
 Current UI automation coverage includes:
 
 - About update state branches and external-link bridge flows
-- app shell and route navigation
-- Creator draft restore and Creator-to-Consumer submit handoff
-- Consumer local Bundle import and recent-record maintenance flows
+- app shell route navigation and startup file-open handoff
+- Creator draft restore, submit handoff, local Consumer preview handoff, preview reset flows, and TW EMR-aligned preview bundle assembly
+- Consumer local Bundle import, recent-record maintenance, and workspace persistence flows
 - Consumer basic, date, and complex search modes
-- Consumer mocked empty / error / cancelled states and load-more pagination
+- Consumer mocked empty / error / cancelled states, detail audit display, and load-more pagination
 - Consumer history, submission-history, and saved-search flows
-- Settings accessibility persistence and FHIR server settings flow
+- Settings accessibility persistence and FHIR server capability diagnostics flow
 
 The current UI automation scope is intentionally treated as the stable v1
 delivery boundary for demo/classroom use. See
@@ -529,7 +541,7 @@ Current repository quality signals:
 - Vitest unit tests are available and pass
 - Accessibility smoke check is available and passes
 - Electron UX smoke and end-to-end verify scripts are available and pass locally
-- Playwright Electron UI automation is available and currently passes locally with 22 tests
+- Playwright Electron UI automation is available and currently passes locally with 31 tests
 - GitHub Actions runs a dedicated `UI Automation` workflow for the Electron UI suite
 - Production build is available and passes locally
 - Manual smoke checklist and report are documented under `docs/ux/manual-testing/`

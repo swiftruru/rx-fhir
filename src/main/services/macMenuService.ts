@@ -65,6 +65,17 @@ export function setupMacMenu(): void {
       ]
     },
     {
+      label: 'File',
+      submenu: [
+        {
+          role: 'recentDocuments',
+          submenu: [
+            { role: 'clearRecentDocuments' }
+          ]
+        }
+      ]
+    },
+    {
       label: 'Edit',
       submenu: [
         { role: 'undo' },

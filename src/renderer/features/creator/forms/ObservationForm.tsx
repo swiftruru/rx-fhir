@@ -150,7 +150,11 @@ export default function ObservationForm({ onSuccess }: Props): React.JSX.Element
           system: 'http://unitsofmeasure.org'
         },
         meta: {
-          profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Observation-EP']
+          profile: [
+            data.loincCode === '29463-7'
+              ? 'https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Observation-EP-BodyWeight'
+              : 'https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Observation-EP'
+          ]
         }
       }
       const existingObservationId = resultId ?? resources.observation?.id

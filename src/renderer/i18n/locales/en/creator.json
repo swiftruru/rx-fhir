@@ -5,6 +5,7 @@
     "successMessage": "Document Bundle submitted successfully! Bundle ID:",
     "successHint": "Go to the Consumer module to query this prescription",
     "goToConsumer": "Open in Consumer",
+    "previewInConsumer": "Open Consumer Preview",
     "draftHint": "Unfinished work is automatically saved as a local draft.",
     "draftSavedTitle": "Draft auto-saved",
     "draftSaved": "You can continue editing next time.",
@@ -178,7 +179,8 @@
       "checkExisting": "This GET request checks whether the FHIR Server already has a resource with the same identifier or code, so the app can avoid creating duplicates. If an existing resource is reused directly, the app does not automatically rewrite the server-side text to match the current locale.",
       "create": "This uses POST because there is no existing ID yet and no reusable resource was found, so a new resource must be created.",
       "update": "This uses PUT because the current step already has an existing resource ID, so the app updates the same resource.",
-      "search": "This uses GET because the app is retrieving data from the FHIR Server as part of a search flow."
+      "search": "This uses GET because the app is retrieving data from the FHIR Server as part of a search flow.",
+      "validate": "This uses POST Bundle/$validate so the app can combine local audit rules with the current FHIR Server's own validation feedback before submission."
     },
     "requestFlow": {
       "title": "Request Flow",
@@ -187,11 +189,13 @@
       "stepCreate": "Step {{index}}: Create {{resourceType}}",
       "stepUpdate": "Step {{index}}: Update {{resourceType}}",
       "stepSearch": "Step {{index}}: Search {{resourceType}}",
+      "stepValidate": "Step {{index}}: Validate {{resourceType}}",
       "stepRequest": "Step {{index}}: {{resourceType}} request",
       "singleCheckExisting": "Check existing {{resourceType}}",
       "singleCreate": "Create {{resourceType}}",
       "singleUpdate": "Update {{resourceType}}",
       "singleSearch": "Search {{resourceType}}",
+      "singleValidate": "Validate {{resourceType}}",
       "singleRequest": "{{resourceType}} request",
       "noteCheckExistingFound": "The GET check found {{count}} existing {{resourceType}} resource(s), so the app reused one directly and did not send POST. Reuse also does not automatically rewrite the existing server-side text to match the current locale.",
       "noteCheckExistingMissing": "The GET check did not find any reusable {{resourceType}}, so the next step uses POST to create a new one.",
@@ -200,7 +204,9 @@
       "noteCreateFailed": "This step tried to create a new {{resourceType}} with POST, but the FHIR Server did not accept it.",
       "noteUpdate": "Because the current step already has an existing {{resourceType}} ID, this step uses PUT to update that same resource.",
       "noteUpdateFailed": "This step tried to update the existing {{resourceType}} with PUT, but the FHIR Server did not accept it.",
-      "noteSearch": "This is a search flow, so it uses GET to fetch matching data."
+      "noteSearch": "This is a search flow, so it uses GET to fetch matching data.",
+      "noteValidate": "This step asks the current FHIR Server to validate the Bundle so RxFHIR can merge server feedback with its local audit rules.",
+      "noteValidateFailed": "This validation request did not complete successfully, so only the local audit result is available."
     },
     "requestHeadersTitle": "Request Headers",
     "requestBodyTitle": "Request Body",
@@ -476,6 +482,17 @@
     "composition": {
       "docTitle":     { "label": "Document Title", "placeholder": "Electronic Prescription", "required": "Document title is required" },
       "date":         { "label": "Prescription Date", "required": "Prescription date is required" },
+      "validation": {
+        "title": "FHIR Validation Audit",
+        "emptyTitle": "Audit will appear here",
+        "emptyDescription": "Enter the Composition title and date first, then RxFHIR will build a local Bundle preview and audit it.",
+        "ready": "The current preview passed the local audit. Server validation will also run before submission.",
+        "warning": "The current preview can still be submitted, but there are warnings worth reviewing first.",
+        "blocking": "Blocking audit errors were found. Fix the linked step before the Bundle can be submitted.",
+        "running": "Validating the current Bundle preview against local rules and the configured FHIR Server.",
+        "blocked": "FHIR validation found blocking errors. Review the audit report before submitting again.",
+        "noPreview": "The Bundle preview is not ready yet. Fill in the required fields first."
+      },
       "export": {
         "button": "Export Bundle JSON",
         "success": "Bundle JSON exported: {{fileName}}"

@@ -52,6 +52,12 @@
       "title": "Search in Progress",
       "toastDescription": "The search is not finished yet. Leaving now will cancel it.",
       "leaveAction": "Leave Anyway"
+    },
+    "previewReturn": {
+      "title": "This is a local Creator preview",
+      "description": "The right panel shows this Bundle's preview and audit result. Review it in Consumer first, then return to Creator anytime if you want to complete the real submission.",
+      "action": "Return to Creator to Submit",
+      "announcement": "Returned to Creator. You can continue submitting the current Bundle."
     }
   },
   "search": {
@@ -243,13 +249,15 @@
       "searchCompletedFiltered": "Search completed. Showing {{count}} result(s) out of {{total}}.",
       "noResults": "Search completed, but no matching results were found.",
       "searchFailed": "Search failed and no results were loaded.",
-      "bundleImported": "Imported a Bundle for {{patient}}."
+      "bundleImported": "Imported a Bundle for {{patient}}.",
+      "previewLoaded": "Opened Consumer Preview. This Bundle has not been submitted to the server yet."
     },
     "count":          "Found {{total}} result(s)",
     "showing":        "Showing {{count}}",
     "selectedBadge": "Selected",
     "unknownPatient": "Unknown Patient",
     "importedBadge": "Local Import",
+    "previewBadge": "Preview",
     "cancelled":      "Search cancelled",
     "cancelledHint":  "The search was stopped. Adjust your criteria and try again.",
     "sortLabel":      "Sort",
@@ -298,6 +306,15 @@
     "exportPostmanSuccess": "Postman Collection exported: {{fileName}}",
     "exportHtmlSuccess": "HTML report exported: {{fileName}}",
     "importedBadge": "Local Import",
+    "previewBadge": "Preview Only",
+    "audit": {
+      "title": "Bundle Audit",
+      "description": "RxFHIR checks the selected Bundle with local rules first, then merges server $validate feedback when available.",
+      "importedDescription": "Imported Bundle JSON is audited locally first, then enriched with server $validate feedback when available.",
+      "previewDescription": "This is a local Creator preview. RxFHIR audits it immediately and will only merge server $validate feedback if the current server supports it.",
+      "emptyTitle": "No audit report is available yet",
+      "emptyDescription": "Open, preview, or search a Bundle to see its audit result here."
+    },
     "sections": {
       "prescription": {
         "title":    "Prescription Info",

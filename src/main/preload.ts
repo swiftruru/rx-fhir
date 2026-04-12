@@ -57,6 +57,15 @@ const bundleJsonBridge = {
     ipcRenderer.invoke('bundle-json:recent-list') as Promise<RecentBundleFileEntry[]>,
   rememberRecentBundleJson: (filePath: string) =>
     ipcRenderer.invoke('bundle-json:recent-track', filePath) as Promise<void>,
+  consumePendingBundleJsonOpen: () =>
+    ipcRenderer.invoke('bundle-json:pending-open:consume') as Promise<string | null>,
+  onPendingBundleJsonOpen: (callback: (filePath: string) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, filePath: string): void => {
+      callback(filePath)
+    }
+    ipcRenderer.on('bundle-json:pending-open', handler)
+    return () => { ipcRenderer.removeListener('bundle-json:pending-open', handler) }
+  },
   savePreferencesJson: (payload: PreferencesJsonSavePayload) =>
     ipcRenderer.invoke('preferences-json:save', payload) as Promise<PreferencesJsonSaveResult>,
   openPreferencesJson: () =>

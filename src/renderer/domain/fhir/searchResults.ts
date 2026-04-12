@@ -1,5 +1,11 @@
 import type { BundleSummary } from '../../types/fhir'
 
+interface ExtractBundleSummaryOptions {
+  source?: BundleSummary['source']
+  fileName?: string
+  serverUrl?: string
+}
+
 export interface BundleHistoryMetadata {
   patientName?: string
   patientIdentifier?: string
@@ -43,7 +49,10 @@ export function extractBundleHistoryMetadata(bundle: fhir4.Bundle): BundleHistor
   }
 }
 
-export function extractBundleSummary(bundle: fhir4.Bundle): BundleSummary | null {
+export function extractBundleSummary(
+  bundle: fhir4.Bundle,
+  options: ExtractBundleSummaryOptions = {}
+): BundleSummary | null {
   if (!bundle.id || bundle.resourceType !== 'Bundle') return null
 
   let patientName: string | undefined
@@ -105,19 +114,24 @@ export function extractBundleSummary(bundle: fhir4.Bundle): BundleSummary | null
     organizationName,
     conditions,
     medications,
-    source: 'server',
+    source: options.source ?? 'server',
+    fileName: options.fileName,
+    serverUrl: options.serverUrl,
     raw: bundle
   }
 }
 
-export function extractSearchResults(searchBundle: fhir4.Bundle): BundleSummary[] {
+export function extractSearchResults(
+  searchBundle: fhir4.Bundle,
+  options: ExtractBundleSummaryOptions = {}
+): BundleSummary[] {
   if (!searchBundle.entry) return []
 
   return searchBundle.entry
     .map((entry) => {
       const resource = entry.resource
       if (resource?.resourceType === 'Bundle') {
-        return extractBundleSummary(resource as fhir4.Bundle)
+        return extractBundleSummary(resource as fhir4.Bundle, options)
       }
       return null
     })

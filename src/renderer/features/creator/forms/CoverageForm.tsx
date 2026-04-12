@@ -127,7 +127,7 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
         },
         payor: [{ display: '全民健康保險' }],
         meta: {
-          profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Coverage-EP']
+          profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Coverage-EMR']
         }
       }
       const existingCoverageId = resultId ?? resources.coverage?.id

@@ -52,6 +52,62 @@
       "invalidSummary": "匯入失敗：這份 Bundle 缺少可供顯示的摘要資訊。"
     }
   },
+  "audit": {
+    "severity": {
+      "error": "錯誤",
+      "warning": "警告",
+      "info": "提示"
+    },
+    "source": {
+      "local": "本機規則",
+      "server": "Server $validate"
+    },
+    "status": {
+      "localOnly": "本機稽核結果",
+      "hybrid": "Hybrid 稽核結果"
+    },
+    "server": {
+      "completed": "已納入伺服器驗證",
+      "unavailable": "伺服器驗證目前不可用",
+      "skipped": "尚未執行伺服器驗證",
+      "environmentDowngraded": "部分 server 驗證訊息已降為提示，因為它們反映的是驗證環境限制或最佳實務建議，而不是 Bundle 結構錯誤。"
+    },
+    "summary": {
+      "errors": "{{count}} 個錯誤",
+      "warnings": "{{count}} 個警告",
+      "info": "{{count}} 個提示",
+      "noIssues": "目前這份稽核報告沒有發現問題。"
+    },
+    "issue": {
+      "step": "對應步驟：{{step}}",
+      "rawServerMessage": "原始 server 訊息：{{message}}"
+    },
+    "serverIssueSummary": {
+      "missingCodeSystem": "FHIR Server 缺少 {{system}} 術語包，因此無法展開值集並驗證這個代碼。",
+      "unknownCodeSystem": "FHIR Server 不認得 {{system}}，因此無法確認這個代碼系統下的代碼是否有效。",
+      "documentTypeValueSet": "FHIR Server 無法確認這個文件類型代碼是否符合預期值集；這通常和術語包缺失有關。",
+      "documentSectionValueSet": "FHIR Server 無法確認這個 section 代碼是否符合文件小節值集；請優先確認小節 code 與固定顯示值。",
+      "profileNotAvailable": "FHIR Server 未安裝或無法取得 Profile `{{profile}}`，因此無法依該規範驗證。",
+      "profileFetchFailed": "FHIR Server 無法下載 Profile `{{profile}}`，因此此次驗證不完整。",
+      "profileReferenceUnresolved": "FHIR Server 無法解析 Profile `{{profile}}`，因此相關 reference target 驗證可能不完整。",
+      "targetTypeValidationBlocked": "這則 target type 驗證訊息可能是由 Profile 無法解析連帶造成，請先確認伺服器的 Profile 支援狀態。",
+      "slicingProfileValidationBlocked": "FHIR Server 無法解析 slicing 所需的 Profile `{{profile}}`，因此這則 slicing 驗證訊息可能不完整。",
+      "slicingMinimumCheckBlocked": "FHIR Server 因無法完成 slicing 驗證，暫時不能確認 `{{section}}` 小節中的 `{{entryType}}` 最小筆數；目前只看到 {{found}} 筆可辨識項目。",
+      "unknownExtension": "FHIR Server 不認得 Extension `{{url}}` 的定義，因此無法驗證其內容。",
+      "bestPractice": "這是最佳實務建議，不是結構性錯誤。",
+      "sectionSliceMismatch": "Composition 的 section 結構未對齊 `{{slice}}` 小節規範；請確認 section code、display 與 entry 類型。",
+      "missingRequiredSection": "Composition 缺少必填的 `{{section}}` 小節；規範至少需要 {{required}} 筆，目前只有 {{found}} 筆。",
+      "fixedValueMismatch": "這個欄位的固定值不符合規範；目前是 `{{actual}}`，應為 `{{expected}}`。",
+      "unreachableEntry": "這個資源 `{{entry}}` 沒有被 Composition 文件結構正確引用。",
+      "unknownCode": "代碼 `{{code}}` 不符合 CodeSystem `{{system}}` 的定義。",
+      "fallback": "FHIR Server 回傳了一則驗證訊息；請參考下方原文。"
+    },
+    "serverEnvironment": {
+      "title": "伺服器驗證環境說明",
+      "onlyEnvironmentIssues": "目前這 {{count}} 則 server 驗證訊息主要反映術語包、Profile 或最佳實務建議，並不表示這份 Bundle 結構有錯。",
+      "partialEnvironmentIssues": "其中有 {{count}} 則 server 驗證訊息主要反映伺服器驗證環境限制；若畫面上仍有錯誤或警告，請優先處理那些項目。"
+    }
+  },
   "theme": {
     "light": "亮色",
     "dark": "暗色",

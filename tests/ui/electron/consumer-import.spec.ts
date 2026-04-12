@@ -1,5 +1,6 @@
 import { closeRxFhir, expect, test } from '../helpers/launchElectron'
 import { readFixtureText } from '../helpers/fixtureLoader'
+import { mockBundleValidateUnavailable } from '../helpers/mockFhir'
 import { selectors } from '../helpers/selectors'
 
 test('imports a local Bundle through drag and drop', async ({ launchApp }) => {
@@ -7,6 +8,7 @@ test('imports a local Bundle through drag and drop', async ({ launchApp }) => {
 
   try {
     await app.page.getByTestId(selectors.app.nav.consumer).click()
+    await mockBundleValidateUnavailable(app.page)
     await expect(app.page.getByTestId(selectors.consumer.dropzoneRoot)).toBeVisible()
 
     const bundleContent = await readFixtureText('bundle/imported-local-bundle.json')
@@ -31,6 +33,9 @@ test('imports a local Bundle through drag and drop', async ({ launchApp }) => {
     await expect(app.page.locator('[data-result-id="local-import-bundle-001"]')).toBeVisible()
     await expect(app.page.getByTestId(selectors.consumer.detail.root)).toBeVisible()
     await expect(app.page.getByTestId(selectors.consumer.detail.root).getByText('Local Import Patient')).toBeVisible()
+    await expect(app.page.getByTestId(selectors.consumer.detail.audit)).toBeVisible()
+    await expect(app.page.getByTestId(selectors.consumer.detail.audit)).toContainText('The first Bundle entry must be a Composition resource.')
+    await expect(app.page.getByTestId(selectors.consumer.detail.audit)).toContainText('Server returned 501 Not Implemented.')
   } finally {
     await closeRxFhir(app)
   }

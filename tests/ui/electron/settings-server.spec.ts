@@ -10,7 +10,18 @@ test('tests, saves, and restores the server settings flow', async ({ launchApp }
     await app.page.getByTestId(selectors.settings.tabs.server).click()
     await mockFhirServerHealth(app.page, {
       name: 'E2E Mock FHIR Server',
-      fhirVersion: '4.0.1'
+      fhirVersion: '4.0.1',
+      rest: [
+        {
+          mode: 'server',
+          resource: [
+            {
+              type: 'Bundle',
+              operation: [{ name: 'validate' }]
+            }
+          ]
+        }
+      ]
     })
 
     await app.page.getByTestId(selectors.settings.server.urlInput).fill('https://mock.fhir.test/baseR4')
@@ -24,6 +35,8 @@ test('tests, saves, and restores the server settings flow', async ({ launchApp }
     await expect(app.page.getByTestId(selectors.settings.server.statusIndicator)).toContainText('online')
     await expect(app.page.getByTestId(selectors.settings.server.statusCard)).toContainText('E2E Mock FHIR Server')
     await expect(app.page.getByTestId(selectors.settings.server.statusCard)).toContainText('R4.0.1')
+    await expect(app.page.getByTestId(selectors.settings.server.capabilities)).toContainText('Bundle $validate')
+    await expect(app.page.getByTestId(selectors.settings.server.bundleValidateCapability)).toContainText('可用')
 
     await closeRxFhir(app)
     app = await launchApp()

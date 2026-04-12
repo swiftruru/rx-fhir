@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CheckCircle2, Wand2, Download, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '../../../shared/components/ui/button'
 import { useHistoryStore } from '../../../features/history/store/historyStore'
 import { useAppStore } from '../../../app/stores/appStore'
@@ -12,6 +13,7 @@ import { Label } from '../../../shared/components/ui/label'
 import { Alert, AlertDescription } from '../../../shared/components/ui/alert'
 import FormErrorSummary from '../components/FormErrorSummary'
 import FhirErrorAlert from '../../../shared/components/FhirErrorAlert'
+import FhirAuditReportCard from '../../../shared/components/FhirAuditReportCard'
 import JsonViewer from '../../../shared/components/JsonViewer'
 import { buildFormErrorSummaryItems } from '../lib/formErrorSummary'
 import { getActiveLiveDemoSubmitRunId, isLiveDemoRunCurrent } from '../../../app/lib/liveDemoRuntime'
@@ -21,25 +23,16 @@ import { mergeDraftValues, useCreatorDraftAutosave } from '../hooks/useCreatorDr
 import { exportBundleJson, getBundleFileErrorMessage } from '../../../services/bundleFileService'
 import { postResource, resetLoggedRequests } from '../../../services/fhirClient'
 import { buildComposition, assembleDocumentBundle } from '../../../services/bundleService'
+import { toDateTimeLocalValue } from '../../../domain/fhir/dateTime'
+import { buildFhirAuditFingerprint, runHybridBundleAudit, runLocalBundleAudit, type FhirAuditIssue } from '../../../domain/fhir/validation'
 import { useCreatorStore } from '../store/creatorStore'
 import { useToastStore } from '../../../shared/stores/toastStore'
 import PrescriptionSummaryCard from '../components/PrescriptionSummaryCard'
+import { RESOURCE_STEPS } from '../../../types/fhir'
 
 type FormData = {
   title: string
   date: string
-}
-
-function toDateTimeLocalValue(value?: string): string {
-  if (!value) return ''
-  const normalized = value.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/)?.[1]
-  if (normalized) return normalized
-
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return ''
-
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`
 }
 
 interface Props {
@@ -47,10 +40,25 @@ interface Props {
 }
 
 export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.Element {
-  const { resources, drafts, setResource, markBundleSubmitted, setBundleError, setSubmittingBundle, setDraft } = useCreatorStore()
+  const {
+    resources,
+    drafts,
+    setResource,
+    markBundleSubmitted,
+    setBundleError,
+    setSubmittingBundle,
+    setDraft,
+    setStep,
+    validationStatus,
+    validationReport,
+    validatedFingerprint,
+    setValidationState,
+    clearValidation
+  } = useCreatorStore()
   const draftValues = useCreatorStore((s) => s.drafts.composition as Partial<FormData> | undefined)
   const { t } = useTranslation('creator')
   const { t: tc } = useTranslation('common')
+  const navigate = useNavigate()
   const pushToast = useToastStore((state) => state.pushToast)
   const f = (k: string) => t(`forms.composition.${k}`)
   const addRecord = useHistoryStore((s) => s.addRecord)
@@ -71,7 +79,7 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
 
   const initialValues = useMemo<FormData>(() => mergeDraftValues({
     title: resources.composition?.title ?? f('docTitle.placeholder'),
-    date: toDateTimeLocalValue(resources.composition?.date) || new Date().toISOString().slice(0, 16)
+    date: toDateTimeLocalValue(resources.composition?.date) || toDateTimeLocalValue(new Date().toISOString())
   }, draftValues) as FormData, [draftValues, f, resources.composition])
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
@@ -95,15 +103,38 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
 
   useCreatorDraftAutosave('composition', watch)
   const formData = watch()
-
-  function getPreview(): fhir4.Bundle | null {
+  const preview = useMemo(() => {
     if (!formData.title || !formData.date) return null
-    const comp = buildComposition(resources, formData.title, formData.date)
-    return assembleDocumentBundle(resources, comp)
-  }
+    const composition = buildComposition(resources, formData.title, formData.date)
+    return assembleDocumentBundle(resources, composition)
+  }, [formData.date, formData.title, resources])
+  const previewFingerprint = useMemo(
+    () => (preview ? buildFhirAuditFingerprint(preview) : undefined),
+    [preview]
+  )
+
+  useEffect(() => {
+    if (!preview || !previewFingerprint) {
+      clearValidation()
+      return
+    }
+
+    if (validatedFingerprint === previewFingerprint && validationReport) {
+      return
+    }
+
+    const localReport = runLocalBundleAudit(preview)
+    setValidationState(localReport.status, localReport, previewFingerprint)
+  }, [
+    clearValidation,
+    preview,
+    previewFingerprint,
+    setValidationState,
+    validatedFingerprint,
+    validationReport
+  ])
 
   async function handleExportBundle(): Promise<void> {
-    const preview = getPreview()
     if (!preview) return
 
     setExporting(true)
@@ -131,13 +162,44 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
     }
   }
 
+  function handlePreviewInConsumer(): void {
+    if (!preview) return
+
+    setDraft('composition', {
+      title: formData.title,
+      date: formData.date
+    })
+    navigate('/consumer', {
+      state: {
+        previewBundle: preview
+      }
+    })
+  }
+
   async function onSubmit(data: FormData): Promise<void> {
     resetLoggedRequests()
-    setCompStatus('loading')
     setErrorMsg(undefined)
+    setFileMessage(undefined)
+
     try {
-      const fhirDate = data.date.length === 16 ? `${data.date}:00` : data.date
-      const composition = buildComposition(resources, data.title, fhirDate)
+      if (!preview || !previewFingerprint) {
+        throw new Error(f('validation.noPreview'))
+      }
+
+      setValidationState('running', validationReport, previewFingerprint)
+      const auditReport = await runHybridBundleAudit(preview)
+      setValidationState(auditReport.status, auditReport, previewFingerprint)
+
+      if (auditReport.hasBlockingErrors) {
+        setCompStatus('idle')
+        setBundleStatus('idle')
+        setBundleError(f('validation.blocked'))
+        setErrorMsg(f('validation.blocked'))
+        return
+      }
+
+      setCompStatus('loading')
+      const composition = buildComposition(resources, data.title, data.date)
       const createdComp = await postResource<fhir4.Composition>('Composition', composition)
       const activeLiveDemoSubmitRun = getActiveLiveDemoSubmitRunId()
       if (activeLiveDemoSubmitRun !== null && !isLiveDemoRunCurrent(activeLiveDemoSubmitRun)) {
@@ -188,8 +250,8 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
     } catch (e) {
       const msg = e instanceof Error ? e.message : t('errors.unknown', { ns: 'common' })
       setErrorMsg(msg)
-      if (compStatus !== 'success') setCompStatus('error')
-      else setBundleStatus('error')
+      if (compStatus === 'success') setBundleStatus('error')
+      else setCompStatus('error')
       setBundleError(msg)
       pushToast({
         variant: 'error',
@@ -200,9 +262,24 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
     }
   }
 
+  function handleValidationIssueSelect(issue: FhirAuditIssue): void {
+    if (!issue.stepKey) return
+    const targetStep = RESOURCE_STEPS.findIndex((step) => step.key === issue.stepKey)
+    if (targetStep >= 0) {
+      setStep(targetStep)
+    }
+  }
+
+  const validationDescription = validationStatus === 'running'
+    ? f('validation.running')
+    : validationReport?.hasBlockingErrors
+      ? f('validation.blocking')
+      : validationReport?.warningCount
+        ? f('validation.warning')
+        : f('validation.ready')
+
   useLiveDemoFormController('composition', fillMock, handleSubmit, onSubmit, fillDemo)
 
-  const preview = getPreview()
   const RESOURCE_CHECKLIST = [
     'organization', 'patient', 'practitioner', 'encounter',
     'condition', 'observation', 'coverage', 'medication', 'medicationRequest'
@@ -211,6 +288,17 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
   return (
     <form id="composition-form" data-live-demo-form="composition" noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="flex items-center justify-end gap-2">
+          <Button
+            data-testid="creator.preview-in-consumer"
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handlePreviewInConsumer}
+            disabled={!preview}
+            className="h-7 px-2 text-xs"
+          >
+            {t('page.previewInConsumer')}
+          </Button>
           <Button
             type="button"
             variant="outline"
@@ -247,6 +335,16 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
           resources={resources}
           title={formData.title}
           date={formData.date}
+        />
+
+        <FhirAuditReportCard
+          report={validationReport}
+          title={f('validation.title')}
+          description={validationDescription}
+          emptyTitle={f('validation.emptyTitle')}
+          emptyDescription={f('validation.emptyDescription')}
+          onIssueSelect={handleValidationIssueSelect}
+          testId="creator.composition.audit"
         />
 
         <div className="p-3 rounded-md bg-muted space-y-1.5">

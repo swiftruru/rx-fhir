@@ -249,7 +249,8 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
     submittingBundle,
     draftRevision,
     clearDraft,
-    lastUpdatedResourceKey
+    lastUpdatedResourceKey,
+    validationStatus
   } = useCreatorStore()
   const allFhirHistory = useFhirInspectorStore((state) => state.history)
   // Only show requests that originated from the Creator module; Consumer / Settings
@@ -879,7 +880,7 @@ export default function ResourceStepper({ onBundleSuccess }: ResourceStepperProp
                         data-live-demo-submit="composition"
                         type="submit"
                         form="composition-form"
-                        disabled={submittingBundle || !resources.patient}
+                        disabled={submittingBundle || validationStatus === 'running' || !resources.patient}
                         className="w-full"
                         size="lg"
                       >

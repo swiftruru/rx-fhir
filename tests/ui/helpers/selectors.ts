@@ -11,8 +11,10 @@ export const selectors = {
   creator: {
     draftStatus: 'creator.draft-status',
     draftRestored: 'creator.draft-restored',
+    compositionAudit: 'creator.composition.audit',
     bundleSuccess: 'creator.bundle-success',
-    goToConsumer: 'creator.go-to-consumer'
+    goToConsumer: 'creator.go-to-consumer',
+    previewInConsumer: 'creator.preview-in-consumer'
   },
   consumer: {
     dropzoneRoot: 'consumer.dropzone.root',
@@ -86,6 +88,10 @@ export const selectors = {
       complexSubmit: 'consumer.search.submit.complex',
       complexCancel: 'consumer.search.cancel.complex'
     },
+    previewReturn: {
+      root: 'consumer.preview-return.root',
+      action: 'consumer.preview-return.action'
+    },
     results: {
       root: 'consumer.results.root',
       loading: 'consumer.results.loading',
@@ -98,6 +104,8 @@ export const selectors = {
     },
     detail: {
       root: 'consumer.detail',
+      previewBadge: 'consumer.detail.preview-badge',
+      audit: 'consumer.detail.audit',
       structuredView: 'consumer.detail.view.structured',
       jsonView: 'consumer.detail.view.json',
       exportTrigger: 'consumer.detail.export.trigger',
@@ -121,7 +129,9 @@ export const selectors = {
       testFail: 'settings.server.test-fail',
       saved: 'settings.server.saved',
       statusCard: 'settings.server.status-card',
-      statusIndicator: 'settings.server.status-indicator'
+      statusIndicator: 'settings.server.status-indicator',
+      capabilities: 'settings.server.capabilities',
+      bundleValidateCapability: 'settings.server.capability.bundle-validate'
     },
     accessibility: {
       motion: (option: string) => `settings.accessibility.motion.${option}`,

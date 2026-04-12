@@ -5,6 +5,7 @@
     "successMessage": "Document Bundle 已成功提交！Bundle ID:",
     "successHint": "可至 Consumer 模組查詢此處方箋",
     "goToConsumer": "前往 Consumer 查詢",
+    "previewInConsumer": "到 Consumer 預覽",
     "draftHint": "未完成的內容會自動儲存到本機草稿。",
     "draftSavedTitle": "草稿已自動儲存",
     "draftSaved": "可於下次開啟時繼續編輯。",
@@ -178,7 +179,8 @@
       "checkExisting": "這次先用 GET 檢查 FHIR Server 是否已有相同識別碼或代碼的資源，避免重複建立。若直接重用既有資源，系統不會依目前語系自動改寫伺服器上的既有文字內容。",
       "create": "因為目前沒有既有 ID，也沒有找到可重用資源，所以用 POST 新建資源。",
       "update": "因為目前步驟已經有既有資源 ID，所以用 PUT 更新同一筆資源。",
-      "search": "這次是查詢流程，所以用 GET 從 FHIR Server 取得符合條件的資料。"
+      "search": "這次是查詢流程，所以用 GET 從 FHIR Server 取得符合條件的資料。",
+      "validate": "這次會用 POST Bundle/$validate，讓系統在送出前把本機稽核結果與目前 FHIR Server 的驗證回饋一起整合。"
     },
     "requestFlow": {
       "title": "本次請求流程",
@@ -187,11 +189,13 @@
       "stepCreate": "步驟 {{index}}：建立 {{resourceType}}",
       "stepUpdate": "步驟 {{index}}：更新 {{resourceType}}",
       "stepSearch": "步驟 {{index}}：查詢 {{resourceType}}",
+      "stepValidate": "步驟 {{index}}：驗證 {{resourceType}}",
       "stepRequest": "步驟 {{index}}：{{resourceType}} 請求",
       "singleCheckExisting": "檢查既有 {{resourceType}}",
       "singleCreate": "建立 {{resourceType}}",
       "singleUpdate": "更新 {{resourceType}}",
       "singleSearch": "查詢 {{resourceType}}",
+      "singleValidate": "驗證 {{resourceType}}",
       "singleRequest": "{{resourceType}} 請求",
       "noteCheckExistingFound": "GET 查詢已找到 {{count}} 筆既有 {{resourceType}}，因此直接重用，沒有再 POST 建立；重用時也不會依目前語系自動改寫伺服器上的既有文字內容。",
       "noteCheckExistingMissing": "GET 查詢沒有找到可重用的 {{resourceType}}，因此下一步改用 POST 建立新資源。",
@@ -200,7 +204,9 @@
       "noteCreateFailed": "這一步原本要用 POST 建立新的 {{resourceType}}，但 FHIR Server 沒有成功接受。",
       "noteUpdate": "因為目前步驟已經有既有 {{resourceType}} ID，所以直接用 PUT 更新同一筆資源。",
       "noteUpdateFailed": "這一步原本要用 PUT 更新既有 {{resourceType}}，但 FHIR Server 沒有成功接受。",
-      "noteSearch": "這次是查詢流程，因此使用 GET 取得符合條件的資料。"
+      "noteSearch": "這次是查詢流程，因此使用 GET 取得符合條件的資料。",
+      "noteValidate": "這一步會向目前設定的 FHIR Server 發送 Bundle 驗證，讓 RxFHIR 把伺服器回饋整合進本機稽核報告。",
+      "noteValidateFailed": "這次驗證請求沒有成功完成，所以目前只能使用本機稽核結果。"
     },
     "requestHeadersTitle": "Request Headers",
     "requestBodyTitle": "Request Body",
@@ -476,6 +482,17 @@
     "composition": {
       "docTitle":     { "label": "文件標題",  "placeholder": "電子處方箋", "required": "請輸入文件標題" },
       "date":         { "label": "處方日期",  "required": "請輸入處方日期" },
+      "validation": {
+        "title": "FHIR 驗證稽核",
+        "emptyTitle": "稽核結果會顯示在這裡",
+        "emptyDescription": "先填好文件標題與處方日期，RxFHIR 才能建立 Bundle 預覽並進行本機稽核。",
+        "ready": "目前預覽已通過本機稽核；正式送出前還會再補跑伺服器驗證。",
+        "warning": "目前預覽仍可送出，但建議先檢查這些警告。",
+        "blocking": "目前有會阻擋送出的稽核錯誤，請先回到對應步驟修正。",
+        "running": "正在用本機規則與目前設定的 FHIR Server 驗證這份 Bundle 預覽。",
+        "blocked": "FHIR 驗證發現阻擋送出的錯誤，請先檢查稽核報告再重新提交。",
+        "noPreview": "目前還無法建立 Bundle 預覽，請先補齊必要欄位。"
+      },
       "export": {
         "button": "匯出 Bundle JSON",
         "success": "Bundle JSON 已匯出：{{fileName}}"

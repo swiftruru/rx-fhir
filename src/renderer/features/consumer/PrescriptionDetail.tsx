@@ -6,15 +6,17 @@ import { Badge } from '../../shared/components/ui/badge'
 import { ScrollArea } from '../../shared/components/ui/scroll-area'
 import { Alert, AlertDescription } from '../../shared/components/ui/alert'
 import FhirErrorAlert from '../../shared/components/FhirErrorAlert'
+import FhirAuditReportCard from '../../shared/components/FhirAuditReportCard'
 import JsonViewer from '../../shared/components/JsonViewer'
 import ExportDropdown from './components/ExportDropdown'
 import FeatureShowcaseTarget from '../../app/components/FeatureShowcaseTarget'
-import type { BundleSummary } from '../../types/fhir'
+import type { AuditedBundleSummary } from '../../domain/fhir/validation'
 import { useFeatureShowcaseStore } from '../../app/stores/featureShowcaseStore'
 import { useShortcutActionStore } from '../../shared/stores/shortcutActionStore'
+import { shouldAuditConsumerBundle } from './lib/bundleAudit'
 
 interface Props {
-  summary: BundleSummary
+  summary: AuditedBundleSummary
   onClose: () => void
 }
 
@@ -50,6 +52,7 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
   const headingRef = useRef<HTMLHeadingElement>(null)
   const showcaseActive = showcaseStatus === 'running' || showcaseStatus === 'paused'
   const bundle = summary.raw
+  const showAudit = shouldAuditConsumerBundle(summary)
 
   const entries = bundle.entry || []
   const getResource = <T extends fhir4.Resource>(type: string): T | undefined =>
@@ -133,6 +136,11 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
                     {t('detail.importedBadge')}
                   </Badge>
                 )}
+                {summary.source === 'preview' && (
+                  <Badge data-testid="consumer.detail.preview-badge" variant="warning" className="rounded-full text-[10px]">
+                    {t('detail.previewBadge')}
+                  </Badge>
+                )}
                 {summary.fileName && (
                   <span className="truncate rounded-full border border-border/60 bg-background/80 px-2.5 py-1 text-[11px] text-muted-foreground max-w-[220px]" title={summary.fileName}>
                     {summary.fileName}
@@ -205,119 +213,134 @@ export default function PrescriptionDetail({ summary, onClose }: Props): React.J
         </div>
       )}
 
-      {showJson ? (
-        <div className="flex-1 min-h-0 min-w-0 overflow-auto p-4 sm:p-5">
-          <JsonViewer
-            key={summary.id}
-            data={bundle}
-            title={t('detail.rawJsonTitle')}
-            defaultCollapsed={false}
-          />
-        </div>
-      ) : (
-        <ScrollArea className="flex-1">
-          <div className="p-4 sm:p-5">
-            <div className="mx-auto max-w-3xl space-y-4">
-              {composition && (
-                <Section title={s('prescription', 'title')}>
-                  <Field label={s('prescription', 'docTitle')} value={composition.title} />
-                  <Field label={s('prescription', 'date')} value={composition.date} />
-                  <Field label={s('prescription', 'status')} value={composition.status} />
-                  <Field label={s('prescription', 'bundleId')} value={summary.id} />
-                </Section>
-              )}
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="px-4 py-4 pr-7 sm:px-5 sm:py-5 sm:pr-8">
+          <div className="mx-auto max-w-3xl space-y-4">
+            {showAudit && (
+              <FhirAuditReportCard
+                report={summary.auditReport}
+                title={t('detail.audit.title')}
+                description={
+                  summary.source === 'preview'
+                    ? t('detail.audit.previewDescription')
+                    : t('detail.audit.importedDescription')
+                }
+                emptyTitle={t('detail.audit.emptyTitle')}
+                emptyDescription={t('detail.audit.emptyDescription')}
+                testId="consumer.detail.audit"
+              />
+            )}
 
-              {patient && (
-                <Section title={s('patient', 'title')}>
-                  <Field label={s('patient', 'name')} value={patient.name?.[0]?.text} />
-                  <Field label={s('patient', 'identifier')} value={patient.identifier?.[0]?.value} />
-                  <Field label={s('patient', 'gender')} value={patient.gender} />
-                  <Field label={s('patient', 'birthDate')} value={patient.birthDate} />
-                </Section>
-              )}
+            {showJson ? (
+              <JsonViewer
+                key={summary.id}
+                data={bundle}
+                title={t('detail.rawJsonTitle')}
+                defaultCollapsed={false}
+              />
+            ) : (
+              <>
+                {composition && (
+                  <Section title={s('prescription', 'title')}>
+                    <Field label={s('prescription', 'docTitle')} value={composition.title} />
+                    <Field label={s('prescription', 'date')} value={composition.date} />
+                    <Field label={s('prescription', 'status')} value={composition.status} />
+                    <Field label={s('prescription', 'bundleId')} value={summary.id} />
+                  </Section>
+                )}
 
-              {practitioner && (
-                <Section title={s('practitioner', 'title')}>
-                  <Field label={s('practitioner', 'name')} value={practitioner.name?.[0]?.text} />
-                  <Field label={s('practitioner', 'licenseNumber')} value={practitioner.identifier?.[0]?.value} />
-                  <Field label={s('practitioner', 'qualification')} value={practitioner.qualification?.[0]?.code?.text} />
-                </Section>
-              )}
+                {patient && (
+                  <Section title={s('patient', 'title')}>
+                    <Field label={s('patient', 'name')} value={patient.name?.[0]?.text} />
+                    <Field label={s('patient', 'identifier')} value={patient.identifier?.[0]?.value} />
+                    <Field label={s('patient', 'gender')} value={patient.gender} />
+                    <Field label={s('patient', 'birthDate')} value={patient.birthDate} />
+                  </Section>
+                )}
 
-              {organization && (
-                <Section title={s('organization', 'title')}>
-                  <Field label={s('organization', 'name')} value={organization.name} />
-                  <Field label={s('organization', 'identifier')} value={organization.identifier?.[0]?.value} />
-                  <Field label={s('organization', 'type')} value={organization.type?.[0]?.coding?.[0]?.display} />
-                </Section>
-              )}
+                {practitioner && (
+                  <Section title={s('practitioner', 'title')}>
+                    <Field label={s('practitioner', 'name')} value={practitioner.name?.[0]?.text} />
+                    <Field label={s('practitioner', 'licenseNumber')} value={practitioner.identifier?.[0]?.value} />
+                    <Field label={s('practitioner', 'qualification')} value={practitioner.qualification?.[0]?.code?.text} />
+                  </Section>
+                )}
 
-              {encounter && (
-                <Section title={s('encounter', 'title')}>
-                  <Field label={s('encounter', 'type')} value={encounter.class?.display} />
-                  <Field label={s('encounter', 'start')} value={encounter.period?.start} />
-                  <Field label={s('encounter', 'end')} value={encounter.period?.end} />
-                  <Field label={s('encounter', 'status')} value={encounter.status} />
-                </Section>
-              )}
+                {organization && (
+                  <Section title={s('organization', 'title')}>
+                    <Field label={s('organization', 'name')} value={organization.name} />
+                    <Field label={s('organization', 'identifier')} value={organization.identifier?.[0]?.value} />
+                    <Field label={s('organization', 'type')} value={organization.type?.[0]?.coding?.[0]?.display} />
+                  </Section>
+                )}
 
-              {condition && (
-                <Section title={s('condition', 'title')}>
-                  <div className="flex flex-wrap gap-2">
-                    {condition.code?.coding?.map((c, i) => (
-                      <Badge key={i} variant="outline" className="rounded-full">
-                        {c.code} — {c.display}
-                      </Badge>
-                    ))}
-                  </div>
-                  <Field label={s('condition', 'clinicalStatus')} value={condition.clinicalStatus?.coding?.[0]?.code} />
-                </Section>
-              )}
+                {encounter && (
+                  <Section title={s('encounter', 'title')}>
+                    <Field label={s('encounter', 'type')} value={encounter.class?.display} />
+                    <Field label={s('encounter', 'start')} value={encounter.period?.start} />
+                    <Field label={s('encounter', 'end')} value={encounter.period?.end} />
+                    <Field label={s('encounter', 'status')} value={encounter.status} />
+                  </Section>
+                )}
 
-              {observation && (
-                <Section title={s('observation', 'title')}>
-                  <Field label={s('observation', 'item')} value={observation.code?.text} />
-                  <Field
-                    label={s('observation', 'result')}
-                    value={observation.valueQuantity
-                      ? `${observation.valueQuantity.value} ${observation.valueQuantity.unit}`
-                      : undefined}
-                  />
-                  <Field label={s('observation', 'status')} value={observation.status} />
-                </Section>
-              )}
+                {condition && (
+                  <Section title={s('condition', 'title')}>
+                    <div className="flex flex-wrap gap-2">
+                      {condition.code?.coding?.map((c, i) => (
+                        <Badge key={i} variant="outline" className="rounded-full">
+                          {c.code} — {c.display}
+                        </Badge>
+                      ))}
+                    </div>
+                    <Field label={s('condition', 'clinicalStatus')} value={condition.clinicalStatus?.coding?.[0]?.code} />
+                  </Section>
+                )}
 
-              {coverage && (
-                <Section title={s('coverage', 'title')}>
-                  <Field label={s('coverage', 'type')} value={coverage.type?.text} />
-                  <Field label={s('coverage', 'insuranceId')} value={coverage.subscriberId} />
-                  <Field label={s('coverage', 'effectiveDate')} value={coverage.period?.start} />
-                </Section>
-              )}
+                {observation && (
+                  <Section title={s('observation', 'title')}>
+                    <Field label={s('observation', 'item')} value={observation.code?.text} />
+                    <Field
+                      label={s('observation', 'result')}
+                      value={observation.valueQuantity
+                        ? `${observation.valueQuantity.value} ${observation.valueQuantity.unit}`
+                        : undefined}
+                    />
+                    <Field label={s('observation', 'status')} value={observation.status} />
+                  </Section>
+                )}
 
-              {medication && (
-                <Section title={s('medicationAndRequest', 'title')}>
-                  <Field label={s('medicationAndRequest', 'medicationName')} value={medication.code?.text} />
-                  <Field label={s('medicationAndRequest', 'medicationCode')} value={medication.code?.coding?.[0]?.code} />
-                  <Field label={s('medicationAndRequest', 'form')} value={medication.form?.text} />
-                  {medicationRequest && (
-                    <>
-                      <Field
-                        label={s('medicationAndRequest', 'dose')}
-                        value={medicationRequest.dosageInstruction?.[0]?.text}
-                      />
-                      <Field
-                        label={s('medicationAndRequest', 'route')}
-                        value={medicationRequest.dosageInstruction?.[0]?.route?.coding?.[0]?.display}
-                      />
-                    </>
-                  )}
-                </Section>
-              )}
-            </div>
+                {coverage && (
+                  <Section title={s('coverage', 'title')}>
+                    <Field label={s('coverage', 'type')} value={coverage.type?.text} />
+                    <Field label={s('coverage', 'insuranceId')} value={coverage.subscriberId} />
+                    <Field label={s('coverage', 'effectiveDate')} value={coverage.period?.start} />
+                  </Section>
+                )}
+
+                {medication && (
+                  <Section title={s('medicationAndRequest', 'title')}>
+                    <Field label={s('medicationAndRequest', 'medicationName')} value={medication.code?.text} />
+                    <Field label={s('medicationAndRequest', 'medicationCode')} value={medication.code?.coding?.[0]?.code} />
+                    <Field label={s('medicationAndRequest', 'form')} value={medication.form?.text} />
+                    {medicationRequest && (
+                      <>
+                        <Field
+                          label={s('medicationAndRequest', 'dose')}
+                          value={medicationRequest.dosageInstruction?.[0]?.text}
+                        />
+                        <Field
+                          label={s('medicationAndRequest', 'route')}
+                          value={medicationRequest.dosageInstruction?.[0]?.route?.coding?.[0]?.display}
+                        />
+                      </>
+                    )}
+                  </Section>
+                )}
+              </>
+            )}
           </div>
-        </ScrollArea>
-      )}
+        </div>
+      </ScrollArea>
     </section>
   )
 }

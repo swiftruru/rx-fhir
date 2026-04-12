@@ -79,7 +79,22 @@
   "status": {
     "title":       "Current Connection Status",
     "serverInfo":  "Server",
-    "fhirVersion": "FHIR"
+    "fhirVersion": "FHIR",
+    "capabilities": {
+      "title": "Demo Readiness",
+      "description": "Capability hints parsed from `/metadata` so you can tell whether the current server is suitable for validation-heavy demos.",
+      "bundleValidate": "Bundle $validate",
+      "support": {
+        "available": "Available",
+        "unavailable": "Unavailable",
+        "unknown": "Unknown"
+      },
+      "notes": {
+        "available": "This server advertises Bundle validation, so hybrid audit and pre-submit validation should work.",
+        "unavailable": "This server does not advertise Bundle validation. RxFHIR will fall back to local-only audit when validation is needed.",
+        "unknown": "This server did not clearly advertise Bundle validation. RxFHIR will probe gracefully and fall back if validation is unavailable."
+      }
+    }
   },
   "accessibility": {
     "title": "Accessibility",

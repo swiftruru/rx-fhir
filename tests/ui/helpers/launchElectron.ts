@@ -20,6 +20,10 @@ export interface LaunchedElectronApp {
   port: number
 }
 
+export interface LaunchRxFhirOptions {
+  args?: string[]
+}
+
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -122,7 +126,7 @@ async function waitForProcessExit(process: ChildProcess, timeoutMs = 5_000): Pro
   })
 }
 
-function spawnElectron(port: number, userDataDir: string): ChildProcess {
+function spawnElectron(port: number, userDataDir: string, options: LaunchRxFhirOptions = {}): ChildProcess {
   const env = {
     ...process.env,
     RXFHIR_E2E: '1',
@@ -133,7 +137,7 @@ function spawnElectron(port: number, userDataDir: string): ChildProcess {
 
   return spawn(
     electronBinary,
-    ['.', `--remote-debugging-port=${port}`],
+    ['.', `--remote-debugging-port=${port}`, ...(options.args ?? [])],
     {
       cwd: projectRoot,
       env,
@@ -142,9 +146,12 @@ function spawnElectron(port: number, userDataDir: string): ChildProcess {
   )
 }
 
-export async function launchRxFhir(userDataDir: string): Promise<LaunchedElectronApp> {
+export async function launchRxFhir(
+  userDataDir: string,
+  options: LaunchRxFhirOptions = {}
+): Promise<LaunchedElectronApp> {
   const port = await reservePort()
-  const electronProcess = spawnElectron(port, userDataDir)
+  const electronProcess = spawnElectron(port, userDataDir, options)
   const browser = await connectToElectron(port)
   const page = await getFirstPage(browser)
 
@@ -186,7 +193,7 @@ export async function getLocationHash(page: Page): Promise<string> {
 
 type Fixtures = {
   userDataDir: string
-  launchApp: () => Promise<LaunchedElectronApp>
+  launchApp: (options?: LaunchRxFhirOptions) => Promise<LaunchedElectronApp>
 }
 
 export const test = base.extend<Fixtures>({
@@ -196,7 +203,7 @@ export const test = base.extend<Fixtures>({
     await rm(dir, { recursive: true, force: true })
   },
   launchApp: async ({ userDataDir }, use) => {
-    await use(() => launchRxFhir(userDataDir))
+    await use((options) => launchRxFhir(userDataDir, options))
   }
 })
 

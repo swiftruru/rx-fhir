@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { CreatedResources } from '../../../types/fhir'
 import type { ResourceKey } from '../../../types/fhir'
 import { RESOURCE_STEPS } from '../../../types/fhir'
+import type { FhirAuditReport, FhirAuditStatus } from '../../../domain/fhir/validation'
 import {
   buildCreatorSubmissionSnapshot,
   type CreatorSubmissionSnapshot
@@ -78,6 +79,9 @@ interface CreatorState {
   draftHydrated: boolean
   draftRestored: boolean
   draftRevision: number
+  validationStatus: FhirAuditStatus
+  validationReport?: FhirAuditReport
+  validatedFingerprint?: string
   bundleId?: string
   bundleError?: string
   submittingBundle: boolean
@@ -94,6 +98,8 @@ interface CreatorState {
   applyTemplateDrafts: (drafts: CreatorDraftValues) => void
   dismissDraftRestored: () => void
   setDraftStatus: (status: DraftStatus) => void
+  setValidationState: (status: FhirAuditStatus, report?: FhirAuditReport, fingerprint?: string) => void
+  clearValidation: () => void
   setBundleId: (id: string) => void
   markBundleSubmitted: (id: string, baselineDrafts?: CreatorDraftValues) => void
   setBundleError: (error: string | undefined) => void
@@ -116,6 +122,9 @@ export const useCreatorStore = create<CreatorState>()(
       draftHydrated: false,
       draftRestored: false,
       draftRevision: 0,
+      validationStatus: 'idle',
+      validationReport: undefined,
+      validatedFingerprint: undefined,
       bundleId: undefined,
       bundleError: undefined,
       submittingBundle: false,
@@ -194,6 +203,9 @@ export const useCreatorStore = create<CreatorState>()(
           draftStatus: hasCreatorPersistableWork({}, drafts) ? 'saved' : 'idle',
           draftRestored: false,
           draftRevision: state.draftRevision + 1,
+          validationStatus: 'idle',
+          validationReport: undefined,
+          validatedFingerprint: undefined,
           bundleId: undefined,
           bundleError: undefined,
           submittingBundle: false,
@@ -203,6 +215,16 @@ export const useCreatorStore = create<CreatorState>()(
       dismissDraftRestored: () => set({ draftRestored: false }),
 
       setDraftStatus: (draftStatus) => set({ draftStatus }),
+      setValidationState: (validationStatus, validationReport, validatedFingerprint) => set({
+        validationStatus,
+        validationReport,
+        validatedFingerprint
+      }),
+      clearValidation: () => set({
+        validationStatus: 'idle',
+        validationReport: undefined,
+        validatedFingerprint: undefined
+      }),
 
       setBundleId: (id) => set({ bundleId: id, bundleError: undefined, draftRestored: false }),
       markBundleSubmitted: (id, baselineDrafts) =>
@@ -226,6 +248,9 @@ export const useCreatorStore = create<CreatorState>()(
           draftStatus: 'idle',
           draftRestored: false,
           draftRevision: state.draftRevision + 1,
+          validationStatus: 'idle',
+          validationReport: undefined,
+          validatedFingerprint: undefined,
           bundleId: undefined,
           bundleError: undefined,
           submittingBundle: false,

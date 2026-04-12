@@ -43,6 +43,42 @@ async function fulfillJsonRoute(
   })
 }
 
+export async function mockBundleValidate(
+  page: Page,
+  body: unknown,
+  options: MockFhirResponseOptions = {}
+): Promise<void> {
+  await page.route('**/Bundle/$validate', async (route) => {
+    if (route.request().method() !== 'POST') {
+      await route.fallback()
+      return
+    }
+
+    await route.fulfill({
+      status: options.status ?? 200,
+      statusText: options.statusText ?? 'OK',
+      contentType: 'application/fhir+json',
+      body: JSON.stringify(body)
+    })
+  })
+}
+
+export async function mockBundleValidateUnavailable(page: Page, status = 501): Promise<void> {
+  await mockBundleValidate(page, {
+    resourceType: 'OperationOutcome',
+    issue: [
+      {
+        severity: 'information',
+        code: 'not-supported',
+        diagnostics: 'Bundle $validate is not supported by this mock server.'
+      }
+    ]
+  }, {
+    status,
+    statusText: 'Not Implemented'
+  })
+}
+
 export async function mockFhirSearchSuccess(page: Page): Promise<void> {
   await fulfillFhirRoute(page, 'fhir/search-success.bundle.json')
 }

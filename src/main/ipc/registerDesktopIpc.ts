@@ -10,6 +10,7 @@ import type {
   SaveFileResult
 } from '../../shared/contracts/electron'
 import { rememberRecentBundleFile, getExistingRecentBundleFiles } from '../services/recentBundleFileService'
+import { consumePendingBundleFilePath } from '../services/pendingBundleOpenService'
 import { clampZoomFactor } from '../services/mainWindowService'
 
 const { BrowserWindow, dialog, ipcMain, shell } = electron
@@ -96,6 +97,10 @@ export function registerDesktopIpc(): void {
 
   ipcMain.handle('bundle-json:recent-track', async (_event, filePath: string) => {
     await rememberRecentBundleFile(filePath)
+  })
+
+  ipcMain.handle('bundle-json:pending-open:consume', async (): Promise<string | null> => {
+    return consumePendingBundleFilePath()
   })
 
   ipcMain.handle(

@@ -9,18 +9,18 @@ import { Card, CardContent } from '../../shared/components/ui/card'
 import { Input } from '../../shared/components/ui/input'
 import { ScrollArea } from '../../shared/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../shared/components/ui/select'
-import type { BundleSummary } from '../../types/fhir'
+import type { AuditedBundleSummary } from '../../domain/fhir/validation'
 import type { ConsumerSearchExecution } from './searchState'
 
 type SortKey = 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc'
 
 interface Props {
-  results: BundleSummary[]
+  results: AuditedBundleSummary[]
   total: number
   searchExecution?: ConsumerSearchExecution | null
-  selected: BundleSummary | null
-  onSelect: (summary: BundleSummary) => void
-  onCompare?: (summary: BundleSummary) => void
+  selected: AuditedBundleSummary | null
+  onSelect: (summary: AuditedBundleSummary) => void
+  onCompare?: (summary: AuditedBundleSummary) => void
   nextUrl?: string | null
   isLoadingMore?: boolean
   onLoadMore?: () => void
@@ -491,6 +491,11 @@ export default function ResultList({ results, total, searchExecution, selected, 
                                   {t('results.importedBadge')}
                                 </Badge>
                               )}
+                                {summary.source === 'preview' && (
+                                  <Badge data-testid={`consumer.results.preview-badge.${summary.id}`} variant="warning" className="rounded-full text-[10px]">
+                                    {t('results.previewBadge')}
+                                  </Badge>
+                                )}
                               {summary.patientIdentifier && (
                                 <Badge variant="outline" className="rounded-full text-[10px] font-mono shrink-0">
                                   {summary.patientIdentifier}

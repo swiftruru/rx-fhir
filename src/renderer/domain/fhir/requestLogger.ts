@@ -48,7 +48,7 @@ export async function performLoggedRequest(
   init: {
     method: 'GET' | 'POST' | 'PUT'
     resourceType?: string
-    reasonCode?: 'check-existing' | 'create' | 'update' | 'search'
+    reasonCode?: 'check-existing' | 'create' | 'update' | 'search' | 'validate'
     headers?: HeadersInit
     body?: unknown
     signal?: AbortSignal

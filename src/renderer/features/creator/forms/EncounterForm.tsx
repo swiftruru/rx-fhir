@@ -16,6 +16,7 @@ import { buildFormErrorSummaryItems } from '../lib/formErrorSummary'
 import { useCreatorMockFill, useLiveDemoTypedMockFill } from '../hooks/useCreatorMockFill'
 import { useLiveDemoFormController } from '../hooks/useLiveDemoFormController'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../hooks/useCreatorDraft'
+import { toDateTimeLocalValue, toFhirDateTime } from '../../../domain/fhir/dateTime'
 import { findOrCreateDetailed, putResource, resetLoggedRequests } from '../../../services/fhirClient'
 import { useCreatorStore } from '../store/creatorStore'
 
@@ -31,18 +32,6 @@ const CLASS_FHIR: Record<'AMB' | 'EMER' | 'IMP', string> = {
   AMB: 'Ambulatory',
   EMER: 'Emergency',
   IMP: 'Inpatient'
-}
-
-function toDateTimeLocalValue(value?: string): string {
-  if (!value) return ''
-  const normalized = value.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/)?.[1]
-  if (normalized) return normalized
-
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return ''
-
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`
 }
 
 interface Props {
@@ -99,12 +88,6 @@ export default function EncounterForm({ onSuccess }: Props): React.JSX.Element {
 
   useCreatorDraftAutosave('encounter', watch)
   const selectedClass = watch('class')
-
-  // datetime-local inputs return "YYYY-MM-DDTHH:MM" (no seconds);
-  // FHIR requires at least "YYYY-MM-DDTHH:MM:SS".
-  function toFhirDateTime(dt: string): string {
-    return dt.length === 16 ? `${dt}:00` : dt
-  }
 
   function buildEncounterIdentifierValue(data: FormData): string {
     return JSON.stringify({

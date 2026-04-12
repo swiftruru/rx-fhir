@@ -19,7 +19,9 @@ export interface ConsumerLaunchState {
   autoSearch?: SearchParams
   targetBundleId?: string
   recentBundleFilePath?: string
+  previewBundle?: fhir4.Bundle
   quickStartScenario?: 'example-query'
+  resetView?: 'initial'
 }
 
 export interface ConsumerSearchExecution {

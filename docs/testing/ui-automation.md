@@ -3,7 +3,8 @@
 ## Purpose
 
 This project now includes a Playwright-based Electron UI automation layer for
-stable, local-first demo and regression coverage.
+stable, local-first regression coverage and repeatable automation proof during
+local demos or classroom review.
 
 ## Current Delivery Status
 
@@ -28,6 +29,13 @@ It focuses on:
 - mocked FHIR network responses for deterministic UI tests
 - isolated user data for repeatable runs
 
+It is intentionally separate from the in-app **Live Demo** and **Feature
+Showcase** systems:
+
+- Live Demo is the human-paced teaching flow
+- Feature Showcase is the product-tour flow
+- UI automation is the fast verification flow
+
 It does **not** treat public HAPI availability or native OS dialogs as part of
 the core UI suite.
 
@@ -38,6 +46,13 @@ npm run test:ui
 npm run test:ui:headed
 npm run test:ui:report
 ```
+
+Command intent:
+
+- `npm run test:ui`: standard fast regression run
+- `npm run test:ui:headed`: the same suite with a visible Electron window for
+  local observation; this is not a dedicated slow-motion presentation mode
+- `npm run test:ui:report`: inspect the HTML report after the run
 
 Related existing checks:
 
@@ -64,14 +79,16 @@ Current workflow behavior:
 ## What The UI Suite Covers
 
 - About page update check, update push, and external-link bridge actions
-- app shell launch and primary route navigation
-- Creator draft autosave and restore after relaunch
+- app shell launch, primary route navigation, and startup file-open handoff
+- Creator draft autosave / restore, submit handoff, local preview handoff, preview-state reset after leaving Consumer, same-route Consumer re-entry reset from the sidebar, narrow-width preview detail scroll behavior, and TW validator environment-downgrade handling for preview audits
 - Consumer drag-and-drop local Bundle import
 - Consumer search history pin and rerun flow
 - Consumer submission history prefill and bundle detail flow
-- Consumer mocked FHIR search success flow
+- Consumer mocked FHIR search success flow, including detail-audit rendering
 - Consumer mocked empty and error states
+- Consumer workspace persistence after relaunch
 - Settings accessibility preference persistence after relaunch
+- Settings server capability / demo-readiness rendering
 
 ## V1 Scope Boundaries
 
@@ -90,12 +107,14 @@ Intentionally out of scope for the current delivery version:
 - cross-platform UI matrix testing
 - visual regression or screenshot-baseline infrastructure
 - further abstraction layers purely for testing architecture aesthetics
+- a dedicated slow-motion UI test mode layered on top of the Playwright suite
 
 ## Test Design Notes
 
 - Electron is launched with isolated `RXFHIR_USER_DATA_DIR` per test run.
 - `RXFHIR_E2E=1` disables startup update-check noise during UI tests.
 - FHIR HTTP is mocked with Playwright route interception.
+- Startup file-open coverage passes a real local fixture path as an Electron launch argument, so the suite verifies the desktop-to-renderer handoff without driving a native Finder / Explorer dialog.
 - About/update bridge behavior is stubbed through a preload-only E2E test hook, so
   the suite does not open a real browser or call a real release API.
 - Native file-save dialogs and external browser opening are intentionally not
@@ -116,6 +135,15 @@ npm run test:ui:report
 ```
 
 to open the HTML report after the run.
+
+Important positioning:
+
+- Use `test:ui:headed` when you want to show that real automation exists and is
+  driving the real Electron app.
+- Use in-app **Live Demo** or **Feature Showcase** when you want a human-paced
+  walkthrough that people can comfortably watch step by step.
+- Do not treat headed Playwright runs as a replacement for Live Demo; the suite
+  is still optimized for speed and determinism.
 
 For a teacher/demo-friendly speaking script, see:
 
@@ -141,7 +169,9 @@ npm run test:ui:report
 
 This is the recommended stopping point for the current project stage. Do not
 expand the suite further unless you have a concrete new product or evaluation
-need.
+need. If a future evaluation explicitly requires a watchable automation mode,
+prefer a thin `watch/demo` entrypoint for a few representative cases instead of
+slowing the main suite.
 
 ## Troubleshooting
 

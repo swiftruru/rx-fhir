@@ -6,7 +6,7 @@ export interface FhirRequestEntry {
   method: 'GET' | 'POST' | 'PUT'
   url: string
   resourceType?: string
-  reasonCode?: 'check-existing' | 'create' | 'update' | 'search'
+  reasonCode?: 'check-existing' | 'create' | 'update' | 'search' | 'validate'
   requestHeaders: Record<string, string>
   requestBody?: unknown
   startedAt: string

@@ -50,6 +50,12 @@ export interface ZoomFactorResult {
   zoomFactor: number
 }
 
+export type ServerCapabilitySupport = 'available' | 'unavailable' | 'unknown'
+
+export interface ServerCapabilities {
+  bundleValidate: ServerCapabilitySupport
+}
+
 export type UpdateStatus = 'up-to-date' | 'update-available' | 'check-failed'
 
 export interface UpdateCheckResult {
@@ -67,6 +73,8 @@ export interface RxFhirDesktopBridge {
   openRecentBundleJson: (filePath: string) => Promise<BundleJsonOpenResult>
   listRecentBundleJsonFiles: () => Promise<RecentBundleFileEntry[]>
   rememberRecentBundleJson: (filePath: string) => Promise<void>
+  consumePendingBundleJsonOpen: () => Promise<string | null>
+  onPendingBundleJsonOpen: (callback: (filePath: string) => void) => () => void
   savePreferencesJson: (payload: PreferencesJsonSavePayload) => Promise<PreferencesJsonSaveResult>
   openPreferencesJson: () => Promise<PreferencesJsonOpenResult>
   saveFile: (payload: FileSavePayload) => Promise<SaveFileResult>

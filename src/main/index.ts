@@ -4,18 +4,39 @@ import { getRuntimeIconPath } from './services/runtimeAssets'
 import { createMainWindow, watchWindowShortcuts } from './services/mainWindowService'
 import { setupMacMenu } from './services/macMenuService'
 import { registerDesktopIpc } from './ipc/registerDesktopIpc'
+import { findBundleFilePathFromArgv, queuePendingBundleFilePath } from './services/pendingBundleOpenService'
 
 const { app, BrowserWindow, nativeImage } = electron
 const isE2eMode = process.env.RXFHIR_E2E === '1'
 const customUserDataDir = process.env.RXFHIR_USER_DATA_DIR?.trim()
+const startupBundleFilePath = findBundleFilePathFromArgv(process.argv)
 
 if (customUserDataDir) {
   app.setPath('userData', customUserDataDir)
 }
 
+if (startupBundleFilePath) {
+  queuePendingBundleFilePath(startupBundleFilePath)
+}
+
 app.name = 'RxFHIR'
 
 registerDesktopIpc()
+
+app.on('open-file', (event, filePath) => {
+  event.preventDefault()
+  const queuedFilePath = queuePendingBundleFilePath(filePath)
+  if (!queuedFilePath || !app.isReady()) return
+
+  const window = BrowserWindow.getAllWindows()[0]
+  if (!window) return
+
+  if (window.isMinimized()) {
+    window.restore()
+  }
+  window.focus()
+  window.webContents.send('bundle-json:pending-open', queuedFilePath)
+})
 
 app.whenReady().then(() => {
   if (process.platform === 'win32') {

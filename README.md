@@ -9,6 +9,38 @@
   <img src="https://img.shields.io/github/last-commit/swiftruru/rx-fhir?style=flat-square&color=b5838d" alt="Last Commit" />
 </p>
 
+---
+
+## 📦 Download
+
+<p align="center">
+  <strong>Pre-built desktop app — no source code or build tools required.</strong><br />
+  <sub>Click your platform below to jump to the latest release.</sub>
+</p>
+
+<p align="center">
+  <a href="https://github.com/swiftruru/rx-fhir/releases/latest">
+    <img src="https://img.shields.io/badge/Download-macOS%20.dmg-000000?style=for-the-badge&logo=apple&logoColor=white&labelColor=4a4a4a" alt="Download for macOS" />
+  </a>
+  &nbsp;
+  <a href="https://github.com/swiftruru/rx-fhir/releases/latest">
+    <img src="https://img.shields.io/badge/Download-Windows%20Setup%20%7C%20Portable-0078D4?style=for-the-badge&logo=windows11&logoColor=white&labelColor=4a4a4a" alt="Download for Windows" />
+  </a>
+  &nbsp;
+  <a href="https://github.com/swiftruru/rx-fhir/releases/latest">
+    <img src="https://img.shields.io/badge/Download-Linux%20AppImage%20%7C%20.deb-FCC624?style=for-the-badge&logo=linux&logoColor=black&labelColor=4a4a4a" alt="Download for Linux" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/swiftruru/rx-fhir/releases/latest">📥 View all downloads on GitHub Releases →</a>
+</p>
+
+---
+
+<details>
+<summary><strong>🛠️ Built with</strong> — click to expand tech stack badges</summary>
+
 <p align="center">
   <img src="https://img.shields.io/badge/Electron-33-47848F?style=flat-square&logo=electron&logoColor=white" alt="Electron" />
   <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React" />
@@ -24,27 +56,7 @@
   <img src="https://img.shields.io/badge/i18n-zh--TW%20%7C%20en-8b5cf6?style=flat-square" alt="i18n" />
 </p>
 
-<p align="center">
-  <strong>Ready-to-run desktop builds — no source code required:</strong>
-</p>
-
-<p align="center">
-  <a href="https://github.com/swiftruru/rx-fhir/releases/latest">
-    <img src="https://img.shields.io/badge/macOS-Download%20.dmg-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download for macOS" />
-  </a>
-  &nbsp;
-  <a href="https://github.com/swiftruru/rx-fhir/releases/latest">
-    <img src="https://img.shields.io/badge/Windows-Setup%20%7C%20Portable-0078D4?style=for-the-badge&logo=windows11&logoColor=white" alt="Download for Windows" />
-  </a>
-  &nbsp;
-  <a href="https://github.com/swiftruru/rx-fhir/releases/latest">
-    <img src="https://img.shields.io/badge/Linux-AppImage%20%7C%20.deb-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download for Linux" />
-  </a>
-</p>
-
-<p align="center">
-  <sub>All three platforms are supported. Click any badge above to go to the latest release.</sub>
-</p>
+</details>
 
 ---
 

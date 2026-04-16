@@ -200,24 +200,24 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
 
       setCompStatus('loading')
       const composition = buildComposition(resources, data.title, data.date)
-      const createdComp = await postResource<fhir4.Composition>('Composition', composition)
-      const activeLiveDemoSubmitRun = getActiveLiveDemoSubmitRunId()
-      if (activeLiveDemoSubmitRun !== null && !isLiveDemoRunCurrent(activeLiveDemoSubmitRun)) {
-        return
-      }
-      setResource('composition', createdComp)
+      // Don't POST Composition individually — it will be persisted as part
+      // of the Document Bundle, avoiding HAPI-2840 duplicate resource errors.
+      setResource('composition', composition)
       setDraft('composition', { title: data.title, date: data.date })
-      setCompId(createdComp.id)
       setCompStatus('success')
 
       setBundleStatus('loading')
       setSubmittingBundle(true)
-      const bundle = assembleDocumentBundle(resources, { ...composition, id: createdComp.id })
+      const bundle = assembleDocumentBundle(resources, composition)
 
       const createdBundle = await postResource<fhir4.Bundle>('Bundle', bundle)
+      const activeLiveDemoSubmitRun = getActiveLiveDemoSubmitRunId()
       if (activeLiveDemoSubmitRun !== null && !isLiveDemoRunCurrent(activeLiveDemoSubmitRun)) {
         return
       }
+      // Extract Composition ID from the created bundle response
+      const createdCompEntry = createdBundle.entry?.[0]?.resource as fhir4.Composition | undefined
+      setCompId(createdCompEntry?.id ?? composition.id)
       setBundleResultId(createdBundle.id!)
       markBundleSubmitted(createdBundle.id!, {
         ...drafts,

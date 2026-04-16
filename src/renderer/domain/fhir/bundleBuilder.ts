@@ -344,9 +344,14 @@ function normalizeBundleResources(
 }
 
 function toEntry(resource: fhir4.Resource, fullUrl: string): fhir4.BundleEntry {
+  // Replace server-assigned id with the bundle-scoped UUID to prevent
+  // HAPI-2840 "duplicate existing resource" when the same resource was
+  // already POSTed individually before the Document Bundle submission.
+  const bundleUuid = fullUrl.startsWith('urn:uuid:') ? fullUrl.slice('urn:uuid:'.length) : undefined
+  const entryResource = bundleUuid ? { ...resource, id: bundleUuid } : resource
   return {
     fullUrl,
-    resource: resource as fhir4.BundleEntry['resource']
+    resource: entryResource as fhir4.BundleEntry['resource']
   }
 }
 

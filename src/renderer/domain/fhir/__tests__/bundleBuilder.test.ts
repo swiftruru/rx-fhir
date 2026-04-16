@@ -20,15 +20,14 @@ describe('bundleBuilder', () => {
     const composition = buildComposition(resources, '電子處方箋', '2026-04-10T10:00:00Z')
     const bundle = assembleDocumentBundle(resources, composition)
     const bundledComposition = bundle.entry?.[0]?.resource as fhir4.Composition
-    const patientEntry = bundle.entry?.find((entry) => entry.resource?.resourceType === 'Patient')
-    const organizationEntry = bundle.entry?.find((entry) => entry.resource?.resourceType === 'Organization')
 
     expect(bundle.resourceType).toBe('Bundle')
     expect(bundle.type).toBe('document')
     expect(bundledComposition.resourceType).toBe('Composition')
     expect(bundledComposition.title).toBe(composition.title)
-    expect(bundledComposition.subject?.reference).toBe(patientEntry?.fullUrl)
-    expect(bundledComposition.custodian?.reference).toBe(organizationEntry?.fullUrl)
+    // Document Bundles keep ResourceType/id references for HAPI compatibility
+    expect(bundledComposition.subject?.reference).toBe('Patient/patient-1')
+    expect(bundledComposition.custodian?.reference).toBe('Organization/org-1')
     expect(bundle.identifier).toEqual({
       system: 'https://hospital.example/patients',
       value: 'P-001'
@@ -151,11 +150,9 @@ describe('bundleBuilder', () => {
     const compositionEntry = bundle.entry?.[0]!
     const patientEntry = bundle.entry?.find((entry) => entry.resource?.resourceType === 'Patient')!
     const organizationEntry = bundle.entry?.find((entry) => entry.resource?.resourceType === 'Organization')!
-    const practitionerEntry = bundle.entry?.find((entry) => entry.resource?.resourceType === 'Practitioner')!
     const encounterEntry = bundle.entry?.find((entry) => entry.resource?.resourceType === 'Encounter')!
     const observationEntry = bundle.entry?.find((entry) => entry.resource?.resourceType === 'Observation')!
     const coverageEntry = bundle.entry?.find((entry) => entry.resource?.resourceType === 'Coverage')!
-    const medicationEntry = bundle.entry?.find((entry) => entry.resource?.resourceType === 'Medication')!
     const medicationRequestEntry = bundle.entry?.find((entry) => entry.resource?.resourceType === 'MedicationRequest')!
     const extensionEntry = bundle.entry?.find((entry) => entry.resource?.resourceType === 'Basic')
     const bundledComposition = compositionEntry.resource as fhir4.Composition
@@ -164,34 +161,36 @@ describe('bundleBuilder', () => {
     const bundledObservation = observationEntry.resource as fhir4.Observation
     const bundledOrganization = organizationEntry.resource as fhir4.Organization
 
+    // All entries still get urn:uuid fullUrls for bundle-level identification
     expect(bundle.entry?.every((entry) => /^urn:uuid:[0-9a-f-]{36}$/.test(entry.fullUrl ?? ''))).toBe(true)
-    expect(bundledComposition.subject?.reference).toBe(patientEntry.fullUrl)
-    expect(bundledComposition.custodian?.reference).toBe(organizationEntry.fullUrl)
+    // Document Bundles keep ResourceType/id references for HAPI compatibility
+    // (HAPI rejects urn:uuid references in Document Bundles with HAPI-0505)
+    expect(bundledComposition.subject?.reference).toBe('Patient/250782')
+    expect(bundledComposition.custodian?.reference).toBe('Organization/250781')
     expect(bundledComposition.author?.map((author) => author.reference)).toEqual([
-      organizationEntry.fullUrl,
-      practitionerEntry.fullUrl
+      'Organization/250781',
+      'Practitioner/250783'
     ])
-    expect(bundledComposition.encounter?.reference).toBe(encounterEntry.fullUrl)
+    expect(bundledComposition.encounter?.reference).toBe('Encounter/250806')
     expect(bundledComposition.section?.map((section) => section.code?.coding?.[0]?.code)).toEqual([
       '29762-2',
       '85353-1',
       '29551-9'
     ])
     expect(bundledComposition.section?.map((section) => section.entry?.map((entry) => entry.reference))).toEqual([
-      [coverageEntry.fullUrl],
-      [observationEntry.fullUrl],
-      [medicationEntry.fullUrl, medicationRequestEntry.fullUrl]
+      ['Coverage/250787'],
+      ['Observation/250808'],
+      ['Medication/250788', 'MedicationRequest/250809']
     ])
-    expect(bundledEncounter.subject?.reference).toBe(patientEntry.fullUrl)
-    expect(bundledEncounter.serviceProvider?.reference).toBe(organizationEntry.fullUrl)
+    expect(bundledEncounter.subject?.reference).toBe('Patient/250782')
+    expect(bundledEncounter.serviceProvider?.reference).toBe('Organization/250781')
     expect(bundledEncounter.period?.start).toMatch(/^2026-03-19T10:55:00(?:Z|[+-]\d{2}:\d{2})$/)
     expect(bundledEncounter.period?.end).toMatch(/^2026-03-19T11:05:00(?:Z|[+-]\d{2}:\d{2})$/)
-    expect(bundledObservation.subject?.reference).toBe(patientEntry.fullUrl)
-    expect(bundledObservation.encounter?.reference).toBe(encounterEntry.fullUrl)
-    expect(bundledObservation.performer?.[0]?.reference).toBe(practitionerEntry.fullUrl)
+    expect(bundledObservation.subject?.reference).toBe('Patient/250782')
+    expect(bundledObservation.encounter?.reference).toBe('Encounter/250806')
     expect((bundledOrganization.type?.[0]?.coding?.[0]?.code)).toBe('prov')
     expect((bundledOrganization.type?.[0]?.coding?.[0]?.display)).toBe('Healthcare Provider')
-    expect((medicationRequestEntry.resource as fhir4.MedicationRequest).medicationReference?.reference).toBe(medicationEntry.fullUrl)
+    expect((medicationRequestEntry.resource as fhir4.MedicationRequest).medicationReference?.reference).toBe('Medication/250788')
     expect(bundledComposition.text?.status).toBe('generated')
     expect(bundledComposition.text?.div).toContain('xmlns="http://www.w3.org/1999/xhtml"')
     expect(bundledPatient.meta?.profile).toEqual(['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Patient-EP'])

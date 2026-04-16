@@ -46,13 +46,15 @@ interface ToastState {
 const MAX_TOASTS = 4
 const MAX_HISTORY = 30
 const DEFAULT_DURATION_MS = 4200
+const ERROR_DURATION_MS = 10000
 
 export const useToastStore = create<ToastState>()(
   persist(
     (set) => ({
       toasts: [],
       history: [],
-      pushToast: ({ variant = 'info', description, title, durationMs = DEFAULT_DURATION_MS, action, actions }) => {
+      pushToast: ({ variant = 'info', description, title, durationMs, action, actions }) => {
+        const resolvedDuration = durationMs ?? (variant === 'error' ? ERROR_DURATION_MS : DEFAULT_DURATION_MS)
         if (!description.trim()) return ''
 
         const id = crypto.randomUUID()
@@ -61,7 +63,7 @@ export const useToastStore = create<ToastState>()(
           variant,
           description,
           title,
-          durationMs,
+          durationMs: resolvedDuration,
           action,
           actions
         }

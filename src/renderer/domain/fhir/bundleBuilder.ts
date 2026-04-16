@@ -209,12 +209,11 @@ function normalizeLegacyOrganizationType(organization: fhir4.Organization): fhir
   return organization
 }
 
-function createBundleScopedReference(fullUrl?: string, fallback?: fhir4.Reference): fhir4.Reference | undefined {
-  if (!fullUrl) return fallback
-  return {
-    ...fallback,
-    reference: fullUrl
-  }
+function createBundleScopedReference(_fullUrl?: string, fallback?: fhir4.Reference): fhir4.Reference | undefined {
+  // For Document Bundles, keep the original ResourceType/id references.
+  // HAPI FHIR rejects urn:uuid: references in Document Bundles with
+  // HAPI-0505 "Does not contain resource type".
+  return fallback
 }
 
 function buildBundleScopedFullUrls(resourceMap: Partial<BundleResourceMap>): Partial<Record<BundleResourceKey, string>> {
@@ -229,29 +228,11 @@ function buildBundleScopedFullUrls(resourceMap: Partial<BundleResourceMap>): Par
   return fullUrls
 }
 
-function buildReferenceLookup(
-  resourceMap: Partial<BundleResourceMap>,
-  fullUrls: Partial<Record<BundleResourceKey, string>>
-): Map<string, string> {
-  const lookup = new Map<string, string>()
-
-  for (const [key, resource] of Object.entries(resourceMap) as Array<[BundleResourceKey, fhir4.Resource | undefined]>) {
-    const fullUrl = fullUrls[key]
-    if (resource?.resourceType && resource.id && fullUrl) {
-      lookup.set(`${resource.resourceType}/${resource.id}`, fullUrl)
-    }
-  }
-
-  return lookup
-}
-
 function normalizeBundleResources(
   resourceMap: Partial<BundleResourceMap>,
   fullUrls: Partial<Record<BundleResourceKey, string>>
 ): Partial<BundleResourceMap> {
   const normalized: Partial<BundleResourceMap> = {}
-  const referenceLookup = buildReferenceLookup(resourceMap, fullUrls)
-
   const patient = resourceMap.patient ? normalizeLegacyProfiles(sanitizeResource(resourceMap.patient)) : undefined
   const organization = resourceMap.organization ? normalizeLegacyProfiles(normalizeLegacyOrganizationType(sanitizeResource(resourceMap.organization))) : undefined
   const practitioner = resourceMap.practitioner ? normalizeLegacyProfiles(sanitizeResource(resourceMap.practitioner)) : undefined
@@ -312,21 +293,8 @@ function normalizeBundleResources(
   }
 
   composition.subject = createBundleScopedReference(fullUrls.patient, composition.subject)
-  composition.author = composition.author?.length
-    ? composition.author.map((author) => {
-        const mappedReference = author.reference ? referenceLookup.get(author.reference) : undefined
-        return mappedReference ? { ...author, reference: mappedReference } : author
-      })
-    : composition.author
   composition.custodian = createBundleScopedReference(fullUrls.organization, composition.custodian)
   composition.encounter = createBundleScopedReference(fullUrls.encounter, composition.encounter)
-  composition.section = composition.section?.map((section) => ({
-    ...section,
-    entry: section.entry?.map((entry) => {
-      const mappedReference = entry.reference ? referenceLookup.get(entry.reference) : undefined
-      return mappedReference ? { ...entry, reference: mappedReference } : entry
-    })
-  }))
 
   normalized.composition = composition
   if (patient) normalized.patient = patient
@@ -344,14 +312,9 @@ function normalizeBundleResources(
 }
 
 function toEntry(resource: fhir4.Resource, fullUrl: string): fhir4.BundleEntry {
-  // Replace server-assigned id with the bundle-scoped UUID to prevent
-  // HAPI-2840 "duplicate existing resource" when the same resource was
-  // already POSTed individually before the Document Bundle submission.
-  const bundleUuid = fullUrl.startsWith('urn:uuid:') ? fullUrl.slice('urn:uuid:'.length) : undefined
-  const entryResource = bundleUuid ? { ...resource, id: bundleUuid } : resource
   return {
     fullUrl,
-    resource: entryResource as fhir4.BundleEntry['resource']
+    resource: resource as fhir4.BundleEntry['resource']
   }
 }
 

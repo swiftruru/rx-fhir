@@ -21,7 +21,7 @@ import { useCreatorMockFill, useLiveDemoTypedMockFill } from '../hooks/useCreato
 import { useLiveDemoFormController } from '../hooks/useLiveDemoFormController'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../hooks/useCreatorDraft'
 import { exportBundleJson, getBundleFileErrorMessage } from '../../../services/bundleFileService'
-import { postResource, resetLoggedRequests } from '../../../services/fhirClient'
+import { postResource, resetLoggedRequests, getFhirBaseUrl } from '../../../services/fhirClient'
 import { buildComposition, assembleDocumentBundle } from '../../../services/bundleService'
 import { toDateTimeLocalValue } from '../../../domain/fhir/dateTime'
 import { buildFhirAuditFingerprint, runHybridBundleAudit, runLocalBundleAudit, type FhirAuditIssue } from '../../../domain/fhir/validation'
@@ -106,8 +106,8 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
   const preview = useMemo(() => {
     if (!formData.title || !formData.date) return null
     const composition = buildComposition(resources, formData.title, formData.date)
-    return assembleDocumentBundle(resources, composition)
-  }, [formData.date, formData.title, resources])
+    return assembleDocumentBundle(resources, composition, getFhirBaseUrl())
+  }, [formData.date, formData.title, resources, serverUrl])
   const previewFingerprint = useMemo(
     () => (preview ? buildFhirAuditFingerprint(preview) : undefined),
     [preview]
@@ -208,7 +208,7 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
 
       setBundleStatus('loading')
       setSubmittingBundle(true)
-      const bundle = assembleDocumentBundle(resources, composition)
+      const bundle = assembleDocumentBundle(resources, composition, getFhirBaseUrl())
 
       const createdBundle = await postResource<fhir4.Bundle>('Bundle', bundle)
       const activeLiveDemoSubmitRun = getActiveLiveDemoSubmitRunId()

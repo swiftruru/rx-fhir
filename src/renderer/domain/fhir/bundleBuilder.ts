@@ -216,12 +216,24 @@ function createBundleScopedReference(_fullUrl?: string, fallback?: fhir4.Referen
   return fallback
 }
 
-function buildBundleScopedFullUrls(resourceMap: Partial<BundleResourceMap>): Partial<Record<BundleResourceKey, string>> {
+function buildBundleScopedFullUrls(
+  resourceMap: Partial<BundleResourceMap>,
+  serverBaseUrl?: string
+): Partial<Record<BundleResourceKey, string>> {
   const fullUrls: Partial<Record<BundleResourceKey, string>> = {}
+  const trimmedBase = serverBaseUrl?.replace(/\/+$/, '')
 
   for (const [key, resource] of Object.entries(resourceMap) as Array<[BundleResourceKey, fhir4.Resource | undefined]>) {
     if (resource) {
-      fullUrls[key] = createBundleScopedFullUrl()
+      // Server-created resources use absolute URLs so that ResourceType/id
+      // references resolve correctly under FHIR bundle resolution rules.
+      // The Composition is built locally (not yet on the server) and always
+      // uses a urn:uuid identifier.
+      if (trimmedBase && key !== 'composition' && resource.id) {
+        fullUrls[key] = `${trimmedBase}/${resource.resourceType}/${resource.id}`
+      } else {
+        fullUrls[key] = createBundleScopedFullUrl()
+      }
     }
   }
 
@@ -320,7 +332,8 @@ function toEntry(resource: fhir4.Resource, fullUrl: string): fhir4.BundleEntry {
 
 export function assembleDocumentBundle(
   resources: CreatedResources,
-  composition: fhir4.Composition
+  composition: fhir4.Composition,
+  serverBaseUrl?: string
 ): fhir4.Bundle {
   const bundleResources: Partial<BundleResourceMap> = {
     composition,
@@ -334,7 +347,7 @@ export function assembleDocumentBundle(
     medication: resources.medication,
     medicationRequest: resources.medicationRequest
   }
-  const fullUrls = buildBundleScopedFullUrls(bundleResources)
+  const fullUrls = buildBundleScopedFullUrls(bundleResources, serverBaseUrl)
   const normalizedResources = normalizeBundleResources(bundleResources, fullUrls)
   const entries: fhir4.BundleEntry[] = []
 

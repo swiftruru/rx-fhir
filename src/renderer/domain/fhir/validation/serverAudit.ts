@@ -29,7 +29,10 @@ function isServerValidationEnvironmentIssue(message: string, fieldPath?: string)
     /validator is set to not fetch unknown profiles/i,
     /unknown extension https?:\/\/.+/i,
     /slicing cannot be evaluated: .*unable to resolve the reference https?:\/\/.+/i,
-    /unable to check minimum required .* due to lack of slicing validation/i
+    /unable to check minimum required .* due to lack of slicing validation/i,
+    /does not match the full target URL .* by Bundle resolution rules/i,
+    /isn't reachable by traversing links .* from the Composition/i,
+    /does not match because of the fullUrl based rules around matching/i
   ].some((pattern) => pattern.test(message))
     || (
       /invalid resource target type\./i.test(message)

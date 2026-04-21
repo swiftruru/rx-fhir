@@ -1,5 +1,11 @@
 # RxFHIR
 
+<p align="center">
+  <strong>🌐 Language / 語言：</strong>
+  <img src="https://img.shields.io/badge/English-d4779a?style=flat-square" alt="English (current)" />
+  <a href="./README.zh-TW.md"><img src="https://img.shields.io/badge/繁體中文-8e8e93?style=flat-square" alt="繁體中文" /></a>
+</p>
+
 > ℞ + FHIR = RxFHIR — A desktop application for Taiwan Core electronic prescription profiles
 
 <p align="center">

@@ -7,7 +7,7 @@ import type { SupportedLocale } from '../i18n'
 import type { FhirRequestEntry } from '../features/creator/store/fhirInspectorStore'
 import type { FeatureShowcaseSnapshot } from './types'
 
-const PATIENT_IDENTIFIER_SYSTEM = 'https://www.moe.edu.tw/student-id'
+const PATIENT_IDENTIFIER_SYSTEM = 'https://rxfhir.app/fhir/medical-record-number'
 const ORGANIZATION_IDENTIFIER_SYSTEM = 'https://twcore.mohw.gov.tw/ig/emr/CodeSystem/organization-identifier'
 const PRACTITIONER_IDENTIFIER_SYSTEM = 'https://www.mohw.gov.tw/practitioner-license'
 const COVERAGE_IDENTIFIER_SYSTEM = 'https://www.nhi.gov.tw/coverage-id'

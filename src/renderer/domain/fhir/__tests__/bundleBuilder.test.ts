@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assembleDocumentBundle, buildComposition } from '../bundleBuilder'
+import { assembleDocumentBundle, buildComposition, toSelfContainedExportBundle } from '../bundleBuilder'
 
 describe('bundleBuilder', () => {
   it('assembles a document bundle with Composition first and mirrored patient identifier', () => {
@@ -173,7 +173,7 @@ describe('bundleBuilder', () => {
     ])
     expect(bundledComposition.encounter?.reference).toBe('Encounter/250806')
     expect(bundledComposition.section?.map((section) => section.code?.coding?.[0]?.code)).toEqual([
-      '29762-2',
+      '48768-6',
       '85353-1',
       '29551-9'
     ])
@@ -198,5 +198,325 @@ describe('bundleBuilder', () => {
     expect((observationEntry.resource as fhir4.Observation).meta?.profile).toEqual(['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Observation-EP-BodyWeight'])
     expect(bundledPatient.meta).not.toHaveProperty('source')
     expect(extensionEntry).toBeUndefined()
+  })
+
+  it('IG cardinality enrichers fill missing required fields without overwriting existing data', () => {
+    const resources = {
+      patient: {
+        resourceType: 'Patient',
+        id: 'p1',
+        identifier: [{ system: 'https://hospital.example/patients', value: 'P-001' }],
+        name: [{ text: 'Alice Example' }],
+        birthDate: '2000-06-09'
+      } satisfies fhir4.Patient,
+      organization: {
+        resourceType: 'Organization',
+        id: 'o1',
+        name: 'Example Hospital'
+      } satisfies fhir4.Organization,
+      practitioner: { resourceType: 'Practitioner', id: 'pr1', name: [{ text: 'Dr.' }] } satisfies fhir4.Practitioner,
+      encounter: {
+        resourceType: 'Encounter',
+        id: 'e1',
+        status: 'finished',
+        class: { code: 'AMB' },
+        subject: { reference: 'Patient/p1' },
+        period: { start: '2026-03-19T10:55', end: '2026-03-19T11:05' }
+      } satisfies fhir4.Encounter,
+      condition: {
+        resourceType: 'Condition',
+        id: 'c1',
+        code: {
+          coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'K21.9', display: 'GERD' }],
+          text: 'GERD'
+        },
+        subject: { reference: 'Patient/p1' }
+      } satisfies fhir4.Condition,
+      observation: {
+        resourceType: 'Observation',
+        id: 'ob1',
+        status: 'final',
+        code: { coding: [{ system: 'http://loinc.org', code: '29463-7', display: 'Body weight' }] },
+        valueQuantity: { value: 54, unit: 'kg', system: 'http://unitsofmeasure.org' },
+        subject: { reference: 'Patient/p1' }
+      } satisfies fhir4.Observation,
+      coverage: {
+        resourceType: 'Coverage',
+        id: 'cov1',
+        status: 'active',
+        beneficiary: { reference: 'Patient/p1' },
+        payor: [{ display: 'NHI' }]
+      } satisfies fhir4.Coverage,
+      medication: {
+        resourceType: 'Medication',
+        id: 'm1',
+        code: { coding: [{ system: 'http://www.whocc.no/atc', code: 'A02BC01', display: 'omeprazole' }] }
+      } satisfies fhir4.Medication,
+      medicationRequest: {
+        resourceType: 'MedicationRequest',
+        id: 'mr1',
+        status: 'active',
+        intent: 'order',
+        identifier: [{ system: 'https://rxfhir.app/fhir/medication-request-key', value: 'k1' }],
+        medicationReference: { reference: 'Medication/m1' },
+        subject: { reference: 'Patient/p1' },
+        dosageInstruction: [{
+          text: '20 mg QD',
+          timing: { code: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-GTSAbbreviation', code: 'QD' }] } }
+        }],
+        dispenseRequest: { expectedSupplyDuration: { value: 14, unit: 'd', system: 'http://unitsofmeasure.org', code: 'd' } }
+      } satisfies fhir4.MedicationRequest
+    }
+
+    const composition = buildComposition(resources, '電子處方箋', '2026-04-10T10:55:00')
+    const bundle = assembleDocumentBundle(resources, composition, { mode: 'export' })
+
+    const patientEntry = bundle.entry?.find((e) => e.resource?.resourceType === 'Patient')!
+    const organizationEntry = bundle.entry?.find((e) => e.resource?.resourceType === 'Organization')!
+    const encounterEntry = bundle.entry?.find((e) => e.resource?.resourceType === 'Encounter')!
+    const conditionEntry = bundle.entry?.find((e) => e.resource?.resourceType === 'Condition')!
+    const observationEntry = bundle.entry?.find((e) => e.resource?.resourceType === 'Observation')!
+    const medicationRequestEntry = bundle.entry?.find((e) => e.resource?.resourceType === 'MedicationRequest')!
+
+    const bundledPatient = patientEntry.resource as fhir4.Patient
+    const bundledOrg = organizationEntry.resource as fhir4.Organization
+    const bundledEncounter = encounterEntry.resource as fhir4.Encounter
+    const bundledCondition = conditionEntry.resource as fhir4.Condition
+    const bundledObservation = observationEntry.resource as fhir4.Observation
+    const bundledMedReq = medicationRequestEntry.resource as fhir4.MedicationRequest
+
+    // Patient gets person-age extension derived from birthDate
+    expect(bundledPatient.extension?.some((ext) =>
+      ext.url === 'https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/person-age'
+      && ext.valueAge?.code === 'a'
+    )).toBe(true)
+
+    // Organization fallback telecom + address
+    expect(bundledOrg.telecom?.[0]?.system).toBe('phone')
+    expect(bundledOrg.address?.[0]?.text).toBe('unknown')
+
+    // Encounter gets a default serviceType
+    expect(bundledEncounter.serviceType?.coding?.[0]?.code).toBe('124')
+
+    // Condition: category, note, ICD-10-CM slice
+    expect(bundledCondition.category?.[0]?.coding?.[0]?.code).toBe('encounter-diagnosis')
+    expect(bundledCondition.note?.[0]?.text).toBeTruthy()
+    expect(bundledCondition.code?.coding?.some((c) => c.system === 'http://hl7.org/fhir/sid/icd-10-cm' && c.code === 'K21.9')).toBe(true)
+
+    // Observation: VSCat + UCUM code on valueQuantity
+    expect(bundledObservation.category?.[0]?.coding?.[0]?.code).toBe('vital-signs')
+    expect(bundledObservation.valueQuantity?.code).toBe('kg')
+
+    // MedicationRequest: 2nd identifier, category, insurance, timing.repeat, dispense fields
+    // (Extension-TotalDuration is intentionally NOT auto-injected — current TW Core EMR
+    // validator packages don't ship its definition; expectedSupplyDuration covers the same data.)
+    expect(bundledMedReq.identifier?.length).toBeGreaterThanOrEqual(2)
+    expect(bundledMedReq.category?.[0]?.coding?.[0]?.code).toBe('OUTPATIENT')
+    expect(bundledMedReq.insurance?.[0]?.reference).toBeTruthy()
+    expect(bundledMedReq.dosageInstruction?.[0]?.timing?.repeat?.frequency).toBe(1)
+    expect(bundledMedReq.dispenseRequest?.numberOfRepeatsAllowed).toBe(0)
+    expect(bundledMedReq.dispenseRequest?.quantity?.value).toBeGreaterThanOrEqual(1)
+    expect(bundledMedReq.dispenseRequest?.validityPeriod?.start).toBeTruthy()
+  })
+
+  it('export mode emits urn:uuid fullUrls and rewrites internal references', () => {
+    const resources = {
+      patient: {
+        resourceType: 'Patient',
+        id: '250782',
+        identifier: [{ system: 'https://hospital.example/patients', value: 'P-001' }],
+        name: [{ text: 'Alice Example' }]
+      } satisfies fhir4.Patient,
+      organization: {
+        resourceType: 'Organization',
+        id: '250781',
+        name: 'Example Hospital'
+      } satisfies fhir4.Organization,
+      practitioner: {
+        resourceType: 'Practitioner',
+        id: '250783',
+        name: [{ text: 'Dr. Example' }]
+      } satisfies fhir4.Practitioner,
+      encounter: {
+        resourceType: 'Encounter',
+        id: '250806',
+        status: 'finished',
+        class: { code: 'AMB' },
+        subject: { reference: 'Patient/250782' },
+        serviceProvider: { reference: 'Organization/250781' },
+        period: { start: '2026-03-19T10:55', end: '2026-03-19T11:05' }
+      } satisfies fhir4.Encounter
+    }
+
+    const composition = buildComposition(resources, '電子處方箋', '2026-04-10T10:55:00')
+    const bundle = assembleDocumentBundle(resources, composition, {
+      serverBaseUrl: 'https://hapi.example/fhir',
+      mode: 'export'
+    })
+
+    const compositionEntry = bundle.entry?.[0]!
+    const patientEntry = bundle.entry?.find((entry) => entry.resource?.resourceType === 'Patient')!
+    const encounterEntry = bundle.entry?.find((entry) => entry.resource?.resourceType === 'Encounter')!
+    const bundledComposition = compositionEntry.resource as fhir4.Composition
+    const bundledEncounter = encounterEntry.resource as fhir4.Encounter
+
+    // Every entry uses lowercase v4 urn:uuid (no absolute URLs even with serverBaseUrl)
+    expect(bundle.entry?.every((entry) => /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(entry.fullUrl ?? ''))).toBe(true)
+
+    // Composition references resolve via urn:uuid back to the matching entry fullUrls
+    expect(bundledComposition.subject?.reference).toBe(patientEntry.fullUrl)
+    expect(bundledComposition.encounter?.reference).toBe(encounterEntry.fullUrl)
+
+    // Encounter internal references rewritten too
+    expect(bundledEncounter.subject?.reference).toBe(patientEntry.fullUrl)
+
+    // Composition.date gains a timezone (regression: dateTime without TZ broke validators)
+    expect(bundledComposition.date).toMatch(/^2026-04-10T10:55:00(?:Z|[+-]\d{2}:\d{2})$/)
+  })
+
+  it('toSelfContainedExportBundle converts a HAPI-retrieved Bundle to urn:uuid form with matching internal references', () => {
+    // Simulate the shape that HAPI returns after a Document Bundle POST: Composition
+    // sits at urn:uuid while Patient/Org/Encounter use absolute server URLs and
+    // relative `ResourceType/id` references — the form that fails external validators.
+    const hapiBundle: fhir4.Bundle = {
+      resourceType: 'Bundle',
+      id: '132015363',
+      type: 'document',
+      meta: {
+        versionId: '1',
+        lastUpdated: '2026-05-07T11:29:31.566+00:00',
+        source: '#noise',
+        profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Bundle-EP']
+      },
+      timestamp: '2026-05-07T11:29:29.912Z',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:98f057b0-a620-4b81-9d79-6df80826fdeb',
+          resource: {
+            resourceType: 'Composition',
+            id: 'comp-1',
+            status: 'final',
+            type: { coding: [{ system: 'http://loinc.org', code: '57833-6', display: 'Prescription for medication' }] },
+            subject: { reference: 'Patient/132015357' },
+            encounter: { reference: 'Encounter/132015358' },
+            author: [{ reference: 'Organization/131580890' }],
+            custodian: { reference: 'Organization/131580890' },
+            date: '2026-04-14T10:55:00+08:00',
+            title: 'Outpatient',
+            section: [{
+              code: { coding: [{ system: 'http://loinc.org', code: '48768-6', display: 'Payment sources Document' }] },
+              entry: [{ reference: 'Coverage/131602373' }]
+            }]
+          } satisfies fhir4.Composition
+        },
+        {
+          fullUrl: 'https://hapi.fhir.org/baseR4/Patient/132015357',
+          resource: {
+            resourceType: 'Patient',
+            id: '132015357',
+            meta: { versionId: '3', lastUpdated: '2026-04-01T00:00:00Z', source: '#noise' }
+          } satisfies fhir4.Patient
+        },
+        {
+          fullUrl: 'https://hapi.fhir.org/baseR4/Organization/131580890',
+          resource: { resourceType: 'Organization', id: '131580890', name: 'NTUH' } satisfies fhir4.Organization
+        },
+        {
+          fullUrl: 'https://hapi.fhir.org/baseR4/Encounter/132015358',
+          resource: { resourceType: 'Encounter', id: '132015358', status: 'finished', class: { code: 'AMB' } } satisfies fhir4.Encounter
+        },
+        {
+          fullUrl: 'https://hapi.fhir.org/baseR4/Coverage/131602373',
+          resource: { resourceType: 'Coverage', id: '131602373', status: 'active', payor: [{ display: 'NHI' }], beneficiary: { reference: 'Patient/132015357' } } satisfies fhir4.Coverage
+        }
+      ]
+    }
+
+    const exportable = toSelfContainedExportBundle(hapiBundle)
+
+    // Every entry now has a urn:uuid fullUrl
+    expect(exportable.entry?.every((e) => /^urn:uuid:[0-9a-f-]{36}$/.test(e.fullUrl ?? ''))).toBe(true)
+
+    const compEntry = exportable.entry?.[0]!
+    const patientEntry = exportable.entry?.find((e) => e.resource?.resourceType === 'Patient')!
+    const orgEntry = exportable.entry?.find((e) => e.resource?.resourceType === 'Organization')!
+    const encounterEntry = exportable.entry?.find((e) => e.resource?.resourceType === 'Encounter')!
+    const coverageEntry = exportable.entry?.find((e) => e.resource?.resourceType === 'Coverage')!
+    const bundledComp = compEntry.resource as fhir4.Composition
+    const bundledCoverage = coverageEntry.resource as fhir4.Coverage
+
+    // Composition references resolve to entry urn:uuids inside the same Bundle
+    expect(bundledComp.subject?.reference).toBe(patientEntry.fullUrl)
+    expect(bundledComp.encounter?.reference).toBe(encounterEntry.fullUrl)
+    expect(bundledComp.custodian?.reference).toBe(orgEntry.fullUrl)
+    expect(bundledComp.author?.[0]?.reference).toBe(orgEntry.fullUrl)
+    expect(bundledComp.section?.[0]?.entry?.[0]?.reference).toBe(coverageEntry.fullUrl)
+
+    // Cross-entry references inside non-Composition resources are also rewritten
+    expect(bundledCoverage.beneficiary?.reference).toBe(patientEntry.fullUrl)
+
+    // HAPI meta noise is stripped from Bundle and entries
+    expect(exportable.meta).not.toHaveProperty('versionId')
+    expect(exportable.meta).not.toHaveProperty('lastUpdated')
+    expect(exportable.meta).not.toHaveProperty('source')
+    // Patient.meta becomes undefined (only had source/versionId/lastUpdated, all stripped)
+    expect(patientEntry.resource?.meta?.source).toBeUndefined()
+  })
+
+  it('toSelfContainedExportBundle strips Extension-TotalDuration (definition missing in current TW EMR validator)', () => {
+    const hapiBundle: fhir4.Bundle = {
+      resourceType: 'Bundle',
+      type: 'document',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:c11c3f9f-6152-4670-8604-001a82c9ea99',
+          resource: {
+            resourceType: 'MedicationRequest',
+            id: 'mr-1',
+            status: 'active',
+            intent: 'order',
+            extension: [
+              {
+                url: 'https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Extension-TotalDuration',
+                valueQuantity: { value: 14, unit: 'days', system: 'http://unitsofmeasure.org', code: 'd' }
+              }
+            ],
+            subject: { reference: 'Patient/p-1' },
+            medicationReference: { reference: 'Medication/m-1' }
+          } satisfies fhir4.MedicationRequest
+        }
+      ]
+    }
+
+    const exportable = toSelfContainedExportBundle(hapiBundle)
+    const medReq = exportable.entry?.[0]?.resource as fhir4.MedicationRequest
+    // Either extension array is undefined or empty — the unknown extension is gone.
+    expect(medReq.extension?.some((e) => e.url === 'https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Extension-TotalDuration')).not.toBe(true)
+  })
+
+  it('enrichCondition uses ICD-10-CM canonical display (American spelling) for the added slice', () => {
+    const resources = {
+      patient: { resourceType: 'Patient', id: 'p1', identifier: [{ system: 'x', value: 'p-1' }], name: [{ text: 'A' }], birthDate: '2000-01-01' } satisfies fhir4.Patient,
+      organization: { resourceType: 'Organization', id: 'o1', name: 'Hosp' } satisfies fhir4.Organization,
+      practitioner: { resourceType: 'Practitioner', id: 'pr1', name: [{ text: 'Dr.' }] } satisfies fhir4.Practitioner,
+      encounter: { resourceType: 'Encounter', id: 'e1', status: 'finished', class: { code: 'AMB' }, period: { start: '2026-03-19T10:55' } } satisfies fhir4.Encounter,
+      condition: {
+        resourceType: 'Condition',
+        id: 'c1',
+        code: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'K21.9', display: 'GERD original' }] },
+        subject: { reference: 'Patient/p1' }
+      } satisfies fhir4.Condition
+    }
+
+    const composition = buildComposition(resources, '電子處方箋', '2026-04-10T10:55:00')
+    const bundle = assembleDocumentBundle(resources, composition, { mode: 'export' })
+    const conditionEntry = bundle.entry?.find((e) => e.resource?.resourceType === 'Condition')!
+    const cond = conditionEntry.resource as fhir4.Condition
+    const cmCoding = cond.code?.coding?.find((c) => c.system === 'http://hl7.org/fhir/sid/icd-10-cm')
+
+    // ICD-10 (British spelling) and ICD-10-CM (American spelling) MUST differ
+    expect(cmCoding?.display).toBe('Gastro-esophageal reflux disease without esophagitis')
+    expect(cond.code?.coding?.find((c) => c.system === 'http://hl7.org/fhir/sid/icd-10')?.display)
+      .toBe('Gastro-oesophageal reflux disease without oesophagitis')
   })
 })

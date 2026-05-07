@@ -133,9 +133,9 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
         resourceType: 'Patient',
         identifier: [{
           use: 'official',
-          system: 'https://www.moe.edu.tw/student-id',
+          system: 'https://rxfhir.app/fhir/medical-record-number',
           value: data.studentId,
-          type: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0203', code: 'SB', display: 'Student Number' }] }
+          type: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0203', code: 'MR', display: 'Medical record number' }] }
         }],
         name: [{ use: 'official', text: displayName, family: data.familyName, given: [data.givenName] }],
         gender: data.gender,
@@ -149,7 +149,7 @@ export default function PatientForm({ onSuccess }: Props): React.JSX.Element {
         : await (async () => {
             const result = await findOrCreateDetailed<fhir4.Patient>(
               'Patient',
-              { identifier: `https://www.moe.edu.tw/student-id|${data.studentId}` },
+              { identifier: `https://rxfhir.app/fhir/medical-record-number|${data.studentId}` },
               resource
             )
             reused = result.reused

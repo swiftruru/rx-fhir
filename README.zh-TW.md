@@ -156,7 +156,7 @@ Electron 原生相關的邏輯維持在 `src/main`；跨 process 穩定契約放
 - **FHIR Request Inspector Postman 匯出**：當 request history 有紀錄時，一鍵匯出按鈕會從已擷取的 request 歷程（POST/PUT resource 建立、GET 檢查與 search）產出 Postman Collection v2.1，使用 `{{fhirBaseUrl}}` 變數置換並解碼 query 參數，無需對 server 做額外探測
 - 最終提交前會加上結構化處方摘要 review 卡
 - Composition 先行、接著 Document Bundle 提交；Composition 現在只透過 Document Bundle 的 POST 建立，避免 HAPI-2840 重複 resource 錯誤；所有 Bundle entry resource 使用 Bundle-scoped UUID 而非 server 指派的 ID，使各 Prescription Template 重複提交更安全
-- Creator 最終步驟可將組裝好的 FHIR Bundle 匯出成本機 JSON
+- Creator 最終步驟可將組裝好的 FHIR Bundle 匯出成本機 JSON：採用 self-contained 的 `urn:uuid:<v4>` 形式且內部 reference 完全對應，並補齊 IG 必填欄位（Patient `person-age`、Organization fallback 聯絡資訊、Encounter `serviceType`、Condition `category` 與 ICD-10-CM 編碼、Observation Vital Signs 分類與 UCUM 單位代碼、MedicationRequest TW Core 必填欄位），同時把標準 coding 的 display 規範化為 en-US 標準字串——可直接通過 TW Core EMR `Bundle-EP` validator，無需手動修改
 - Creator 最終步驟也可直接在 Consumer 以明確標示的本機預覽開啟已組裝 Bundle，即使不允許寫入 server 時也能展示 export、diff 與稽核流程；預覽模式也顯眼地顯示「返回 Creator」按鈕；預覽 session 視為暫時性，離開 Consumer 或從側邊欄再次點擊 Consumer 會重新開啟正常查詢工作區，不保留預覽稽核狀態；為符合 TW EMR 文件範圍，組裝的 document bundle 會排除獨立的 `Basic` 補充延伸紀錄，不加入 Bundle entry
 - Bundle 提交成功後，Creator 可直接跳到 Consumer、自動執行查詢並聚焦到新建立的 Bundle
 - 最近提交歷程會在本機保存，供日後查詢預填使用
@@ -211,14 +211,14 @@ Electron 原生相關的邏輯維持在 `src/main`；跨 process 穩定契約放
 - 處方詳情採固定寬度的 detail pane，標頭中有更清楚的 `Structured / JSON` 切換
 - Structured 詳情檢視與原始 JSON viewer；JSON 面板會在 detail pane 寬度內捲動；切換不同結果時會自動展開
 - Bundle 詳情對 server 結果、匯入檔案、Creator 預覽皆預設顯示本機優先的 FHIR 稽核卡，若當前 server 支援 `$validate` 則升級為 hybrid server 反饋；更清楚區分 validator 環境限制、最佳實務建議與真正結構錯誤；常見 server 訊息會提供在地化白話摘要同時保留原始文字；卡片也會明確說明剩餘 server 結果是否主要反映 validator 環境限制而非 Bundle 結構問題，包含 TW EMR slicing 因目前 validator 無法解析所引用 profile 而失敗的情況
-- Bundle 詳情提供**匯出下拉選單**，支援三種格式：FHIR JSON、Postman Collection v2.1、HTML 報告
+- Bundle 詳情提供**匯出下拉選單**，支援三種格式：FHIR JSON、Postman Collection v2.1、HTML 報告。FHIR JSON 匯出會把 HAPI 上儲存的 Document Bundle 轉成 self-contained `urn:uuid` 形式並對應內部 reference、附上 `Reference.type` 讓外部 validator 能解析 slice profile choice、剝除 HAPI 注入的 `meta.source` / `versionId` / `lastUpdated`，並移除目前 TW Core EMR validator 套件無定義的 extension——任何已存的 bundle 都可離線重新驗證 IG 而不需手動修改
 - **Postman Collection 匯出**會先探測 FHIR server 以判定每個 resource 該用 PUT 或 POST（透過 HAPI-2840 重複偵測與 identifier 查詢），然後產生可直接執行的 collection，包含涵蓋 basic、date、complex 三種模式的四個查詢 request，每個都附帶與 App 內 workaround 邏輯一致的 client-side filter test script；server 探測期間會出現取消按鈕，讓長時間匯出可中止而不產生錯誤
 - **HTML 報告匯出**會產生 self-contained、可列印的處方摘要，內嵌 CSS，包含：依時序呈現關鍵臨床事件的臨床時間軸；詳細卡片前的藥品摘要表；依 reference range 推導的 Observation 檢驗值標籤（Normal / High / Low）；Composition 狀態橫幅以顏色區分 final / draft / amended / entered-in-error；全文搜尋列含 ↑↓ 導覽與匹配數；A4 邊界與固定頁首頁尾的列印版面
 - **日期查詢**現在正確以 `Composition.date`（處方日期）而非 `Bundle.timestamp`（提交時間）過濾，使用與機構、作者複合搜尋相同的 fetch-then-filter workaround
 - 日期查詢範例會以最近提交的 Bundle 中實際 `Composition.date` 預填，若無則回退到最近使用的日期搜尋，確保範例永遠對應到 server 上實際存在的紀錄
 - **Composition chain 搜尋**：姓名與 identifier 搜尋最後都會執行一個額外步驟，找出關聯到匹配病患的 `Composition`，再以 `Bundle?composition=` 取回對應父 Bundle，使從任何 FHIR client（Postman、其他 App）提交的處方皆可被搜尋到，而非僅限 RxFHIR 自己的 identifier 慣例
 - **取消搜尋**：查詢進行中提交按鈕旁會出現 `×` 圖示按鈕，點擊即透過 `AbortController` 立即取消所有進行中的 HTTP request，並在結果面板顯示明確的已取消狀態
-- **結果排序與過濾**：結果載入後，結果標頭會出現排序下拉（Newest First / Oldest First / Name A→Z / Name Z→A）與關鍵字過濾輸入；過濾同時比對病患姓名、identifier、機構；每次新搜尋會重設過濾，但排序偏好會跨查詢保留；當過濾後無結果時，會顯示「no match」空狀態
+- **結果排序與過濾**：結果載入後，結果標頭會出現排序下拉（Newest First / Oldest First / Name A→Z / Name Z→A / Bundle ID 新→舊 / Bundle ID 舊→新）與關鍵字過濾輸入；Bundle ID 排序使用 `Intl.Collator({ numeric: true })`，HAPI 數字 ID 會依數值大小排，UUID 形式則回退到字典序；過濾同時比對病患姓名、identifier、機構；每次新搜尋會重設過濾，但排序偏好會跨查詢保留；當過濾後無結果時，會顯示「no match」空狀態
 - **搜尋 UX 改進**：每次新查詢開始時會清空結果，避免舊資料誤導；結果面板會立刻顯示含動畫 skeleton card 的 spinner；查詢進行中，所有搜尋模式 tab 與中間 Results / Shortcuts 分頁皆會停用，避免誤點切換
 - **導航守衛**：搜尋進行中嘗試切換頁面時，會出現含選擇性「Leave Anyway」行動的 toast，而不是靜默中止搜尋
 - **Consumer 搜尋隔離**：Consumer 查詢不再出現在 Creator 的 FHIR Request Inspector 面板中；每個模組會以來源路由標記自己的 HTTP request，Creator Inspector 只過濾自己的紀錄

@@ -265,6 +265,8 @@
     "sortDateAsc":    "Oldest First",
     "sortNameAsc":    "Name (A → Z)",
     "sortNameDesc":   "Name (Z → A)",
+    "sortBundleIdDesc": "Bundle ID (Newest First)",
+    "sortBundleIdAsc":  "Bundle ID (Oldest First)",
     "filterPlaceholder": "Filter results…",
     "filterMatch":    "{{count}} match",
     "filterNoMatch":  "No results match the filter",

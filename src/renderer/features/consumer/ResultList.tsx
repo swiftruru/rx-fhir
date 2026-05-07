@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import type { AuditedBundleSummary } from '../../domain/fhir/validation'
 import type { ConsumerSearchExecution } from './searchState'
 
-type SortKey = 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc'
+type SortKey = 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc' | 'bundle-id-desc' | 'bundle-id-asc'
 
 interface Props {
   results: AuditedBundleSummary[]
@@ -180,12 +180,18 @@ export default function ResultList({ results, total, searchExecution, selected, 
         )
       : results
 
+    // numeric: true so HAPI's numeric Bundle IDs sort like numbers (132015363 < 132015372),
+    // while still falling back to lexicographic order for non-numeric IDs (UUIDs, etc.).
+    const idCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
+
     return [...filtered].sort((a, b) => {
       switch (sortKey) {
         case 'date-desc': return (b.date ?? '').localeCompare(a.date ?? '')
         case 'date-asc':  return (a.date ?? '').localeCompare(b.date ?? '')
         case 'name-asc':  return (a.patientName ?? '').localeCompare(b.patientName ?? '')
         case 'name-desc': return (b.patientName ?? '').localeCompare(a.patientName ?? '')
+        case 'bundle-id-desc': return idCollator.compare(b.id ?? '', a.id ?? '')
+        case 'bundle-id-asc':  return idCollator.compare(a.id ?? '', b.id ?? '')
       }
     })
   }, [results, sortKey, filterText])
@@ -418,6 +424,8 @@ export default function ResultList({ results, total, searchExecution, selected, 
             <SelectItem value="date-asc"  className="text-xs">{t('results.sortDateAsc')}</SelectItem>
             <SelectItem value="name-asc"  className="text-xs">{t('results.sortNameAsc')}</SelectItem>
             <SelectItem value="name-desc" className="text-xs">{t('results.sortNameDesc')}</SelectItem>
+            <SelectItem value="bundle-id-desc" className="text-xs">{t('results.sortBundleIdDesc')}</SelectItem>
+            <SelectItem value="bundle-id-asc"  className="text-xs">{t('results.sortBundleIdAsc')}</SelectItem>
           </SelectContent>
         </Select>
       </div>

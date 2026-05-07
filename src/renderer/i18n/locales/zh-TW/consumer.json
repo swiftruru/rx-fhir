@@ -265,6 +265,8 @@
     "sortDateAsc":    "日期（舊→新）",
     "sortNameAsc":    "姓名（A → Z）",
     "sortNameDesc":   "姓名（Z → A）",
+    "sortBundleIdDesc": "Bundle ID（新→舊）",
+    "sortBundleIdAsc":  "Bundle ID（舊→新）",
     "filterPlaceholder": "篩選結果…",
     "filterMatch":    "{{count}} 筆符合",
     "filterNoMatch":  "沒有符合篩選條件的結果",

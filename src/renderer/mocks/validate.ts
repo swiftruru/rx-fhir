@@ -1,3 +1,4 @@
+import { ICD10_CM_TW_DISPLAYS } from '../domain/fhir/twEmrTerminology'
 import type { ResourceKey } from '../types/fhir'
 import type {
   LocalizedString,
@@ -68,6 +69,11 @@ export function validateMockScenarioPacks(scenarios: MockScenarioPackSource[]): 
 
     if (!scenario.creator.composition.date) {
       throw new Error(`Scenario ${scenario.id} is missing composition date`)
+    }
+
+    const icdCode = scenario.creator.condition.icdCode
+    if (!ICD10_CM_TW_DISPLAYS[icdCode]) {
+      throw new Error(`Scenario ${scenario.id} uses unsupported ICD-10-CM code: ${icdCode}`)
     }
 
     for (const key of [

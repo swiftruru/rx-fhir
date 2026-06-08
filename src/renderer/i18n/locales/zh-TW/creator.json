@@ -374,9 +374,11 @@
         "required": "請選擇保險類型",
         "hint": "請選與病人本次就醫最相關的保險別，例如全民健保或自費。",
         "options": {
-          "EHCPOL":    "全民健保（NHI）",
-          "PAY":       "自費",
-          "PUBLICPOL": "公務人員保險"
+          "nhi":          "全民健保（NHI）",
+          "selfpay":      "自費",
+          "public":       "公務人員保險",
+          "injury":       "普通傷害",
+          "occupational": "職業傷害"
         }
       },
       "insuranceId":   { "label": "健保卡號 / 保險 ID", "placeholder": "例：A123456789", "required": "請輸入保險 ID / 健保卡號", "hint": "請填病人保險可識別代碼，例如健保卡號、保險會員編號。" },

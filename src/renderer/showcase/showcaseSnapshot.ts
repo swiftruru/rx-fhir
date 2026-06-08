@@ -5,6 +5,8 @@ import { getScenarioById } from '../mocks/selectors'
 import type { MockScenarioPack } from '../mocks/types'
 import type { SupportedLocale } from '../i18n'
 import type { FhirRequestEntry } from '../features/creator/store/fhirInspectorStore'
+import { buildCoverageType, normalizeConditionCodeForEmr } from '../domain/fhir/twEmrTerminology'
+import type { CoverageIdentityOption } from '../domain/fhir/twEmrTerminology'
 import type { FeatureShowcaseSnapshot } from './types'
 
 const PATIENT_IDENTIFIER_SYSTEM = 'https://rxfhir.app/fhir/medical-record-number'
@@ -38,11 +40,13 @@ function encounterDisplay(code: MockScenarioPack['creator']['encounter']['class'
 }
 
 function coverageTypeDisplay(type: MockScenarioPack['creator']['coverage']['type'], locale: SupportedLocale): string {
-  const labels = {
-    EHCPOL: locale === 'en' ? 'National Health Insurance (NHI)' : '全民健保（NHI）',
-    PAY: locale === 'en' ? 'Self-pay' : '自費',
-    PUBLICPOL: locale === 'en' ? 'Public Insurance' : '公保'
-  } as const
+  const labels: Record<CoverageIdentityOption, string> = {
+    nhi: locale === 'en' ? 'National Health Insurance (NHI)' : '全民健保（NHI）',
+    selfpay: locale === 'en' ? 'Self-pay' : '自費',
+    public: locale === 'en' ? 'Public Insurance' : '公務人員保險',
+    injury: locale === 'en' ? 'Ordinary injury' : '普通傷害',
+    occupational: locale === 'en' ? 'Occupational injury' : '職業傷害'
+  }
   return labels[type]
 }
 
@@ -77,9 +81,10 @@ function buildScenarioResources(scenario: MockScenarioPack, locale: SupportedLoc
     type: [{
       coding: [{
         system: 'http://terminology.hl7.org/CodeSystem/organization-type',
-        code: scenario.creator.organization.type.toUpperCase().slice(0, 4),
-        display: organizationTypeDisplay(scenario.creator.organization.type, locale)
-      }]
+        code: 'prov',
+        display: locale === 'en' ? 'Healthcare Provider' : 'Healthcare Provider'
+      }],
+      text: organizationTypeDisplay(scenario.creator.organization.type, locale)
     }],
     identifier: [{
       system: ORGANIZATION_IDENTIFIER_SYSTEM,
@@ -93,7 +98,14 @@ function buildScenarioResources(scenario: MockScenarioPack, locale: SupportedLoc
     identifier: [{
       use: 'official',
       system: PATIENT_IDENTIFIER_SYSTEM,
-      value: scenario.creator.patient.studentId
+      value: scenario.creator.patient.studentId,
+      type: {
+        coding: [{
+          system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+          code: 'MR',
+          display: 'Medical record number'
+        }]
+      }
     }],
     name: [{
       use: 'official',
@@ -154,14 +166,14 @@ function buildScenarioResources(scenario: MockScenarioPack, locale: SupportedLoc
         code: scenario.creator.condition.clinicalStatus
       }]
     },
-    code: {
+    code: normalizeConditionCodeForEmr({
       coding: [{
         system: 'http://hl7.org/fhir/sid/icd-10-cm',
         code: scenario.creator.condition.icdCode,
         display: scenario.creator.condition.icdDisplay
       }],
       text: scenario.creator.condition.icdDisplay
-    },
+    }),
     subject: { reference: `Patient/${patient.id}` },
     encounter: { reference: `Encounter/${encounter.id}` }
   }
@@ -193,14 +205,10 @@ function buildScenarioResources(scenario: MockScenarioPack, locale: SupportedLoc
     id: `${prefix}-coverage`,
     status: 'active',
     subscriberId: scenario.creator.coverage.subscriberId,
-    type: {
-      coding: [{
-        system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
-        code: scenario.creator.coverage.type,
-        display: coverageTypeDisplay(scenario.creator.coverage.type, locale)
-      }],
-      text: coverageTypeDisplay(scenario.creator.coverage.type, locale)
-    },
+    type: buildCoverageType(
+      scenario.creator.coverage.type,
+      coverageTypeDisplay(scenario.creator.coverage.type, locale)
+    ),
     identifier: [{
       system: COVERAGE_IDENTIFIER_SYSTEM,
       value: scenario.creator.coverage.subscriberId

@@ -136,8 +136,8 @@ export const mockResourcePresetSources: MockResourcePresetSourceMap = {
     }
   ],
   coverage: [
-    { type: 'PAY', subscriberId: 'HC009900111', periodStart: '2026-03-01', periodEnd: '' },
-    { type: 'PUBLICPOL', subscriberId: 'HC009900222', periodStart: '2026-01-15', periodEnd: '2026-12-31' }
+    { type: 'selfpay', subscriberId: 'HC009900111', periodStart: '2026-03-01', periodEnd: '' },
+    { type: 'public', subscriberId: 'HC009900222', periodStart: '2026-01-15', periodEnd: '2026-12-31' }
   ],
   medication: [
     {

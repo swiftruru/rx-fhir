@@ -374,9 +374,11 @@
         "required": "Insurance type is required",
         "hint": "Choose the insurance type most relevant to this visit, such as National Health Insurance or self-pay.",
         "options": {
-          "EHCPOL":    "National Health Insurance (NHI)",
-          "PAY":       "Self-pay",
-          "PUBLICPOL": "Government Employee Insurance"
+          "nhi":          "National Health Insurance (NHI)",
+          "selfpay":      "Self-pay",
+          "public":       "Government Employee Insurance",
+          "injury":       "Ordinary injury",
+          "occupational": "Occupational injury"
         }
       },
       "insuranceId":   { "label": "NHI Card / Insurance ID", "placeholder": "e.g. A123456789", "required": "Insurance ID is required", "hint": "Enter an insurance identifier, such as an NHI card number or member ID." },

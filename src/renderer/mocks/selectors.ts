@@ -33,6 +33,7 @@ import type {
   PractitionerMockInput,
   PractitionerMockSource
 } from './types'
+import { resolveIcd10CmDisplay } from '../domain/fhir/twEmrTerminology'
 import { validateMockScenarioPacks } from './validate'
 
 validateMockScenarioPacks(mockScenarioPackSources)
@@ -88,7 +89,13 @@ function resolvePractitioner(source: PractitionerMockSource, locale?: string): P
 }
 
 function resolveCondition(source: ConditionMockSource, locale?: string): ConditionMockInput {
-  return resolveLocalizedResource(source, locale)
+  const resolved = resolveLocalizedResource(source, locale)
+  const canonicalDisplay = resolveIcd10CmDisplay(resolved.icdCode, resolved.icdDisplay)
+  // English mock fills should show validator-canonical ICD-10-CM display names.
+  if (normalizeLocale(locale) === 'en' && canonicalDisplay !== resolved.icdDisplay) {
+    return { ...resolved, icdDisplay: canonicalDisplay }
+  }
+  return resolved
 }
 
 function resolveObservation(source: ObservationMockSource, locale?: string): ObservationMockInput {

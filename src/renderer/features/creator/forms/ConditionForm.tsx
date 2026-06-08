@@ -15,6 +15,7 @@ import { buildFormErrorSummaryItems } from '../lib/formErrorSummary'
 import { useCreatorMockFill, useLiveDemoTypedMockFill } from '../hooks/useCreatorMockFill'
 import { useLiveDemoFormController } from '../hooks/useLiveDemoFormController'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../hooks/useCreatorDraft'
+import { normalizeConditionCodeForEmr } from '../../../domain/fhir/twEmrTerminology'
 import { findOrCreateDetailed, putResource, resetLoggedRequests } from '../../../services/fhirClient'
 import { useCreatorStore } from '../store/creatorStore'
 
@@ -121,14 +122,14 @@ export default function ConditionForm({ onSuccess }: Props): React.JSX.Element {
             code: data.clinicalStatus
           }]
         },
-        code: {
+        code: normalizeConditionCodeForEmr({
           coding: [{
             system: 'http://hl7.org/fhir/sid/icd-10',
             code: data.icdCode,
             display: data.icdDisplay
           }],
           text: data.icdDisplay
-        },
+        }),
         subject: resources.patient
           ? { reference: `Patient/${resources.patient.id}` }
           : { display: 'Unknown Patient' },

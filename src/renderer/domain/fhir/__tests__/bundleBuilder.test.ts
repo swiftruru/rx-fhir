@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { assembleDocumentBundle, buildComposition, toSelfContainedExportBundle } from '../bundleBuilder'
+import {
+  assembleDocumentBundle,
+  buildComposition,
+  resolveBundleAssemblyMode,
+  shouldConvertBundleToSelfContainedExport,
+  toSelfContainedExportBundle
+} from '../bundleBuilder'
 
 describe('bundleBuilder', () => {
   it('assembles a document bundle with Composition first and mirrored patient identifier', () => {
@@ -173,7 +179,7 @@ describe('bundleBuilder', () => {
     ])
     expect(bundledComposition.encounter?.reference).toBe('Encounter/250806')
     expect(bundledComposition.section?.map((section) => section.code?.coding?.[0]?.code)).toEqual([
-      '48768-6',
+      '29762-2',
       '85353-1',
       '29551-9'
     ])
@@ -295,23 +301,34 @@ describe('bundleBuilder', () => {
     expect(bundledOrg.telecom?.[0]?.system).toBe('phone')
     expect(bundledOrg.address?.[0]?.text).toBe('unknown')
 
-    // Encounter gets a default serviceType
+    // Encounter class maps HL7 AMB → TW CaseType 01; serviceType filled when missing
+    expect(bundledEncounter.class?.system).toBe('https://standard-interoperability-lab.com/fhir/CodeSystem/casetype')
+    expect(bundledEncounter.class?.code).toBe('01')
     expect(bundledEncounter.serviceType?.coding?.[0]?.code).toBe('124')
 
     // Condition: category, note, ICD-10-CM slice
-    expect(bundledCondition.category?.[0]?.coding?.[0]?.code).toBe('encounter-diagnosis')
+    expect(bundledCondition.category?.[0]?.coding?.[0]?.code).toBe('problem-list-item')
     expect(bundledCondition.note?.[0]?.text).toBeTruthy()
-    expect(bundledCondition.code?.coding?.some((c) => c.system === 'http://hl7.org/fhir/sid/icd-10-cm' && c.code === 'K21.9')).toBe(true)
+    expect(bundledCondition.code?.coding).toEqual([{
+      system: 'https://twcore.mohw.gov.tw/ig/twcore/CodeSystem/icd-10-cm-2021-tw',
+      code: 'K21.9',
+      display: '胃食道逆性疾病未伴有食道炎'
+    }])
 
     // Observation: VSCat + UCUM code on valueQuantity
     expect(bundledObservation.category?.[0]?.coding?.[0]?.code).toBe('vital-signs')
     expect(bundledObservation.valueQuantity?.code).toBe('kg')
 
     // MedicationRequest: 2nd identifier, category, insurance, timing.repeat, dispense fields
-    // (Extension-TotalDuration is intentionally NOT auto-injected — current TW Core EMR
-    // validator packages don't ship its definition; expectedSupplyDuration covers the same data.)
     expect(bundledMedReq.identifier?.length).toBeGreaterThanOrEqual(2)
-    expect(bundledMedReq.category?.[0]?.coding?.[0]?.code).toBe('OUTPATIENT')
+    expect(bundledMedReq.extension?.some((ext) => (
+      ext.url === 'https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Extension-TotalDuration'
+    ))).toBe(true)
+    expect(bundledMedReq.category?.[0]?.coding?.[0]).toEqual({
+      system: 'https://twcore.mohw.gov.tw/ig/emr/CodeSystem/prescription',
+      code: 'B',
+      display: '慢性病處方箋'
+    })
     expect(bundledMedReq.insurance?.[0]?.reference).toBeTruthy()
     expect(bundledMedReq.dosageInstruction?.[0]?.timing?.repeat?.frequency).toBe(1)
     expect(bundledMedReq.dispenseRequest?.numberOfRepeatsAllowed).toBe(0)
@@ -463,7 +480,7 @@ describe('bundleBuilder', () => {
     expect(patientEntry.resource?.meta?.source).toBeUndefined()
   })
 
-  it('toSelfContainedExportBundle strips Extension-TotalDuration (definition missing in current TW EMR validator)', () => {
+  it('toSelfContainedExportBundle preserves Extension-TotalDuration on MedicationRequest', () => {
     const hapiBundle: fhir4.Bundle = {
       resourceType: 'Bundle',
       type: 'document',
@@ -490,11 +507,219 @@ describe('bundleBuilder', () => {
 
     const exportable = toSelfContainedExportBundle(hapiBundle)
     const medReq = exportable.entry?.[0]?.resource as fhir4.MedicationRequest
-    // Either extension array is undefined or empty — the unknown extension is gone.
-    expect(medReq.extension?.some((e) => e.url === 'https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Extension-TotalDuration')).not.toBe(true)
+    expect(medReq.extension?.some((e) => e.url === 'https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Extension-TotalDuration')).toBe(true)
   })
 
-  it('enrichCondition uses ICD-10-CM canonical display (American spelling) for the added slice', () => {
+  it('enrichPatient keeps only one medicalRecord identifier for TW Patient-EP', () => {
+    const resources = {
+      patient: {
+        resourceType: 'Patient',
+        id: 'patient-1',
+        identifier: [
+          {
+            system: 'https://rxfhir.app/fhir/medical-record-number',
+            value: 'MR-001',
+            type: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0203', code: 'MR' }] }
+          },
+          {
+            system: 'https://www.moe.edu.tw/student-id',
+            value: 'S1101001',
+            type: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0203', code: 'MR' }] }
+          }
+        ],
+        name: [{ text: 'Alice Example' }],
+        birthDate: '2000-01-01'
+      } satisfies fhir4.Patient,
+      organization: {
+        resourceType: 'Organization',
+        id: 'org-1',
+        name: 'Example Hospital'
+      } satisfies fhir4.Organization
+    }
+
+    const composition = buildComposition(resources, '電子處方箋', '2026-04-10T10:00:00Z')
+    const bundle = assembleDocumentBundle(resources, composition)
+    const patient = bundle.entry?.find((entry) => entry.resource?.resourceType === 'Patient')?.resource as fhir4.Patient
+
+    expect(patient.identifier).toHaveLength(1)
+    expect(patient.identifier?.[0]?.value).toBe('MR-001')
+  })
+
+  it('enrichCoverage maps legacy EHCPOL coding to TW PaymentCategory', () => {
+    const resources = {
+      patient: {
+        resourceType: 'Patient',
+        id: 'patient-1',
+        identifier: [{ system: 'https://hospital.example/patients', value: 'P-001' }],
+        name: [{ text: 'Alice Example' }]
+      } satisfies fhir4.Patient,
+      organization: {
+        resourceType: 'Organization',
+        id: 'org-1',
+        name: 'Example Hospital'
+      } satisfies fhir4.Organization,
+      coverage: {
+        resourceType: 'Coverage',
+        id: 'cov-1',
+        status: 'active',
+        type: {
+          coding: [{
+            system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+            code: 'EHCPOL',
+            display: 'extended healthcare'
+          }],
+          text: '全民健保（NHI）'
+        },
+        beneficiary: { reference: 'Patient/patient-1' },
+        payor: [{ display: 'NHI' }]
+      } satisfies fhir4.Coverage
+    }
+
+    const composition = buildComposition(resources, '電子處方箋', '2026-04-10T10:00:00Z')
+    const bundle = assembleDocumentBundle(resources, composition)
+    const coverage = bundle.entry?.find((entry) => entry.resource?.resourceType === 'Coverage')?.resource as fhir4.Coverage
+
+    expect(coverage.type?.coding?.[0]?.system).toBe('https://twcore.mohw.gov.tw/ig/emr/CodeSystem/paymentcategory')
+    expect(coverage.type?.coding?.[0]?.code).toBe('4')
+    expect(coverage.type?.text).toBe('全民健保（NHI）')
+  })
+
+  it('replaces server-reused Condition category and ICD display during assembly', () => {
+    const resources = {
+      patient: { resourceType: 'Patient', id: 'p1', identifier: [{ system: 'x', value: 'p-1' }], name: [{ text: 'A' }] } satisfies fhir4.Patient,
+      organization: { resourceType: 'Organization', id: 'o1', name: 'Hosp' } satisfies fhir4.Organization,
+      condition: {
+        resourceType: 'Condition',
+        id: '257196',
+        meta: { profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Condition-EP'] },
+        clinicalStatus: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-clinical', code: 'active' }] },
+        category: [{
+          coding: [{
+            system: 'http://terminology.hl7.org/CodeSystem/condition-category',
+            code: 'encounter-diagnosis',
+            display: 'Encounter Diagnosis'
+          }]
+        }],
+        code: {
+          text: '胃食道逆流疾病',
+          coding: [{
+            system: 'https://twcore.mohw.gov.tw/ig/twcore/CodeSystem/icd-10-cm-2021-tw',
+            code: 'K21.9',
+            display: '胃食道逆流疾病'
+          }]
+        },
+        subject: { reference: 'Patient/p1' }
+      } satisfies fhir4.Condition
+    }
+
+    const composition = buildComposition(resources, '電子處方箋', '2026-04-10T10:55:00')
+    const bundle = assembleDocumentBundle(resources, composition, { mode: 'export' })
+    const condition = bundle.entry?.find((e) => e.resource?.resourceType === 'Condition')?.resource as fhir4.Condition
+
+    expect(condition.category?.[0]?.coding?.[0]?.code).toBe('problem-list-item')
+    expect(condition.clinicalStatus?.coding?.[0]?.display).toBe('Active')
+    expect(condition.code?.coding?.[0]).toEqual({
+      system: 'https://twcore.mohw.gov.tw/ig/twcore/CodeSystem/icd-10-cm-2021-tw',
+      code: 'K21.9',
+      display: '胃食道逆性疾病未伴有食道炎'
+    })
+  })
+
+  it('rebuilds stale Composition sections and canonical LOINC displays during assembly', () => {
+    const resources = {
+      patient: { resourceType: 'Patient', id: 'p1', identifier: [{ system: 'x', value: 'p-1' }], name: [{ text: 'A' }], birthDate: '2000-01-01' } satisfies fhir4.Patient,
+      organization: { resourceType: 'Organization', id: 'o1', name: 'Hosp' } satisfies fhir4.Organization,
+      practitioner: { resourceType: 'Practitioner', id: 'pr1', name: [{ text: 'Dr.' }] } satisfies fhir4.Practitioner,
+      encounter: { resourceType: 'Encounter', id: 'e1', status: 'finished', class: { code: 'AMB' }, period: { start: '2026-03-19T10:55' } } satisfies fhir4.Encounter,
+      coverage: {
+        resourceType: 'Coverage',
+        id: 'cov1',
+        status: 'active',
+        beneficiary: { reference: 'Patient/p1' },
+        payor: [{ display: 'NHI' }]
+      } satisfies fhir4.Coverage,
+      condition: {
+        resourceType: 'Condition',
+        id: 'c1',
+        code: {
+          coding: [{
+            system: 'https://twcore.mohw.gov.tw/ig/twcore/CodeSystem/icd-10-cm-2021-tw',
+            code: 'K21.9',
+            display: '胃食道逆流疾病'
+          }],
+          text: '胃食道逆流'
+        },
+        subject: { reference: 'Patient/p1' }
+      } satisfies fhir4.Condition,
+      observation: {
+        resourceType: 'Observation',
+        id: 'ob1',
+        status: 'final',
+        code: { coding: [{ system: 'http://loinc.org', code: '29463-7', display: 'Body weight' }] },
+        valueQuantity: { value: 54, unit: 'kg', system: 'http://unitsofmeasure.org' },
+        subject: { reference: 'Patient/p1' }
+      } satisfies fhir4.Observation,
+      medication: {
+        resourceType: 'Medication',
+        id: 'm1',
+        code: { coding: [{ system: 'http://www.whocc.no/atc', code: 'A02BC01', display: 'omeprazole' }] }
+      } satisfies fhir4.Medication,
+      medicationRequest: {
+        resourceType: 'MedicationRequest',
+        id: 'mr1',
+        status: 'active',
+        intent: 'order',
+        category: [{
+          coding: [{
+            system: 'https://twcore.mohw.gov.tw/ig/emr/CodeSystem/prescription',
+            code: 'B',
+            display: '慢性病連續處方箋：處方用藥，一次給予8日(含)以上之用藥量'
+          }]
+        }],
+        medicationReference: { reference: 'Medication/m1' },
+        subject: { reference: 'Patient/p1' },
+        dispenseRequest: { expectedSupplyDuration: { value: 14, unit: 'd', system: 'http://unitsofmeasure.org', code: 'd' } }
+      } satisfies fhir4.MedicationRequest
+    }
+
+    const staleComposition = {
+      resourceType: 'Composition',
+      id: 'stale-comp',
+      status: 'final',
+      type: { coding: [{ system: 'http://loinc.org', code: '57833-6', display: 'Prescription for medication' }] },
+      title: '電子處方箋',
+      date: '2026-04-10T10:55:00',
+      subject: { reference: 'Patient/p1' },
+      section: [{
+        title: '保險資訊',
+        code: { coding: [{ system: 'http://loinc.org', code: '29762-2', display: 'Social history note' }] },
+        entry: [{ reference: 'Coverage/cov1', type: 'Coverage' }]
+      }],
+      meta: { profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Composition-EP'] }
+    } satisfies fhir4.Composition
+
+    const bundle = assembleDocumentBundle(resources, staleComposition, { mode: 'export' })
+    const composition = bundle.entry?.[0]?.resource as fhir4.Composition
+    const condition = bundle.entry?.find((e) => e.resource?.resourceType === 'Condition')?.resource as fhir4.Condition
+    const medReq = bundle.entry?.find((e) => e.resource?.resourceType === 'MedicationRequest')?.resource as fhir4.MedicationRequest
+
+    expect(composition.section?.[0]?.code?.coding?.[0]).toEqual({
+      system: 'http://loinc.org',
+      code: '29762-2'
+    })
+    expect(composition.section?.[0]?.code?.coding?.[0]?.display).toBeUndefined()
+    expect(composition.section?.map((section) => section.code?.coding?.[0]?.code)).toEqual([
+      '29762-2',
+      '85353-1',
+      '29548-5',
+      '29551-9'
+    ])
+    expect(composition.section?.[3]?.entry?.map((entry) => entry.type)).toEqual(['Medication', 'MedicationRequest'])
+    expect(condition.code?.coding?.[0]?.display).toBe('胃食道逆性疾病未伴有食道炎')
+    expect(medReq.category?.[0]?.coding?.[0]?.display).toBe('慢性病處方箋')
+  })
+
+  it('enrichCondition normalizes to TW icd-10-cm-2021-tw CodeSystem', () => {
     const resources = {
       patient: { resourceType: 'Patient', id: 'p1', identifier: [{ system: 'x', value: 'p-1' }], name: [{ text: 'A' }], birthDate: '2000-01-01' } satisfies fhir4.Patient,
       organization: { resourceType: 'Organization', id: 'o1', name: 'Hosp' } satisfies fhir4.Organization,
@@ -512,11 +737,138 @@ describe('bundleBuilder', () => {
     const bundle = assembleDocumentBundle(resources, composition, { mode: 'export' })
     const conditionEntry = bundle.entry?.find((e) => e.resource?.resourceType === 'Condition')!
     const cond = conditionEntry.resource as fhir4.Condition
-    const cmCoding = cond.code?.coding?.find((c) => c.system === 'http://hl7.org/fhir/sid/icd-10-cm')
+    expect(cond.code?.coding).toHaveLength(1)
+    expect(cond.code?.coding?.[0]).toEqual({
+      system: 'https://twcore.mohw.gov.tw/ig/twcore/CodeSystem/icd-10-cm-2021-tw',
+      code: 'K21.9',
+      display: '胃食道逆性疾病未伴有食道炎'
+    })
+  })
 
-    // ICD-10 (British spelling) and ICD-10-CM (American spelling) MUST differ
-    expect(cmCoding?.display).toBe('Gastro-esophageal reflux disease without esophagitis')
-    expect(cond.code?.coding?.find((c) => c.system === 'http://hl7.org/fhir/sid/icd-10')?.display)
-      .toBe('Gastro-oesophageal reflux disease without oesophagitis')
+  it('resolveBundleAssemblyMode uses submit when a FHIR server base URL is configured', () => {
+    expect(resolveBundleAssemblyMode('https://hapi.fhir.org/baseR4')).toBe('submit')
+    expect(resolveBundleAssemblyMode('https://conference.example/fhir')).toBe('submit')
+    expect(resolveBundleAssemblyMode()).toBe('export')
+  })
+
+  it('shouldConvertBundleToSelfContainedExport keeps TW submit bundles with server fullUrls', () => {
+    const resources = {
+      patient: { resourceType: 'Patient', id: 'p1', identifier: [{ system: 'x', value: 'p-1' }], name: [{ text: 'A' }] } satisfies fhir4.Patient,
+      organization: { resourceType: 'Organization', id: 'o1', name: 'Hosp' } satisfies fhir4.Organization
+    }
+    const composition = buildComposition(resources, '電子處方箋', '2026-04-10T10:55:00')
+    const bundle = assembleDocumentBundle(resources, composition, {
+      mode: 'submit',
+      serverBaseUrl: 'https://conference.example/fhir'
+    })
+    expect(shouldConvertBundleToSelfContainedExport(bundle)).toBe(false)
+  })
+
+  it('submit mode rewrites stale Coverage patient refs and MedRequest insurance to ResourceType/id', () => {
+    const resources = {
+      patient: {
+        resourceType: 'Patient',
+        id: '257189',
+        identifier: [{ system: 'x', value: 'p-1' }],
+        name: [{ text: 'Alice' }]
+      } satisfies fhir4.Patient,
+      organization: { resourceType: 'Organization', id: '250781', name: 'Hosp' } satisfies fhir4.Organization,
+      practitioner: { resourceType: 'Practitioner', id: '250783', name: [{ text: 'Dr.' }] } satisfies fhir4.Practitioner,
+      encounter: {
+        resourceType: 'Encounter',
+        id: '257211',
+        status: 'finished',
+        class: { code: 'AMB' },
+        period: { start: '2026-05-16T10:20:00+08:00' }
+      } satisfies fhir4.Encounter,
+      coverage: {
+        resourceType: 'Coverage',
+        id: '250787',
+        status: 'active',
+        subscriber: { reference: 'Patient/250782' },
+        beneficiary: { reference: 'Patient/250782' },
+        payor: [{ display: 'NHI' }]
+      } satisfies fhir4.Coverage,
+      medication: {
+        resourceType: 'Medication',
+        id: '250788',
+        code: { coding: [{ system: 'http://www.whocc.no/atc', code: 'A02BC01' }] }
+      } satisfies fhir4.Medication,
+      medicationRequest: {
+        resourceType: 'MedicationRequest',
+        id: '257214',
+        status: 'active',
+        intent: 'order',
+        medicationReference: { reference: 'Medication/250788' },
+        subject: { reference: 'Patient/257189' },
+        insurance: [{ reference: 'https://hapi.fhir.tw/fhir/Coverage/250787', type: 'Coverage' }],
+        dispenseRequest: { expectedSupplyDuration: { value: 14, unit: 'd', code: 'd' } }
+      } satisfies fhir4.MedicationRequest
+    }
+
+    const composition = buildComposition(resources, '電子處方箋', '2026-04-10T10:55:00')
+    const bundle = assembleDocumentBundle(resources, composition, {
+      mode: 'submit',
+      serverBaseUrl: 'https://hapi.fhir.tw/fhir'
+    })
+    const coverage = bundle.entry?.find((e) => e.resource?.resourceType === 'Coverage')?.resource as fhir4.Coverage
+    const medReq = bundle.entry?.find((e) => e.resource?.resourceType === 'MedicationRequest')?.resource as fhir4.MedicationRequest
+
+    expect(coverage.subscriber?.reference).toBe('Patient/257189')
+    expect(coverage.beneficiary?.reference).toBe('Patient/257189')
+    expect(medReq.insurance?.[0]?.reference).toBe('Coverage/250787')
+  })
+
+  it('submit mode uses server-absolute fullUrls for every entry including Composition', () => {
+    const resources = {
+      patient: {
+        resourceType: 'Patient',
+        id: '257189',
+        identifier: [{ system: 'x', value: 'p-1' }],
+        name: [{ text: 'Alice' }]
+      } satisfies fhir4.Patient,
+      organization: {
+        resourceType: 'Organization',
+        id: '250781',
+        name: 'Example Hospital'
+      } satisfies fhir4.Organization
+    }
+    const composition = buildComposition(resources, '電子處方箋', '2026-04-10T10:55:00')
+    const bundle = assembleDocumentBundle(resources, composition, {
+      mode: 'submit',
+      serverBaseUrl: 'https://conference.example/fhir'
+    })
+    const base = 'https://conference.example/fhir'
+    expect(bundle.entry?.every((entry) => (
+      entry.fullUrl?.startsWith(`${base}/`)
+    ))).toBe(true)
+    const bundledComposition = bundle.entry?.[0]?.resource as fhir4.Composition
+    expect(bundledComposition.subject?.reference).toBe('Patient/257189')
+    expect(bundle.entry?.[0]?.fullUrl).toBe(`${base}/Composition/${composition.id}`)
+  })
+
+  it('strips HAPI meta.tag from bundled resources', () => {
+    const resources = {
+      patient: {
+        resourceType: 'Patient',
+        id: 'p1',
+        identifier: [{ system: 'https://hospital.example/patients', value: 'P-001' }],
+        name: [{ text: 'Alice' }],
+        meta: {
+          tag: [{
+            system: 'http://terminology.hl7.org/CodeSystem/v3-ObservationValue',
+            code: 'SUBSETTED',
+            display: 'Resource encoded in summary mode'
+          }]
+        }
+      } satisfies fhir4.Patient,
+      organization: { resourceType: 'Organization', id: 'o1', name: 'Hosp' } satisfies fhir4.Organization
+    }
+
+    const composition = buildComposition(resources, '電子處方箋', '2026-04-10T10:00:00Z')
+    const bundle = assembleDocumentBundle(resources, composition)
+    const patient = bundle.entry?.find((e) => e.resource?.resourceType === 'Patient')?.resource as fhir4.Patient
+
+    expect(patient.meta?.tag).toBeUndefined()
   })
 })

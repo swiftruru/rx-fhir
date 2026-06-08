@@ -21,8 +21,8 @@ import { useCreatorMockFill, useLiveDemoTypedMockFill } from '../hooks/useCreato
 import { useLiveDemoFormController } from '../hooks/useLiveDemoFormController'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../hooks/useCreatorDraft'
 import { exportBundleJson, getBundleFileErrorMessage } from '../../../services/bundleFileService'
-import { postResource, resetLoggedRequests, getFhirBaseUrl } from '../../../services/fhirClient'
-import { buildComposition, assembleDocumentBundle } from '../../../services/bundleService'
+import { postResource, resetLoggedRequests } from '../../../services/fhirClient'
+import { buildComposition, assembleDocumentBundle, resolveBundleAssemblyMode } from '../../../services/bundleService'
 import { toDateTimeLocalValue } from '../../../domain/fhir/dateTime'
 import { buildFhirAuditFingerprint, runHybridBundleAudit, runLocalBundleAudit, type FhirAuditIssue } from '../../../domain/fhir/validation'
 import { useCreatorStore } from '../store/creatorStore'
@@ -106,10 +106,13 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
   const preview = useMemo(() => {
     if (!formData.title || !formData.date) return null
     const composition = buildComposition(resources, formData.title, formData.date)
-    // Preview drives JSON export, Consumer preview handoff, and in-app validation.
-    // Use 'export' mode so the bundle is self-contained (urn:uuid fullUrls + urn:uuid
-    // internal references) — required for external FHIR validators to resolve refs.
-    return assembleDocumentBundle(resources, composition, { mode: 'export' })
+    // Preview/submit both use server-absolute fullUrls when a FHIR base URL is set
+    // (TW Core EMR Bundle-EP / IG examples). urn:uuid export is only for offline use.
+    const bundleMode = resolveBundleAssemblyMode(serverUrl)
+    return assembleDocumentBundle(resources, composition, {
+      mode: bundleMode,
+      serverBaseUrl: bundleMode === 'submit' ? serverUrl : undefined
+    })
   }, [formData.date, formData.title, resources, serverUrl])
   const previewFingerprint = useMemo(
     () => (preview ? buildFhirAuditFingerprint(preview) : undefined),
@@ -211,9 +214,12 @@ export default function CompositionForm({ onBundleSuccess }: Props): React.JSX.E
 
       setBundleStatus('loading')
       setSubmittingBundle(true)
-      // HAPI submission stays in 'submit' mode: absolute server URLs in fullUrls
-      // and ResourceType/id references (HAPI rejects urn:uuid: with HAPI-0505).
-      const bundle = assembleDocumentBundle(resources, composition, { serverBaseUrl: getFhirBaseUrl(), mode: 'submit' })
+      // Use the same serverUrl as preview/validation — not a separate localStorage read.
+      const bundleMode = resolveBundleAssemblyMode(serverUrl)
+      const bundle = assembleDocumentBundle(resources, composition, {
+        mode: bundleMode,
+        serverBaseUrl: bundleMode === 'submit' ? serverUrl : undefined
+      })
 
       const createdBundle = await postResource<fhir4.Bundle>('Bundle', bundle)
       const activeLiveDemoSubmitRun = getActiveLiveDemoSubmitRunId()

@@ -1,7 +1,7 @@
 import type { BundleJsonOpenResult, BundleJsonSaveResult, RecentBundleFileEntry, RxFhirDesktopBridge, SaveFileResult } from '../types/electron'
 import type { BundleSummary } from '../types/fhir'
 import { buildPostmanCollection, buildCreatorPostmanCollection, buildPrescriptionHtml } from './bundleExportService'
-import { toSelfContainedExportBundle } from './bundleService'
+import { shouldConvertBundleToSelfContainedExport, toSelfContainedExportBundle } from './bundleService'
 import type { FhirRequestEntry } from '../features/creator/store/fhirInspectorStore'
 import {
   BundleFileError,
@@ -30,7 +30,9 @@ export async function exportBundleJson(
   // Always emit a self-contained Document Bundle so external FHIR validators
   // can resolve internal references. Bundles retrieved from HAPI carry mixed
   // absolute/relative references that fail Bundle resolution rules.
-  const exportable = toSelfContainedExportBundle(bundle)
+  const exportable = shouldConvertBundleToSelfContainedExport(bundle)
+    ? toSelfContainedExportBundle(bundle)
+    : bundle
   return bridge.saveBundleJson({
     content: JSON.stringify(exportable, null, 2),
     defaultFileName: defaultFileName ?? deriveBundleFileName(exportable)

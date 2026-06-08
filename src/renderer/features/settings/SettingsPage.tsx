@@ -41,7 +41,8 @@ import type { ServerCapabilities, ServerCapabilitySupport } from '../../../share
 
 const PRESET_SERVERS = [
   { label: 'HAPI FHIR (International)', url: 'https://hapi.fhir.org/baseR4' },
-  { label: 'HAPI FHIR TW', url: 'https://hapi.fhir.tw/fhir' }
+  { label: 'HAPI FHIR TW', url: 'https://hapi.fhir.tw/fhir' },
+  { label: 'TW CAT FHIR Server (Conference)', url: 'https://twcat-fhirsrv.dicom.org.tw/fhir' }
 ]
 
 interface FormData {

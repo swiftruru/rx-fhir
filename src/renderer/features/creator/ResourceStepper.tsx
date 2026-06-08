@@ -156,17 +156,9 @@ function getEncounterTypeLabel(code: string | undefined, t: (key: string) => str
   }
 }
 
-function getCoverageTypeLabel(code: string | undefined, t: (key: string) => string): string | undefined {
-  switch (code) {
-    case 'EHCPOL':
-      return t('forms.coverage.type.options.EHCPOL')
-    case 'PAY':
-      return t('forms.coverage.type.options.PAY')
-    case 'PUBLICPOL':
-      return t('forms.coverage.type.options.PUBLICPOL')
-    default:
-      return undefined
-  }
+function getCoverageTypeLabel(coverage: fhir4.Coverage | undefined): string | undefined {
+  if (!coverage) return undefined
+  return coverage.type?.text || undefined
 }
 
 function getMedicationRequestFrequency(resource?: fhir4.MedicationRequest): string | undefined {
@@ -199,7 +191,7 @@ function getStepSummary(
       return joinSummary(getCodeableText(resources.observation?.code), formatQuantity(resources.observation?.valueQuantity))
     case 'coverage':
       return joinSummary(
-        getCoverageTypeLabel(resources.coverage?.type?.coding?.[0]?.code, t) || getCodeableText(resources.coverage?.type),
+        getCoverageTypeLabel(resources.coverage) || getCodeableText(resources.coverage?.type),
         getIdentifierValue(resources.coverage)
       )
     case 'medication':

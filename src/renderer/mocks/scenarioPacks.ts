@@ -102,7 +102,7 @@ export const mockScenarioPackSources: MockScenarioPackSource[] = [
         }
       },
       coverage: {
-        type: 'EHCPOL',
+        type: 'nhi',
         subscriberId: 'HC001234567',
         periodStart: '2026-01-01',
         periodEnd: '2026-12-31'
@@ -201,7 +201,7 @@ export const mockScenarioPackSources: MockScenarioPackSource[] = [
         clinicalStatus: 'active',
         text: {
           'zh-TW': { icdDisplay: '胃食道逆流疾病' },
-          en: { icdDisplay: 'Gastroesophageal reflux disease' }
+          en: { icdDisplay: 'Gastro-esophageal reflux disease without esophagitis' }
         }
       },
       observation: {
@@ -215,7 +215,7 @@ export const mockScenarioPackSources: MockScenarioPackSource[] = [
         }
       },
       coverage: {
-        type: 'EHCPOL',
+        type: 'nhi',
         subscriberId: 'HC001234568',
         periodStart: '2026-01-01',
         periodEnd: '2026-12-31'
@@ -327,7 +327,7 @@ export const mockScenarioPackSources: MockScenarioPackSource[] = [
         }
       },
       coverage: {
-        type: 'EHCPOL',
+        type: 'nhi',
         subscriberId: 'HC001234569',
         periodStart: '2026-01-01',
         periodEnd: '2026-12-31'
@@ -439,7 +439,7 @@ export const mockScenarioPackSources: MockScenarioPackSource[] = [
         }
       },
       coverage: {
-        type: 'EHCPOL',
+        type: 'nhi',
         subscriberId: 'HC001234570',
         periodStart: '2026-01-01',
         periodEnd: '2026-12-31'
@@ -551,7 +551,7 @@ export const mockScenarioPackSources: MockScenarioPackSource[] = [
         }
       },
       coverage: {
-        type: 'PUBLICPOL',
+        type: 'public',
         subscriberId: 'HC001234571',
         periodStart: '2026-01-01',
         periodEnd: '2026-12-31'
@@ -645,11 +645,11 @@ export const mockScenarioPackSources: MockScenarioPackSource[] = [
         periodEnd: ''
       },
       condition: {
-        icdCode: 'T78.4',
+        icdCode: 'T78.40XA',
         clinicalStatus: 'active',
         text: {
-          'zh-TW': { icdDisplay: '過敏反應，未明示' },
-          en: { icdDisplay: 'Allergic reaction, unspecified' }
+          'zh-TW': { icdDisplay: '過敏，未明示，初診' },
+          en: { icdDisplay: 'Allergy, unspecified, initial encounter' }
         }
       },
       observation: {
@@ -663,7 +663,7 @@ export const mockScenarioPackSources: MockScenarioPackSource[] = [
         }
       },
       coverage: {
-        type: 'PAY',
+        type: 'selfpay',
         subscriberId: 'HC001234572',
         periodStart: '2026-03-01',
         periodEnd: ''
@@ -757,11 +757,11 @@ export const mockScenarioPackSources: MockScenarioPackSource[] = [
         periodEnd: relativeDatePlusMinutes(acuteMskStart, 20)
       },
       condition: {
-        icdCode: 'M79.1',
+        icdCode: 'M79.10',
         clinicalStatus: 'active',
         text: {
-          'zh-TW': { icdDisplay: '肌痛' },
-          en: { icdDisplay: 'Myalgia' }
+          'zh-TW': { icdDisplay: '肌痛，部位未明示' },
+          en: { icdDisplay: 'Myalgia, unspecified site' }
         }
       },
       observation: {
@@ -775,7 +775,7 @@ export const mockScenarioPackSources: MockScenarioPackSource[] = [
         }
       },
       coverage: {
-        type: 'EHCPOL',
+        type: 'nhi',
         subscriberId: 'HC001234573',
         periodStart: '2026-01-01',
         periodEnd: '2026-12-31'
@@ -887,7 +887,7 @@ export const mockScenarioPackSources: MockScenarioPackSource[] = [
         }
       },
       coverage: {
-        type: 'PAY',
+        type: 'selfpay',
         subscriberId: 'HC001234574',
         periodStart: '2026-02-01',
         periodEnd: ''
@@ -998,7 +998,7 @@ export const mockScenarioPackSources: MockScenarioPackSource[] = [
         }
       },
       coverage: {
-        type: 'EHCPOL',
+        type: 'nhi',
         subscriberId: 'HC001234567',
         periodStart: '2026-01-01',
         periodEnd: '2026-12-31'
@@ -1110,7 +1110,7 @@ export const mockScenarioPackSources: MockScenarioPackSource[] = [
         }
       },
       coverage: {
-        type: 'EHCPOL',
+        type: 'nhi',
         subscriberId: 'HC001234567',
         periodStart: '2026-01-01',
         periodEnd: '2026-12-31'

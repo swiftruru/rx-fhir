@@ -121,7 +121,14 @@ export const useAppStore = create<AppState>()(
         focusPreference: state.focusPreference,
         sidebarMode: state.sidebarMode,
         hasSeenOnboarding: state.hasSeenOnboarding
-      })
+      }),
+      // fhirServerUrl (localStorage) is written on every Settings save via setServerUrl.
+      // Rehydrate can otherwise resurrect a stale persisted serverUrl (e.g. hapi.fhir.tw)
+      // while API calls already target the newly saved conference server.
+      onRehydrateStorage: () => (state) => {
+        if (!state) return
+        state.serverUrl = getFhirBaseUrl()
+      }
     }
   )
 )

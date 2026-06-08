@@ -1,1 +1,8 @@
-export { assembleDocumentBundle, buildComposition, toSelfContainedExportBundle } from '../domain/fhir/bundleBuilder'
+export {
+  assembleDocumentBundle,
+  buildComposition,
+  resolveBundleAssemblyMode,
+  shouldConvertBundleToSelfContainedExport,
+  toSelfContainedExportBundle,
+  type BundleAssemblyMode
+} from '../domain/fhir/bundleBuilder'

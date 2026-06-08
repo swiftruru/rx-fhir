@@ -1,29 +1,42 @@
 import type { CreatedResources } from '../../types/fhir'
 import { toFhirDateTime } from './dateTime'
+import {
+  EMR_PROFILES,
+  TW_CASE_TYPE_SYSTEM,
+  TW_PAYMENT_CATEGORY_SYSTEM,
+  TW_TOTAL_DURATION_EXTENSION,
+  ensureEmrProfile,
+  encounterCaseTypeCoding,
+  medicationRequestCategoryCoding,
+  ICD10_CM_TW_DISPLAYS,
+  ICD10_CM_TW_SYSTEM,
+  normalizeConditionCodeForEmr,
+  normalizeCoveragePaymentCategory,
+  normalizePatientMedicalRecordIdentifier,
+  PAYMENT_CATEGORY_DISPLAYS,
+  PRESCRIPTION_CATEGORY_DISPLAYS,
+  TW_PRESCRIPTION_CATEGORY_SYSTEM,
+  type BundleAssemblyMode
+} from './twEmrTerminology'
+
+export { resolveBundleAssemblyMode, type BundleAssemblyMode } from './twEmrTerminology'
 
 type BundleResourceMap = CreatedResources & { composition: fhir4.Composition }
 type BundleResourceKey = keyof BundleResourceMap
 
-const EMR_PROFILES = {
-  bundle: 'https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Bundle-EP',
-  composition: 'https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Composition-EP',
-  coverage: 'https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Coverage-EMR',
-  observationBodyWeight: 'https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Observation-EP-BodyWeight'
-} as const
-
 // LOINC codes + display strings here are the slice discriminators for the
 // TW Core EMR Composition-EP profile. The validator rejects any deviation:
-// Composition.section:Coverage requires `48768-6 Payment sources Document`,
+// Composition.section:Coverage requires `29762-2` (Coverage entry; display fixed to `Social history Narrative`),
 // Composition.section:Condition requires `29548-5 Diagnosis Narrative`,
-// Composition.section:MedicationPrescribed requires `29551-9 Medication prescribed Narrative`.
+// Composition.section:MedicationPrescribed requires `29551-9` with Medication + MedicationRequest.
 // `display` is fixed-value in the profile, so canonicalize it here once and
 // keep mock data / forms from overriding it.
 const DOCUMENT_SECTIONS = {
   coverage: {
     title: '保險資訊',
     system: 'http://loinc.org',
-    code: '48768-6',
-    display: 'Payment sources Document'
+    code: '29762-2',
+    display: 'Social history Narrative'
   },
   observationBodyWeight: {
     title: '檢驗檢查',
@@ -153,7 +166,7 @@ function sanitizeMeta(meta?: fhir4.Meta): fhir4.Meta | undefined {
   const nextMeta: fhir4.Meta = {}
   if (meta.profile?.length) nextMeta.profile = [...meta.profile]
   if (meta.security?.length) nextMeta.security = meta.security.map((item) => ({ ...item }))
-  if (meta.tag?.length) nextMeta.tag = meta.tag.map((item) => ({ ...item }))
+  // Drop HAPI summary tags (e.g. SUBSETTED with non-canonical display) — they break TW validators.
 
   return Object.keys(nextMeta).length > 0 ? nextMeta : undefined
 }
@@ -161,6 +174,7 @@ function sanitizeMeta(meta?: fhir4.Meta): fhir4.Meta | undefined {
 function sanitizeResource<T extends fhir4.Resource>(resource: T): T {
   const clone = cloneResource(resource)
   clone.meta = sanitizeMeta(clone.meta)
+  ensureEmrProfile(clone)
   canonicalizeDisplays(clone)
   const domainResource = clone as T & Partial<fhir4.DomainResource>
   if (!domainResource.text?.div) {
@@ -230,8 +244,6 @@ function normalizeLegacyOrganizationType(organization: fhir4.Organization): fhir
   return organization
 }
 
-export type BundleAssemblyMode = 'submit' | 'export'
-
 // Canonical en-US display strings for codings the IG / FHIR validator inspects.
 // FHIR validators (TerminologyEngine + InstanceValidator) lookup display in en-US
 // against the source CodeSystem and reject mismatches. Localized Chinese strings
@@ -243,7 +255,8 @@ const CANONICAL_CODING_DISPLAYS: Record<string, Record<string, string>> = {
     '29548-5': 'Diagnosis Narrative',
     '30954-2': 'Relevant diagnostic tests/laboratory data note',
     '29551-9': 'Medication prescribed Narrative',
-    '48768-6': 'Payment sources Document',
+    // IG Composition-EP fixed binding (not LOINC preferred term "Social history note").
+    '29762-2': 'Social history Narrative',
     '57833-6': 'Prescription for medication',
     '85353-1': 'Vital signs, weight, height, head circumference, oxygen saturation and BMI panel',
     // Observation codes used across mock scenarios
@@ -279,6 +292,16 @@ const CANONICAL_CODING_DISPLAYS: Record<string, Record<string, string>> = {
     IMP: 'inpatient encounter',
     EMER: 'emergency'
   },
+  [TW_PAYMENT_CATEGORY_SYSTEM]: PAYMENT_CATEGORY_DISPLAYS,
+  [TW_CASE_TYPE_SYSTEM]: {
+    '01': '西醫一般案件',
+    '02': '西醫急診',
+    '03': '西醫門診手術',
+    '1': '住院一般案件',
+    '2': '住院案件分類案件'
+  },
+  [TW_PRESCRIPTION_CATEGORY_SYSTEM]: PRESCRIPTION_CATEGORY_DISPLAYS,
+  [ICD10_CM_TW_SYSTEM]: ICD10_CM_TW_DISPLAYS,
   'http://snomed.info/sct': {
     '26643006': 'Oral route',
     '46713006': 'Nasal route',
@@ -376,18 +399,30 @@ function createBundleScopedReference(
   useUuidReferences: boolean,
   resourceType?: string
 ): fhir4.Reference | undefined {
-  // 'submit' mode: keep ResourceType/id (HAPI rejects urn:uuid: in Document Bundles
-  // with HAPI-0505). 'export' mode: rewrite to entry's urn:uuid so external
-  // validators can resolve internal references inside a self-contained Bundle.
-  // Always include `type` when known: TW EMR profile discriminators of the form
-  // `discriminator: { type: 'profile', path: 'entry.resolve()' }` need a way to
-  // determine the target's resource type before resolution. Without `type`, slice
-  // matching like Composition.section:Coverage / :Condition / :MedicationPrescribed
-  // fails with "Reference_REF_CantMatchChoice".
+  // 'submit' mode: ResourceType/id refs (IG Bundle-EP style). Always derive from
+  // the bundle entry fullUrl so stale server copies (e.g. Coverage → Patient/250782)
+  // are rewritten to the patient actually in this bundle.
+  // 'export' mode: urn:uuid refs for self-contained bundles.
+  const type = resourceType ?? fallback?.type
+
+  if (!useUuidReferences && fullUrl && type && !fullUrl.startsWith('urn:uuid:')) {
+    const resourceId = fullUrl.split('/').pop()
+    if (resourceId) {
+      const next: fhir4.Reference = { reference: `${type}/${resourceId}`, type }
+      if (fallback?.display) next.display = fallback.display
+      return next
+    }
+  }
+
   if (useUuidReferences && fullUrl?.startsWith('urn:uuid:')) {
     const next: fhir4.Reference = { reference: fullUrl }
     if (fallback?.display) next.display = fallback.display
-    const type = resourceType ?? fallback?.type
+    if (type) next.type = type
+    return next
+  }
+
+  if (fallback?.reference) {
+    const next: fhir4.Reference = { ...fallback }
     if (type) next.type = type
     return next
   }
@@ -419,10 +454,9 @@ function buildBundleScopedFullUrls(
   for (const [key, resource] of Object.entries(resourceMap) as Array<[BundleResourceKey, fhir4.Resource | undefined]>) {
     if (resource) {
       // 'export' mode is self-contained: every entry uses urn:uuid:<v4>.
-      // 'submit' mode prefers absolute URLs for server-created resources so HAPI
-      // can resolve ResourceType/id references under FHIR bundle resolution rules.
-      // The Composition is built locally (not yet on the server) and always uses urn:uuid.
-      if (mode === 'submit' && trimmedBase && key !== 'composition' && resource.id) {
+      // 'submit' mode uses `{base}/{ResourceType}/{id}` fullUrls (IG Bundle-EP style)
+      // with ResourceType/id internal references.
+      if (mode === 'submit' && trimmedBase && resource.id) {
         fullUrls[key] = `${trimmedBase}/${resource.resourceType}/${resource.id}`
       } else {
         fullUrls[key] = createBundleScopedFullUrl()
@@ -464,7 +498,6 @@ function inferSectionEntryKey(
 // emitted Bundle satisfies IG cardinality without forcing UI changes upstream.
 
 const TW_PERSON_AGE_EXTENSION = 'https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/person-age'
-const TW_MEDREQ_CATEGORY_SYSTEM = 'https://twcore.mohw.gov.tw/ig/emr/CodeSystem/MedicationRequestCategory'
 const TW_PRESCRIPTION_NO_SYSTEM = 'https://rxfhir.app/fhir/medication-request-prescription-no'
 
 function calculatePersonAge(birthDate: string | undefined): number | undefined {
@@ -479,6 +512,8 @@ function calculatePersonAge(birthDate: string | undefined): number | undefined {
 }
 
 function enrichPatient(patient: fhir4.Patient): fhir4.Patient {
+  normalizePatientMedicalRecordIdentifier(patient)
+
   const hasPersonAge = patient.extension?.some((ext) => ext.url === TW_PERSON_AGE_EXTENSION)
   if (!hasPersonAge) {
     const age = calculatePersonAge(patient.birthDate)
@@ -495,6 +530,10 @@ function enrichPatient(patient: fhir4.Patient): fhir4.Patient {
   return patient
 }
 
+function enrichCoverage(coverage: fhir4.Coverage): fhir4.Coverage {
+  return normalizeCoveragePaymentCategory(coverage)
+}
+
 function enrichOrganization(organization: fhir4.Organization): fhir4.Organization {
   if (!organization.telecom?.length) {
     organization.telecom = [{ system: 'phone', value: 'unknown', use: 'work' }]
@@ -506,6 +545,12 @@ function enrichOrganization(organization: fhir4.Organization): fhir4.Organizatio
 }
 
 function enrichEncounter(encounter: fhir4.Encounter): fhir4.Encounter {
+  const caseType = encounterCaseTypeCoding(encounter.class?.code)
+  encounter.class = {
+    system: caseType.system,
+    code: caseType.code,
+    display: caseType.display
+  }
   if (!encounter.serviceType) {
     // Default to outpatient general medicine; HL7 v2-0276 ServiceType is the
     // FHIR-recommended binding when no IG-specific code is supplied.
@@ -521,31 +566,34 @@ function enrichEncounter(encounter: fhir4.Encounter): fhir4.Encounter {
 }
 
 function enrichCondition(condition: fhir4.Condition): fhir4.Condition {
-  if (!condition.category?.length) {
-    condition.category = [{
+  if (!condition.clinicalStatus?.coding?.length) {
+    condition.clinicalStatus = {
       coding: [{
-        system: 'http://terminology.hl7.org/CodeSystem/condition-category',
-        code: 'encounter-diagnosis',
-        display: 'Encounter Diagnosis'
+        system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+        code: 'active',
+        display: 'Active'
       }]
-    }]
+    }
+  } else {
+    const clinical = condition.clinicalStatus.coding[0]
+    if (clinical && !clinical.display) {
+      clinical.display = clinical.code === 'active' ? 'Active' : clinical.display ?? clinical.code
+    }
   }
+  // IG Condition-EP binds problem-list-item; server-reused Conditions often carry encounter-diagnosis.
+  condition.category = [{
+    coding: [{
+      system: 'http://terminology.hl7.org/CodeSystem/condition-category',
+      code: 'problem-list-item',
+      display: 'Problem List Item'
+    }]
+  }]
   if (!condition.note?.length) {
     const noteText = condition.code?.text || condition.code?.coding?.[0]?.display
     if (noteText) condition.note = [{ text: noteText }]
   }
-  // Add ICD-10-CM 2021 slice if the existing ICD-10 coding has no CM counterpart.
-  // ICD-10-CM uses American spelling ("esophageal" not "oesophageal"), so look up
-  // the canonical CM display via the dictionary rather than copying from ICD-10.
-  const codings = condition.code?.coding ?? []
-  const hasIcd10Cm = codings.some((c) => c.system === 'http://hl7.org/fhir/sid/icd-10-cm')
-  const icd10 = codings.find((c) => c.system === 'http://hl7.org/fhir/sid/icd-10')
-  if (!hasIcd10Cm && icd10?.code && condition.code) {
-    const cmDisplay = CANONICAL_CODING_DISPLAYS['http://hl7.org/fhir/sid/icd-10-cm']?.[icd10.code] ?? icd10.display
-    condition.code = {
-      ...condition.code,
-      coding: [...codings, { system: 'http://hl7.org/fhir/sid/icd-10-cm', code: icd10.code, display: cmDisplay }]
-    }
+  if (condition.code) {
+    condition.code = normalizeConditionCodeForEmr(condition.code) ?? condition.code
   }
   return condition
 }
@@ -633,13 +681,24 @@ function enrichMedicationRequest(
   coverageFallback: fhir4.Reference | undefined,
   useUuidReferences: boolean
 ): fhir4.MedicationRequest {
-  // Note: an earlier IG version (Composition-EP|0.2.0) defined an
-  // `Extension-TotalDuration` extension and required it on MedicationRequest.
-  // Current TW Core EMR validator packages do NOT ship this extension's
-  // definition, so injecting it produces "extension could not be found so is
-  // not allowed here". Total-duration information is already captured in
-  // `dispenseRequest.expectedSupplyDuration`, so we skip auto-injecting the
-  // extension. If a future IG version reintroduces it, restore here.
+  const duration = medicationRequest.dispenseRequest?.expectedSupplyDuration
+  if (duration?.value !== undefined) {
+    const hasTotalDuration = medicationRequest.extension?.some((ext) => ext.url === TW_TOTAL_DURATION_EXTENSION)
+    if (!hasTotalDuration) {
+      medicationRequest.extension = [
+        ...(medicationRequest.extension ?? []),
+        {
+          url: TW_TOTAL_DURATION_EXTENSION,
+          valueQuantity: {
+            value: duration.value,
+            unit: duration.unit ?? 'days',
+            system: duration.system ?? 'http://unitsofmeasure.org',
+            code: duration.code ?? 'd'
+          }
+        }
+      ]
+    }
+  }
 
   // Identifier: ensure at least 2 (IG min=2). Use existing as the primary,
   // synthesize a prescription-no identifier from the resource id when needed.
@@ -652,12 +711,13 @@ function enrichMedicationRequest(
     })
   }
 
-  // Category: 'typesOfPrescription' slice. Default to OUTPATIENT.
-  if (!medicationRequest.category?.length) {
-    medicationRequest.category = [{
-      coding: [{ system: TW_MEDREQ_CATEGORY_SYSTEM, code: 'OUTPATIENT', display: 'Outpatient' }]
-    }]
-  }
+  // Category: 'typesOfPrescription' slice — IG binds CodeSystem/prescription (A/B).
+  const durationDays = medicationRequest.dispenseRequest?.expectedSupplyDuration?.value
+  medicationRequest.category = [{
+    coding: [medicationRequestCategoryCoding(
+      typeof durationDays === 'number' ? durationDays : undefined
+    )]
+  }]
 
   // Insurance: link to Coverage entry.
   if (!medicationRequest.insurance?.length && coverageFullUrl) {
@@ -701,7 +761,9 @@ function enrichMedicationRequest(
       dispense.numberOfRepeatsAllowed = 0
     }
     if (!dispense.quantity) {
-      dispense.quantity = { value: 1, unit: 'TAB', system: 'http://unitsofmeasure.org', code: '{tablet}' }
+      dispense.quantity = { value: 1, unit: '{tablet}', system: 'http://unitsofmeasure.org', code: '{tablet}' }
+    } else if (dispense.quantity.code === '{tablet}' && dispense.quantity.unit === 'TAB') {
+      dispense.quantity = { ...dispense.quantity, unit: '{tablet}' }
     }
     if (!dispense.validityPeriod) {
       const start = medicationRequest.authoredOn || new Date().toISOString()
@@ -745,7 +807,9 @@ function normalizeBundleResources(
   const encounter = resourceMap.encounter ? enrichEncounter(normalizeLegacyProfiles(sanitizeResource(resourceMap.encounter))) : undefined
   const condition = resourceMap.condition ? enrichCondition(normalizeLegacyProfiles(sanitizeResource(resourceMap.condition))) : undefined
   const observation = resourceMap.observation ? enrichObservation(normalizeLegacyProfiles(sanitizeResource(resourceMap.observation))) : undefined
-  const coverage = resourceMap.coverage ? normalizeLegacyProfiles(sanitizeResource(resourceMap.coverage)) : undefined
+  const coverage = resourceMap.coverage
+    ? enrichCoverage(normalizeLegacyProfiles(sanitizeResource(resourceMap.coverage)))
+    : undefined
   const medication = resourceMap.medication ? normalizeLegacyProfiles(sanitizeResource(resourceMap.medication)) : undefined
   const medicationRequest = resourceMap.medicationRequest
     ? enrichMedicationRequest(
@@ -793,7 +857,7 @@ function normalizeBundleResources(
   }
 
   if (coverage) {
-    coverage.subscriber = refByKey('patient', coverage.subscriber)
+    coverage.subscriber = refByKey('patient', coverage.subscriber) ?? coverage.subscriber
     coverage.beneficiary = refByKey('patient', coverage.beneficiary) ?? coverage.beneficiary
   }
 
@@ -828,15 +892,10 @@ function normalizeBundleResources(
       return inferred ? (refByKey(inferred, author) ?? author) : author
     })
   }
-  if (composition.section?.length) {
-    composition.section = composition.section.map((section) => ({
-      ...section,
-      entry: section.entry?.map((entry) => {
-        const targetKey = inferSectionEntryKey(entry, fullUrls)
-        return targetKey ? (refByKey(targetKey, entry) ?? entry) : entry
-      })
-    }))
-  }
+  composition.section = buildEmrCompositionSections(
+    { coverage, condition, observation, medication, medicationRequest },
+    (key, fallback) => refByKey(key, fallback) ?? fallback
+  )
 
   normalized.composition = composition
   if (patient) normalized.patient = patient
@@ -916,8 +975,8 @@ export function assembleDocumentBundle(
   if (organization && fullUrls.organization) entries.push(toEntry(organization, fullUrls.organization))
   if (practitioner && fullUrls.practitioner) entries.push(toEntry(practitioner, fullUrls.practitioner))
   if (encounter && fullUrls.encounter) entries.push(toEntry(encounter, fullUrls.encounter))
-  if (condition && fullUrls.condition) entries.push(toEntry(condition, fullUrls.condition))
   if (observation && fullUrls.observation) entries.push(toEntry(observation, fullUrls.observation))
+  if (condition && fullUrls.condition) entries.push(toEntry(condition, fullUrls.condition))
   if (coverage && fullUrls.coverage) entries.push(toEntry(coverage, fullUrls.coverage))
   if (medication && fullUrls.medication) entries.push(toEntry(medication, fullUrls.medication))
   if (medicationRequest && fullUrls.medicationRequest) entries.push(toEntry(medicationRequest, fullUrls.medicationRequest))
@@ -939,87 +998,100 @@ export function assembleDocumentBundle(
   }
 }
 
-export function buildComposition(
-  resources: CreatedResources,
-  title: string,
-  date: string
-): fhir4.Composition {
-  const { patient, organization, practitioner, encounter, condition, observation, coverage, medication, medicationRequest } = resources
+function buildDocumentSectionCode(section: { system: string; code: string; display: string }): fhir4.CodeableConcept {
+  // IG Composition-com-ep: section slice codings carry system+code only (no display).
+  // Omitting display avoids TerminologyEngine vs Composition-EP fixed-value conflicts.
+  return {
+    coding: [{ system: section.system, code: section.code }],
+    text: section.display
+  }
+}
+
+type CompositionSectionResources = {
+  coverage?: fhir4.Coverage
+  observation?: fhir4.Observation
+  condition?: fhir4.Condition
+  medication?: fhir4.Medication
+  medicationRequest?: fhir4.MedicationRequest
+}
+
+function resolveCompositionSectionReference(
+  key: BundleResourceKey,
+  resource: fhir4.Resource,
+  resolveRef: (key: BundleResourceKey, fallback: fhir4.Reference) => fhir4.Reference
+): fhir4.Reference {
+  const fallback: fhir4.Reference = {
+    reference: `${resource.resourceType}/${resource.id}`,
+    type: resource.resourceType
+  }
+  return resolveRef(key, fallback)
+}
+
+/** Always rebuild TW EMR Composition sections from bundle resources (ignores stale section metadata). */
+function buildEmrCompositionSections(
+  resources: CompositionSectionResources,
+  resolveRef: (key: BundleResourceKey, fallback: fhir4.Reference) => fhir4.Reference
+): fhir4.CompositionSection[] {
   const sections: fhir4.CompositionSection[] = []
+  const { coverage, observation, condition, medication, medicationRequest } = resources
 
   if (coverage) {
     sections.push({
       title: DOCUMENT_SECTIONS.coverage.title,
-      code: {
-        coding: [{
-          system: DOCUMENT_SECTIONS.coverage.system,
-          code: DOCUMENT_SECTIONS.coverage.code,
-          display: DOCUMENT_SECTIONS.coverage.display
-        }],
-        text: DOCUMENT_SECTIONS.coverage.display
-      },
-      entry: [{ reference: `${coverage.resourceType}/${coverage.id}` }]
+      code: buildDocumentSectionCode(DOCUMENT_SECTIONS.coverage),
+      entry: [resolveCompositionSectionReference('coverage', coverage, resolveRef)]
     })
   }
 
   if (observation) {
     sections.push({
       title: DOCUMENT_SECTIONS.observationBodyWeight.title,
-      code: {
-        coding: [{
-          system: DOCUMENT_SECTIONS.observationBodyWeight.system,
-          code: DOCUMENT_SECTIONS.observationBodyWeight.code,
-          display: DOCUMENT_SECTIONS.observationBodyWeight.display
-        }],
-        text: DOCUMENT_SECTIONS.observationBodyWeight.display
-      },
-      entry: [{ reference: `${observation.resourceType}/${observation.id}` }]
+      code: buildDocumentSectionCode(DOCUMENT_SECTIONS.observationBodyWeight),
+      entry: [resolveCompositionSectionReference('observation', observation, resolveRef)]
     })
   }
 
   if (condition) {
     sections.push({
       title: DOCUMENT_SECTIONS.condition.title,
-      code: {
-        coding: [{
-          system: DOCUMENT_SECTIONS.condition.system,
-          code: DOCUMENT_SECTIONS.condition.code,
-          display: DOCUMENT_SECTIONS.condition.display
-        }],
-        text: DOCUMENT_SECTIONS.condition.display
-      },
-      entry: [{ reference: `${condition.resourceType}/${condition.id}` }]
+      code: buildDocumentSectionCode(DOCUMENT_SECTIONS.condition),
+      entry: [resolveCompositionSectionReference('condition', condition, resolveRef)]
     })
   }
 
-  if (medication || medicationRequest) {
+  if (medicationRequest) {
     const medicationEntries: fhir4.Reference[] = []
     if (medication) {
-      medicationEntries.push({ reference: `${medication.resourceType}/${medication.id}` })
+      medicationEntries.push(resolveCompositionSectionReference('medication', medication, resolveRef))
     }
-    if (medicationRequest) {
-      medicationEntries.push({ reference: `${medicationRequest.resourceType}/${medicationRequest.id}` })
-    }
+    medicationEntries.push(resolveCompositionSectionReference('medicationRequest', medicationRequest, resolveRef))
     sections.push({
       title: DOCUMENT_SECTIONS.medicationPrescribed.title,
-      code: {
-        coding: [{
-          system: DOCUMENT_SECTIONS.medicationPrescribed.system,
-          code: DOCUMENT_SECTIONS.medicationPrescribed.code,
-          display: DOCUMENT_SECTIONS.medicationPrescribed.display
-        }],
-        text: DOCUMENT_SECTIONS.medicationPrescribed.display
-      },
+      code: buildDocumentSectionCode(DOCUMENT_SECTIONS.medicationPrescribed),
       entry: medicationEntries
     })
   }
 
+  return sections
+}
+
+export function buildComposition(
+  resources: CreatedResources,
+  title: string,
+  date: string
+): fhir4.Composition {
+  const { patient, organization, practitioner, encounter, condition, observation, coverage, medication, medicationRequest } = resources
+  const sections = buildEmrCompositionSections(
+    { coverage, observation, condition, medication, medicationRequest },
+    (_key, fallback) => fallback
+  )
+
   const authorRefs: fhir4.Reference[] = []
   if (organization) {
-    authorRefs.push({ reference: `Organization/${organization.id}` })
+    authorRefs.push({ reference: `Organization/${organization.id}`, type: 'Organization' })
   }
   if (practitioner) {
-    authorRefs.push({ reference: `Practitioner/${practitioner.id}` })
+    authorRefs.push({ reference: `Practitioner/${practitioner.id}`, type: 'Practitioner' })
   }
   if (!authorRefs.length) {
     authorRefs.push({ display: 'Unknown Author' })
@@ -1040,10 +1112,10 @@ export function buildComposition(
     },
     title: title || '電子處方箋',
     date: toFhirDateTime(date) || new Date().toISOString(),
-    subject: patient ? { reference: `Patient/${patient.id}` } : undefined,
+    subject: patient ? { reference: `Patient/${patient.id}`, type: 'Patient' } : undefined,
     author: authorRefs,
-    custodian: organization ? { reference: `Organization/${organization.id}` } : undefined,
-    encounter: encounter ? { reference: `Encounter/${encounter.id}` } : undefined,
+    custodian: organization ? { reference: `Organization/${organization.id}`, type: 'Organization' } : undefined,
+    encounter: encounter ? { reference: `Encounter/${encounter.id}`, type: 'Encounter' } : undefined,
     section: sections,
     meta: {
       profile: [EMR_PROFILES.composition]
@@ -1129,36 +1201,29 @@ function rewriteReferencesInPlace<T>(node: T, lookup: Map<string, ReferenceLooku
   return node
 }
 
-// Extension URLs whose definitions are not present in the current TW Core EMR
-// validator package. Including these in the exported Bundle produces
-// "extension … could not be found so is not allowed here" errors. Stripping
-// them at export keeps the Bundle clean regardless of which historical version
-// of RxFHIR (or HAPI persistence) attached the extension. The information they
-// carried is also captured elsewhere — e.g. Extension-TotalDuration's days are
-// equivalent to MedicationRequest.dispenseRequest.expectedSupplyDuration.
-const UNKNOWN_EXTENSION_URLS = new Set<string>([
-  'https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Extension-TotalDuration'
-])
+/** Whether a bundle should be rewritten to all-urn:uuid form before JSON download. */
+export function shouldConvertBundleToSelfContainedExport(bundle: fhir4.Bundle): boolean {
+  const entries = bundle.entry ?? []
+  if (!entries.length) return false
 
-function stripUnknownExtensionsInPlace<T>(node: T): T {
-  if (Array.isArray(node)) {
-    for (let index = 0; index < node.length; index += 1) stripUnknownExtensionsInPlace(node[index])
-    return node
+  const fullUrls = entries.map((entry) => entry.fullUrl).filter((url): url is string => Boolean(url))
+  if (!fullUrls.length) return false
+  if (fullUrls.every((url) => url.startsWith('urn:uuid:'))) return false
+
+  const composition = entries.find((entry) => entry.resource?.resourceType === 'Composition')
+    ?.resource as fhir4.Composition | undefined
+  const subjectRef = composition?.subject?.reference ?? ''
+
+  // Fresh TW EMR submit bundles: absolute fullUrls + ResourceType/id refs — keep as-is.
+  if (
+    fullUrls.every((url) => /^https?:\/\//.test(url))
+    && subjectRef.includes('/')
+    && !subjectRef.startsWith('urn:uuid:')
+  ) {
+    return false
   }
-  if (node && typeof node === 'object') {
-    const record = node as Record<string, unknown>
-    if (Array.isArray(record.extension)) {
-      record.extension = (record.extension as fhir4.Extension[]).filter(
-        (ext) => !ext.url || !UNKNOWN_EXTENSION_URLS.has(ext.url)
-      )
-      if ((record.extension as fhir4.Extension[]).length === 0) delete record.extension
-    }
-    for (const key of Object.keys(record)) {
-      if (key === 'extension') continue
-      stripUnknownExtensionsInPlace(record[key])
-    }
-  }
-  return node
+
+  return true
 }
 
 /**
@@ -1169,8 +1234,6 @@ function stripUnknownExtensionsInPlace<T>(node: T): T {
  * - Every internal reference (Composition.subject, section.entry, etc.) is
  *   rewritten to the matching urn:uuid so refs resolve within the Bundle.
  * - meta.source / versionId / lastUpdated are stripped on Bundle and entries
- * - Extensions whose definitions are absent from the current TW Core EMR
- *   validator (see UNKNOWN_EXTENSION_URLS) are removed.
  * - Coding.display values pass through canonicalizeDisplays so en-US standard
  *   names are used (e.g. ICD-10-CM K21.9 → "Gastro-esophageal reflux disease...")
  */
@@ -1191,8 +1254,6 @@ export function toSelfContainedExportBundle(bundle: fhir4.Bundle): fhir4.Bundle 
     if (entry.resource) {
       // Strip HAPI-injected meta noise per resource.
       entry.resource.meta = sanitizeMeta(entry.resource.meta)
-      // Drop any extensions the current TW Core EMR validator doesn't recognise.
-      stripUnknownExtensionsInPlace(entry.resource)
       // Rewrite any internal reference strings to the new urn:uuid namespace.
       rewriteReferencesInPlace(entry.resource, lookup)
       // Re-canonicalize displays in case enrichment added codings without canonical lookup.

@@ -17,12 +17,14 @@ import { useCreatorMockFill, useLiveDemoTypedMockFill } from '../hooks/useCreato
 import { useLiveDemoFormController } from '../hooks/useLiveDemoFormController'
 import { mergeDraftValues, useCreatorDraftAutosave } from '../hooks/useCreatorDraft'
 import { findOrCreateDetailed, putResource, resetLoggedRequests } from '../../../services/fhirClient'
+import {
+  buildCoverageType,
+  COVERAGE_IDENTITY_OPTIONS,
+  resolveCoverageIdentityOption,
+  type CoverageIdentityOption
+} from '../../../domain/fhir/twEmrTerminology'
 import { useCreatorStore } from '../store/creatorStore'
 
-const COVERAGE_TYPE_CODES = ['EHCPOL', 'PAY', 'PUBLICPOL'] as const
-type CoverageTypeCode = (typeof COVERAGE_TYPE_CODES)[number]
-
-const COVERAGE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v3-ActCode'
 const COVERAGE_IDENTIFIER_SYSTEM = 'https://www.nhi.gov.tw/coverage-id'
 
 type FormData = {
@@ -61,7 +63,7 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
     : persistedFeedback
 
   const initialValues = useMemo<Partial<FormData>>(() => mergeDraftValues({
-    type: resources.coverage?.type?.coding?.[0]?.code ?? '',
+    type: resolveCoverageIdentityOption(resources.coverage),
     subscriberId: resources.coverage?.subscriberId ?? '',
     periodStart: resources.coverage?.period?.start ?? '',
     periodEnd: resources.coverage?.period?.end ?? ''
@@ -97,8 +99,9 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
     setErrorMsg(undefined)
     clearFeedback('coverage')
     try {
-      const typeCode = data.type as CoverageTypeCode
-      const typeDisplay = t(`forms.coverage.type.options.${typeCode}`)
+      const identityOption = data.type as CoverageIdentityOption
+      const option = COVERAGE_IDENTITY_OPTIONS.find((item) => item.value === identityOption)
+      const identityText = t(`forms.coverage.type.options.${option?.labelKey ?? 'nhi'}`)
       const resource: Omit<fhir4.Coverage, 'id'> = {
         resourceType: 'Coverage',
         status: 'active',
@@ -106,14 +109,7 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
           system: COVERAGE_IDENTIFIER_SYSTEM,
           value: data.subscriberId
         }],
-        type: {
-          coding: [{
-            system: COVERAGE_SYSTEM,
-            code: typeCode,
-            display: typeDisplay
-          }],
-          text: typeDisplay
-        },
+        type: buildCoverageType(identityOption, identityText),
         subscriber: resources.patient
           ? { reference: `Patient/${resources.patient.id}` }
           : undefined,
@@ -198,8 +194,8 @@ export default function CoverageForm({ onSuccess }: Props): React.JSX.Element {
             <SelectValue placeholder={f('type.placeholder')} />
           </SelectTrigger>
           <SelectContent>
-            {COVERAGE_TYPE_CODES.map(code => (
-              <SelectItem key={code} value={code}>{f(`type.options.${code}`)}</SelectItem>
+            {COVERAGE_IDENTITY_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>{f(`type.options.${option.labelKey}`)}</SelectItem>
             ))}
           </SelectContent>
         </Select>

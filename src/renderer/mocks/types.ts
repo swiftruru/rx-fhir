@@ -58,7 +58,7 @@ export interface ObservationMockInput {
 }
 
 export interface CoverageMockInput {
-  type: 'EHCPOL' | 'PAY' | 'PUBLICPOL'
+  type: 'nhi' | 'selfpay' | 'public' | 'injury' | 'occupational'
   subscriberId: string
   periodStart: string
   periodEnd?: string

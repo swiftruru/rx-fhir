@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Bell, Command, Globe2, HelpCircle, Languages, MoonStar, Search, Settings2, Sparkles } from 'lucide-react'
+import { Bell, Command, Globe2, HelpCircle, Languages, MoonStar, Repeat2, Search, Settings2, Sparkles } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import i18n from '../../i18n'
@@ -109,6 +109,15 @@ export default function CommandPaletteDialog(): React.JSX.Element {
       keywords: ['consumer', 'query', 'search', '查詢'],
       icon: Search,
       run: () => navigate('/consumer', { label: tn('items.consumer.label') })
+    },
+    {
+      id: 'route.converter',
+      group: t('commandPalette.groups.navigation'),
+      label: tn('items.converter.label'),
+      description: tn('items.converter.sublabel'),
+      keywords: ['converter', 'convert', 'twcore', 'track', '賽道', '轉換'],
+      icon: Repeat2,
+      run: () => navigate('/converter', { label: tn('items.converter.label') })
     },
     {
       id: 'route.settings',

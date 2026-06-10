@@ -32,6 +32,14 @@ import { useOnboardingStore } from '../../app/stores/onboardingStore'
 import { useQuickStartStore } from '../../app/stores/quickStartStore'
 import { DEFAULT_SERVER_URL, checkServerHealth } from '../../services/fhirClient'
 import {
+  getOAuthConfig,
+  setOAuthConfig,
+  verifyOAuthConfig,
+  isOAuthConfigured,
+  TWCAT_OAUTH_DEFAULTS,
+  type OAuthConfig
+} from '../../domain/fhir/fhirAuth'
+import {
   applyImportedPreferences,
   exportPreferencesJson,
   getPreferencesFileErrorMessage,
@@ -117,6 +125,45 @@ export default function SettingsPage(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<SettingsShortcutTab>('server')
   const [settingsQuery, setSettingsQuery] = useState('')
   const [preferencesStatus, setPreferencesStatus] = useState<'idle' | 'exporting' | 'importing'>('idle')
+  const [oauthConfig, setOAuthConfigState] = useState<OAuthConfig>(() => getOAuthConfig())
+  const [oauthVerify, setOAuthVerify] = useState<{ status: 'idle' | 'verifying' | 'ok' | 'fail'; error?: string }>({ status: 'idle' })
+
+  function updateOAuthField<K extends keyof OAuthConfig>(key: K, value: OAuthConfig[K]): void {
+    setOAuthConfigState((prev) => ({ ...prev, [key]: value }))
+    setOAuthVerify({ status: 'idle' })
+  }
+
+  function handleFillTwcatOAuth(): void {
+    setOAuthConfigState((prev) => ({
+      ...prev,
+      ...TWCAT_OAUTH_DEFAULTS,
+      enabled: true
+    }))
+    setOAuthVerify({ status: 'idle' })
+  }
+
+  async function handleVerifyOAuth(): Promise<void> {
+    if (!isOAuthConfigured(oauthConfig)) {
+      const message = t('server.oauth.incomplete')
+      setOAuthVerify({ status: 'fail', error: message })
+      announceAssertive(message)
+      return
+    }
+    setOAuthConfig(oauthConfig)
+    setOAuthVerify({ status: 'verifying' })
+    const result = await verifyOAuthConfig(oauthConfig)
+    if (result.ok) {
+      setOAuthVerify({ status: 'ok' })
+      const message = t('server.oauth.verifySuccess')
+      announcePolite(message)
+      pushToast({ variant: 'success', description: message })
+    } else {
+      setOAuthVerify({ status: 'fail', error: result.error })
+      const message = t('server.oauth.verifyFail', { error: result.error ?? '' })
+      announceAssertive(message)
+      pushToast({ variant: 'error', description: message })
+    }
+  }
 
   const { register, handleSubmit, setValue, setError, clearErrors, watch, formState: { errors } } = useForm<FormData>({
     defaultValues: { serverUrl }
@@ -308,6 +355,7 @@ export default function SettingsPage(): React.JSX.Element {
     clearErrors('serverUrl')
     const sameUrl = normalizeUrl(data.serverUrl) === normalizeUrl(serverUrl)
     setServerUrl(data.serverUrl)
+    setOAuthConfig(oauthConfig)
     setSaved(true)
     const message = t('server.savedAnnouncement')
     announcePolite(message)
@@ -648,6 +696,114 @@ export default function SettingsPage(): React.JSX.Element {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                <div className="space-y-3 rounded-xl border border-border bg-background/40 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">{t('server.oauth.title')}</p>
+                      <p className="text-xs leading-relaxed text-muted-foreground">
+                        {t('server.oauth.description')}
+                      </p>
+                    </div>
+                    <label className="flex shrink-0 items-center gap-2 text-sm">
+                      <input
+                        data-testid="settings.server.oauth.enable"
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-border accent-primary"
+                        checked={oauthConfig.enabled}
+                        onChange={(event) => updateOAuthField('enabled', event.target.checked)}
+                      />
+                      <span>{t('server.oauth.enableLabel')}</span>
+                    </label>
+                  </div>
+
+                  {oauthConfig.enabled && (
+                    <div className="space-y-3 pt-1">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="oauth-token-url">{t('server.oauth.tokenUrlLabel')}</Label>
+                        <Input
+                          id="oauth-token-url"
+                          className="font-mono text-sm"
+                          placeholder={t('server.oauth.tokenUrlPlaceholder')}
+                          value={oauthConfig.tokenUrl}
+                          onChange={(event) => updateOAuthField('tokenUrl', event.target.value)}
+                        />
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="oauth-client-id">{t('server.oauth.clientIdLabel')}</Label>
+                          <Input
+                            id="oauth-client-id"
+                            className="font-mono text-sm"
+                            autoComplete="off"
+                            value={oauthConfig.clientId}
+                            onChange={(event) => updateOAuthField('clientId', event.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="oauth-client-secret">{t('server.oauth.clientSecretLabel')}</Label>
+                          <Input
+                            id="oauth-client-secret"
+                            type="password"
+                            className="font-mono text-sm"
+                            autoComplete="off"
+                            value={oauthConfig.clientSecret}
+                            onChange={(event) => updateOAuthField('clientSecret', event.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="oauth-participant-token">{t('server.oauth.participantTokenLabel')}</Label>
+                        <p className="text-xs leading-relaxed text-muted-foreground">
+                          {t('server.oauth.participantTokenHint')}
+                        </p>
+                        <Input
+                          id="oauth-participant-token"
+                          type="password"
+                          className="font-mono text-sm"
+                          autoComplete="off"
+                          value={oauthConfig.participantToken}
+                          onChange={(event) => updateOAuthField('participantToken', event.target.value)}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleFillTwcatOAuth}
+                        >
+                          {t('server.oauth.fillTwcat')}
+                        </Button>
+                        <Button
+                          data-testid="settings.server.oauth.verify"
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleVerifyOAuth}
+                          disabled={oauthVerify.status === 'verifying'}
+                        >
+                          {oauthVerify.status === 'verifying' && <Loader2 className="h-4 w-4 animate-spin" />}
+                          {oauthVerify.status === 'ok' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                          {tc('buttons.test')}
+                        </Button>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">{t('server.oauth.storageNote')}</p>
+                      {oauthVerify.status === 'ok' && (
+                        <Alert variant="success">
+                          <CheckCircle2 className="h-4 w-4" />
+                          <AlertDescription>{t('server.oauth.verifySuccess')}</AlertDescription>
+                        </Alert>
+                      )}
+                      {oauthVerify.status === 'fail' && (
+                        <Alert variant="destructive">
+                          <WifiOff className="h-4 w-4" />
+                          <AlertDescription>{t('server.oauth.verifyFail', { error: oauthVerify.error ?? '' })}</AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-2 sm:flex-row">

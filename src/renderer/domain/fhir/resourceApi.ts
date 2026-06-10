@@ -1,5 +1,7 @@
 import { getFhirBaseUrl, trimTrailingSlash } from './baseUrl'
 import { FHIR_HEADERS, performLoggedRequest } from './requestLogger'
+import { getAuthHeaders } from './fhirAuth'
+import { hardenResourceForServer } from './bundleBuilder'
 
 interface OperationOutcomeLike {
   issue?: Array<{
@@ -33,7 +35,7 @@ export async function postResource<T extends fhir4.Resource>(
     resourceType,
     reasonCode: 'create',
     headers: FHIR_HEADERS,
-    body
+    body: hardenResourceForServer(body as fhir4.Resource)
   })
   if (!response.ok) {
     const errorText = await response.text()
@@ -88,7 +90,7 @@ export async function checkResourceExists(
   try {
     const response = await fetch(`${base}/${resourceType}/${id}`, {
       method: 'GET',
-      headers: { Accept: 'application/fhir+json' }
+      headers: { Accept: 'application/fhir+json', ...(await getAuthHeaders()) }
     })
     if (response.status === 404) return false
     return response.ok
@@ -224,7 +226,7 @@ export async function putResource<T extends fhir4.Resource>(
     resourceType,
     reasonCode: 'update',
     headers: FHIR_HEADERS,
-    body: { ...body, id }
+    body: hardenResourceForServer({ ...body, id } as fhir4.Resource)
   })
   if (!response.ok) {
     const errorText = await response.text()

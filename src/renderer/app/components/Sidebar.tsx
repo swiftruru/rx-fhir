@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom'
-import { FilePlus2, Search, Settings, Activity, Info, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { FilePlus2, Search, Repeat2, Settings, Activity, Info, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../shared/lib/utils'
 import { useAppStore } from '../stores/appStore'
@@ -7,13 +7,14 @@ import { useGuardedNavigate } from '../../shared/hooks/useGuardedNavigate'
 import FeatureShowcaseTarget from './FeatureShowcaseTarget'
 import { useConsumerSessionStore } from '../../features/consumer/store/consumerSessionStore'
 
-type NavKey = 'creator' | 'consumer' | 'settings' | 'about'
+type NavKey = 'creator' | 'consumer' | 'converter' | 'settings' | 'about'
 
 const navItems: { to: string; key: NavKey; icon: React.ElementType }[] = [
-  { to: '/creator',  key: 'creator',  icon: FilePlus2 },
-  { to: '/consumer', key: 'consumer', icon: Search },
-  { to: '/settings', key: 'settings', icon: Settings },
-  { to: '/about',    key: 'about',    icon: Info }
+  { to: '/creator',   key: 'creator',   icon: FilePlus2 },
+  { to: '/consumer',  key: 'consumer',  icon: Search },
+  { to: '/converter', key: 'converter', icon: Repeat2 },
+  { to: '/settings',  key: 'settings',  icon: Settings },
+  { to: '/about',     key: 'about',     icon: Info }
 ]
 
 export default function Sidebar(): React.JSX.Element {

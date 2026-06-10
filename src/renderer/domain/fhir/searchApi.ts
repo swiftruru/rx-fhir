@@ -2,6 +2,7 @@ import i18n from '../../i18n'
 import type { SearchParams } from '../../types/fhir'
 import { getFhirBaseUrl } from './baseUrl'
 import { FHIR_HEADERS, performLoggedRequest } from './requestLogger'
+import { getAuthHeaders } from './fhirAuth'
 
 export interface QueryStep {
   step: number
@@ -149,9 +150,10 @@ export async function searchBundles(
 ): Promise<fhir4.Bundle> {
   const signal = options?.signal
   const loggedFetch = async (url: string, init: Parameters<typeof performLoggedRequest>[1]): Promise<Response> => {
+    const authHeaders = await getAuthHeaders()
     const response = await fetch(url, {
       method: init.method,
-      headers: init.headers ?? { 'Content-Type': 'application/fhir+json', Accept: 'application/fhir+json' },
+      headers: { ...(init.headers ?? { 'Content-Type': 'application/fhir+json', Accept: 'application/fhir+json' }), ...authHeaders },
       signal,
       body: typeof init.body === 'string' || init.body === undefined
         ? init.body

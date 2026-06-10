@@ -70,7 +70,7 @@
 目前 Renderer 分為四個明確的層級：
 
 - `src/renderer/app`：App Shell、路由、對話框、全域協調邏輯，以及 App 層 stores
-- `src/renderer/features`：Creator、Consumer、History、Settings、About 等 feature 各自擁有的 UI、hooks、libs 與 stores
+- `src/renderer/features`：Creator、Consumer、Converter、History、Settings、About 等 feature 各自擁有的 UI、hooks、libs 與 stores
 - `src/renderer/domain`：可重用的 FHIR 商業邏輯與 request 規則
 - `src/renderer/shared`：共用 UI primitives、共用 hooks、共用 stores，以及跨 feature 的 utilities
 
@@ -229,9 +229,20 @@ Electron 原生相關的邏輯維持在 `src/main`；跨 process 穩定契約放
 - **FHIR 410 Gone 復原**：當 HAPI 搜尋索引指向已被軟刪除的 resource，且後續 `fetchResourceById` 收到 410 時，client 會自動對同一 ID 發出 `PUT` 恢復該 resource，解決過去在公開 HAPI server 上 Creator Extension 等步驟出現的「Resource was deleted」錯誤
 - 支援 Creator 到 Consumer 的交接，自動預填查詢、自動搜尋，並聚焦到新建立的 Bundle
 
+### Converter 模組（TW Core 互通）
+
+獨立的 **Converter** 工作區（側邊欄分頁）將扁平的 FHIRfox 競賽題目 JSON 轉換成符合 TW Core（`twcore`）的 FHIR `collection` Bundle，可通過聯測的 Gazelle/Prism 驗證器。
+
+- 將來源 JSON 對應到 TW Core profile 資源，涵蓋 **11 種資源類型**：Patient（雙重身分證／病歷號 identifier、緊急聯絡人）、Organization、Encounter（含 `hospitalization.admitSource`／`dischargeDisposition`）、Condition、Practitioner、PractitionerRole、AllergyIntolerance、Observation（生命徵象，含雙碼血壓與血氧，以及實驗室檢驗）、Procedure、DiagnosticReport、MedicationRequest（inline `medicationCodeableConcept`）
+- 引用使用 `urn:uuid` 指向各 entry 的 `fullUrl`，自動產生 dom-6 narrative、UCUM 編碼數值，以及各資源對應的 TW Core profile（心率、體溫、體重、呼吸速率、血壓、血氧、實驗室檢驗等）
+- 內建競賽代碼字典，將不透明代碼（如 `Cond-0012`、serviceType、`PR-/Spec-/Qual-`、`Med-`、`Lab-/Rep-`、`Tim-/Route-/Perf-/bodySite`）對應到標準 SNOMED CT／LOINC／HL7 術語；內建（已驗證）對應永遠優先於學習到的對應
+- **從錯誤學習**：貼上 Gazelle 驗證錯誤，轉換器會自動推導新的「競賽代碼 → 標準代碼」對應（透過產生 bundle 的 provenance 對回），保存在本機並重新轉換 —— 每題都在教字典。另有「清除字典」可重置學習內容
+- 輸入框與 Bundle 預覽皆有語法凸顯；一鍵將 bundle 送至所設定的 server（Prism 會擷取轉給 Gazelle），驗證連結則從 Prism connection 頁取得
+
 ### Settings 與 App Shell
 
 - FHIR Server URL 設定，附預設 server
+- **OAuth 2.0（client credentials）驗證**，支援位於授權閘道後方的 FHIR server（如 TW CAT 聯測 server）：可設定 token 端點、client id/secret 與 participant token，自動取得／快取 token 並於過期前刷新；main process 的 CORS shim 讓這些跨來源的帶授權請求通過 preflight，無需關閉 `webSecurity`。憑證可從 gitignored 的 `.env.local` 預先填入
 - 透過 `/metadata` 進行即時 server 健康檢查
 - 測試目前使用中的 server 會立即同步 Settings 中與狀態列顯示的全域連線狀態
 - Settings 會將 `/metadata` 解析為輕量 demo-readiness 視圖，包含目前 server 是否似乎有宣告 `Bundle $validate`

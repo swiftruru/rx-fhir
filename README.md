@@ -70,7 +70,7 @@ This README reflects the **current implementation** in the repository. When docu
 The current renderer is organized into four explicit layers:
 
 - `src/renderer/app`: app shell, routes, dialogs, global orchestration, and app-level stores
-- `src/renderer/features`: feature-owned UI, hooks, libs, and stores for Creator, Consumer, History, Settings, and About
+- `src/renderer/features`: feature-owned UI, hooks, libs, and stores for Creator, Consumer, Converter, History, Settings, and About
 - `src/renderer/domain`: reusable FHIR business logic and request rules
 - `src/renderer/shared`: shared UI primitives, shared hooks, shared stores, and cross-feature utilities
 
@@ -231,9 +231,20 @@ Search and inspect FHIR Bundles on the configured server:
 - **FHIR 410 Gone recovery**: when HAPI's search index points to a soft-deleted resource and the subsequent `fetchResourceById` receives 410, the client now automatically issues a `PUT` to the same ID to resurrect it — eliminating the "Resource was deleted" error that previously surfaced during Creator Extension and other resource steps on the public HAPI server
 - Supports Creator-to-Consumer handoff with automatic query prefill, auto-search, and newly created bundle focus
 
+### Converter Module (TW Core interoperability)
+
+A dedicated **Converter** workspace (sidebar page) turns a flat, FHIRfox-style competition problem JSON into a TW Core (`twcore`) compliant FHIR `collection` Bundle that passes the conference Gazelle/Prism validator.
+
+- Maps the source JSON to TW Core profiled resources across **11 resource types**: Patient (dual national-ID + medical-record identifier, emergency contact), Organization, Encounter (with `hospitalization.admitSource`/`dischargeDisposition`), Condition, Practitioner, PractitionerRole, AllergyIntolerance, Observation (vital signs incl. dual-coded blood pressure & pulse oximetry, plus laboratory results), Procedure, DiagnosticReport, and MedicationRequest (inline `medicationCodeableConcept`)
+- Emits `urn:uuid` references resolving to each entry's `fullUrl`, generated narratives for dom-6, UCUM-coded quantities, and per-resource TW Core profiles (heart-rate, body-temperature, body-weight, respiratory-rate, blood-pressure, pulse-oximetry, laboratory-result, …)
+- A built-in competition code dictionary maps opaque codes (e.g. `Cond-0012`, `serviceType`, `PR-/Spec-/Qual-`, `Med-`, `Lab-/Rep-`, `Tim-/Route-/Perf-/bodySite`) to standard SNOMED CT / LOINC / HL7 terminology; the built-in (verified) map always wins over learned entries
+- **Learn-from-errors**: paste the Gazelle validation errors and the converter auto-derives new `competition-code → standard-code` mappings (correlated via the generated bundle's provenance), persists them locally, and re-converts — so each problem teaches the dictionary. A "clear dictionary" action resets learned entries
+- Syntax-highlighted JSON editor for input and a color-highlighted Bundle preview; one click submits the bundle to the configured server (Prism captures it for Gazelle), with the Gazelle share link retrieved from the Prism connection view
+
 ### Settings and App Shell
 
 - FHIR Server URL configuration with preset servers
+- **OAuth 2.0 (client credentials) authentication** for FHIR servers behind an authorization gateway (e.g. the TW CAT conference server): configurable token endpoint, client id/secret, and participant token, with automatic token fetch/cache and pre-expiry refresh; a main-process CORS shim lets these authenticated cross-origin requests pass preflight without disabling `webSecurity`. Credentials can be pre-filled from a gitignored `.env.local`
 - Live server health check via `/metadata`
 - Testing the currently active server now immediately syncs the global connection status shown in Settings and the status bar
 - Settings now parse `/metadata` into a lightweight demo-readiness view, including whether the current server appears to advertise `Bundle $validate`

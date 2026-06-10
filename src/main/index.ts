@@ -2,6 +2,7 @@ import electron from 'electron'
 import { setupUpdateIpc, scheduleStartupUpdateCheck } from './updater/index'
 import { getRuntimeIconPath } from './services/runtimeAssets'
 import { createMainWindow, watchWindowShortcuts } from './services/mainWindowService'
+import { installCorsShim } from './services/corsService'
 import { setupMacMenu } from './services/macMenuService'
 import { registerDesktopIpc } from './ipc/registerDesktopIpc'
 import { findBundleFilePathFromArgv, queuePendingBundleFilePath } from './services/pendingBundleOpenService'
@@ -54,6 +55,8 @@ app.whenReady().then(() => {
   app.on('browser-window-created', (_, window) => {
     watchWindowShortcuts(window)
   })
+
+  installCorsShim()
 
   setupUpdateIpc()
   void createMainWindow().then(() => {

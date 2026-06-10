@@ -2,10 +2,45 @@ import { describe, expect, it } from 'vitest'
 import {
   assembleDocumentBundle,
   buildComposition,
+  hardenResourceForServer,
   resolveBundleAssemblyMode,
   shouldConvertBundleToSelfContainedExport,
   toSelfContainedExportBundle
 } from '../bundleBuilder'
+
+describe('hardenResourceForServer', () => {
+  it('adds the TW Core required telecom, address, and narrative to a bare Organization', () => {
+    const hardened = hardenResourceForServer({
+      resourceType: 'Organization',
+      active: true,
+      name: '馬偕紀念醫院',
+      identifier: [{ system: 'https://twcore.mohw.gov.tw/ig/emr/CodeSystem/organization-identifier', value: 'MMHF001' }],
+      meta: { profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Organization-EP'] }
+    } satisfies fhir4.Organization)
+
+    expect(hardened.telecom?.length).toBeGreaterThanOrEqual(1)
+    expect(hardened.address?.length).toBeGreaterThanOrEqual(1)
+    expect(hardened.text?.status).toBe('generated')
+    expect(hardened.text?.div).toContain('xhtml')
+  })
+
+  it('does not mutate the input resource', () => {
+    const original: fhir4.Organization = {
+      resourceType: 'Organization',
+      name: 'Clinic',
+      identifier: [{ value: 'C-1' }]
+    }
+    hardenResourceForServer(original)
+    expect(original.telecom).toBeUndefined()
+    expect(original.address).toBeUndefined()
+    expect(original.text).toBeUndefined()
+  })
+
+  it('passes Bundles through untouched', () => {
+    const bundle: fhir4.Bundle = { resourceType: 'Bundle', type: 'document', entry: [] }
+    expect(hardenResourceForServer(bundle)).toBe(bundle)
+  })
+})
 
 describe('bundleBuilder', () => {
   it('assembles a document bundle with Composition first and mirrored patient identifier', () => {

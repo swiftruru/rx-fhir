@@ -792,6 +792,55 @@ function mapTimingCodeToRepeat(code: string): fhir4.Timing['repeat'] | undefined
   return TIMING_CODE_REPEAT[code.toUpperCase()]
 }
 
+/**
+ * Apply the same TW Core EMR hardening used for bundle entries to a single
+ * resource before an individual POST/PUT.
+ *
+ * The conference server enforces profile cardinality as hard 422 errors — e.g.
+ * Organization-EP requires `telecom` and `address` (min=1), and the dom-6
+ * narrative best-practice is reported alongside. A bare form resource is missing
+ * these, so the stepper's "POST 至 FHIR Server" fails even though the equivalent
+ * Bundle export (which runs this enrichment) succeeds.
+ *
+ * Mirrors the per-type enrichment in normalizeBundleResources, minus the
+ * cross-resource reference rewiring (that only applies inside a bundle). Returns
+ * a hardened clone; the input is not mutated. Bundles pass through unchanged
+ * because their entries are hardened during assembly.
+ */
+export function hardenResourceForServer<T extends fhir4.Resource>(resource: T): T {
+  if (resource.resourceType === 'Bundle') return resource
+
+  const sanitized = normalizeLegacyProfiles(sanitizeResource(resource))
+
+  switch (sanitized.resourceType) {
+    case 'Patient':
+      return enrichPatient(sanitized as unknown as fhir4.Patient) as unknown as T
+    case 'Organization':
+      return enrichOrganization(
+        normalizeLegacyOrganizationType(sanitized as unknown as fhir4.Organization)
+      ) as unknown as T
+    case 'Encounter':
+      return enrichEncounter(sanitized as unknown as fhir4.Encounter) as unknown as T
+    case 'Condition':
+      return enrichCondition(sanitized as unknown as fhir4.Condition) as unknown as T
+    case 'Observation':
+      return enrichObservation(sanitized as unknown as fhir4.Observation) as unknown as T
+    case 'Coverage':
+      return enrichCoverage(sanitized as unknown as fhir4.Coverage) as unknown as T
+    case 'MedicationRequest':
+      return enrichMedicationRequest(
+        sanitized as unknown as fhir4.MedicationRequest,
+        undefined,
+        undefined,
+        false
+      ) as unknown as T
+    default:
+      // Practitioner, Medication, Basic (extension), Composition, etc. only need
+      // narrative + profile normalization, already applied by sanitizeResource.
+      return sanitized
+  }
+}
+
 function normalizeBundleResources(
   resourceMap: Partial<BundleResourceMap>,
   fullUrls: Partial<Record<BundleResourceKey, string>>,

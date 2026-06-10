@@ -1,6 +1,7 @@
 // Pure data-transformation helpers — no I/O, no React imports.
 import QRCode from 'qrcode'
 import type { FhirRequestEntry } from '../features/creator/store/fhirInspectorStore'
+import { getAuthHeaders } from '../domain/fhir/fhirAuth'
 
 // ─── Postman Collection v2.1 ────────────────────────────────────────────────
 
@@ -151,7 +152,7 @@ async function searchByIdentifier(
   if (!url) return undefined
 
   try {
-    const resp = await fetch(url, { headers: { Accept: 'application/fhir+json' } })
+    const resp = await fetch(url, { headers: { Accept: 'application/fhir+json', ...(await getAuthHeaders()) } })
     if (!resp.ok) return undefined
     const result = await resp.json() as { entry?: Array<{ resource?: { id?: string } }> }
     return result.entry?.[0]?.resource?.id
@@ -174,7 +175,7 @@ async function searchByPatient(
 
   try {
     const url = `${baseUrl}/${type}?patient=Patient/${patientServerId}&_count=1`
-    const resp = await fetch(url, { headers: { Accept: 'application/fhir+json' } })
+    const resp = await fetch(url, { headers: { Accept: 'application/fhir+json', ...(await getAuthHeaders()) } })
     if (!resp.ok) return undefined
     const result = await resp.json() as { entry?: Array<{ resource?: { id?: string } }> }
     return result.entry?.[0]?.resource?.id
@@ -209,7 +210,7 @@ async function resolveHttpMethod(
   try {
     const resp = await fetch(`${base}/${type}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/fhir+json', Accept: 'application/fhir+json' },
+      headers: { 'Content-Type': 'application/fhir+json', Accept: 'application/fhir+json', ...(await getAuthHeaders()) },
       body: JSON.stringify(resource),
       signal
     })
@@ -221,7 +222,7 @@ async function resolveHttpMethod(
       const created = await resp.json() as { id?: string }
       console.log(`[RxFHIR Export] probe ${type}: created probe ID=${created.id}, deleting...`)
       if (created.id) {
-        await fetch(`${base}/${type}/${created.id}`, { method: 'DELETE' }).catch(() => {})
+        await fetch(`${base}/${type}/${created.id}`, { method: 'DELETE', headers: await getAuthHeaders() }).catch(() => {})
       }
       // fall through to identifier search below
     } else if (!resp.ok) {

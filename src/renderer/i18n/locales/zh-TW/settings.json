@@ -74,7 +74,23 @@
     "testingAnnouncement": "正在測試 FHIR Server 連線。",
     "testSuccessAnnouncement": "FHIR Server 連線成功。",
     "testFailAnnouncement": "FHIR Server 連線失敗。",
-    "savedAnnouncement": "FHIR Server 設定已儲存。"
+    "savedAnnouncement": "FHIR Server 設定已儲存。",
+    "oauth": {
+      "title": "進階驗證（OAuth 2.0）",
+      "description": "若伺服器需要授權（例如聯測伺服器），啟用後每次請求會自動取得並帶上 Bearer Token。",
+      "enableLabel": "啟用 OAuth 2.0 驗證",
+      "tokenUrlLabel": "Token 端點 URL",
+      "tokenUrlPlaceholder": "https://…/protocol/openid-connect/token",
+      "clientIdLabel": "Client ID",
+      "clientSecretLabel": "Client Secret",
+      "participantTokenLabel": "Participant Token（X-Participant-Token）",
+      "participantTokenHint": "聯測單位核發的身分權杖，會一併送至 Token 端點與 FHIR 伺服器。",
+      "fillTwcat": "套用聯測（TW CAT）預設值",
+      "storageNote": "憑證僅儲存在本機，不會上傳。",
+      "verifySuccess": "OAuth 驗證成功，已成功取得存取 Token。",
+      "verifyFail": "OAuth 驗證失敗：{{error}}",
+      "incomplete": "請先填寫 Token 端點、Client ID 與 Client Secret。"
+    }
   },
   "status": {
     "title":      "目前連線狀態",

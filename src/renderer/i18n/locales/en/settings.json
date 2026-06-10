@@ -74,7 +74,23 @@
     "testingAnnouncement": "Testing the FHIR Server connection.",
     "testSuccessAnnouncement": "FHIR Server connection successful.",
     "testFailAnnouncement": "FHIR Server connection failed.",
-    "savedAnnouncement": "FHIR Server settings saved."
+    "savedAnnouncement": "FHIR Server settings saved.",
+    "oauth": {
+      "title": "Advanced authentication (OAuth 2.0)",
+      "description": "If the server requires authorization (e.g. the conference server), enabling this fetches and attaches a Bearer token on every request automatically.",
+      "enableLabel": "Enable OAuth 2.0 authentication",
+      "tokenUrlLabel": "Token endpoint URL",
+      "tokenUrlPlaceholder": "https://…/protocol/openid-connect/token",
+      "clientIdLabel": "Client ID",
+      "clientSecretLabel": "Client Secret",
+      "participantTokenLabel": "Participant Token (X-Participant-Token)",
+      "participantTokenHint": "Identity token issued by the conference organizer; sent to both the token endpoint and the FHIR server.",
+      "fillTwcat": "Use TW CAT conference defaults",
+      "storageNote": "Credentials are stored locally only and never uploaded.",
+      "verifySuccess": "OAuth verification succeeded; access token obtained.",
+      "verifyFail": "OAuth verification failed: {{error}}",
+      "incomplete": "Please fill in the token endpoint, Client ID, and Client Secret first."
+    }
   },
   "status": {
     "title":       "Current Connection Status",

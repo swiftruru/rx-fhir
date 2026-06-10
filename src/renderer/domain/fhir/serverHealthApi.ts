@@ -1,5 +1,6 @@
 import { getFhirBaseUrl } from './baseUrl'
 import { FHIR_HEADERS } from './requestLogger'
+import { getAuthHeaders } from './fhirAuth'
 import type { ServerCapabilities, ServerCapabilitySupport } from '../../../shared/contracts/electron'
 
 export interface ServerHealthResult {
@@ -59,7 +60,7 @@ export async function checkServerHealth(baseUrl?: string): Promise<ServerHealthR
   try {
     const response = await fetch(url, {
       method: 'GET',
-      headers: FHIR_HEADERS,
+      headers: { ...FHIR_HEADERS, ...(await getAuthHeaders()) },
       signal: AbortSignal.timeout(8000)
     })
     if (!response.ok) {

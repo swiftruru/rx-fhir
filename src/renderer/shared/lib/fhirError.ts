@@ -1,9 +1,15 @@
 type OperationOutcomeIssue = {
+  severity?: 'fatal' | 'error' | 'warning' | 'information'
   diagnostics?: string
   details?: {
     text?: string
   }
 }
+
+// Surface blocking issues before best-practice advisories. Servers (e.g. the TW
+// CAT validator) often list the dom-6 narrative warning first, which would
+// otherwise mask the real 422 cause (missing required telecom/address, etc.).
+const SEVERITY_RANK: Record<string, number> = { fatal: 0, error: 1, warning: 2, information: 3 }
 
 type OperationOutcomeLike = {
   resourceType?: string
@@ -30,6 +36,8 @@ function getDiagnostics(outcome: OperationOutcomeLike | undefined): string[] {
   if (!outcome || outcome.resourceType !== 'OperationOutcome') return []
 
   return (outcome.issue ?? [])
+    .slice()
+    .sort((a, b) => (SEVERITY_RANK[a.severity ?? 'error'] ?? 1) - (SEVERITY_RANK[b.severity ?? 'error'] ?? 1))
     .flatMap((issue) => [issue.diagnostics, issue.details?.text])
     .filter((value): value is string => Boolean(value))
     .map((value) => stripHtml(value))

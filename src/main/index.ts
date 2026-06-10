@@ -56,7 +56,12 @@ app.whenReady().then(() => {
     watchWindowShortcuts(window)
   })
 
-  installCorsShim()
+  // Skip in E2E: the conference CORS shim registers a session webRequest
+  // handler that interferes with Playwright's page.route network interception,
+  // and mocked tests never hit a real cross-origin server anyway.
+  if (!isE2eMode) {
+    installCorsShim()
+  }
 
   setupUpdateIpc()
   void createMainWindow().then(() => {

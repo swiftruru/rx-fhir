@@ -10,13 +10,14 @@ import {
 
 describe('hardenResourceForServer', () => {
   it('adds the TW Core required telecom, address, and narrative to a bare Organization', () => {
-    const hardened = hardenResourceForServer({
+    const bareOrganization: fhir4.Organization = {
       resourceType: 'Organization',
       active: true,
       name: '馬偕紀念醫院',
       identifier: [{ system: 'https://twcore.mohw.gov.tw/ig/emr/CodeSystem/organization-identifier', value: 'MMHF001' }],
       meta: { profile: ['https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Organization-EP'] }
-    } satisfies fhir4.Organization)
+    }
+    const hardened = hardenResourceForServer(bareOrganization)
 
     expect(hardened.telecom?.length).toBeGreaterThanOrEqual(1)
     expect(hardened.address?.length).toBeGreaterThanOrEqual(1)
@@ -725,6 +726,7 @@ describe('bundleBuilder', () => {
       title: '電子處方箋',
       date: '2026-04-10T10:55:00',
       subject: { reference: 'Patient/p1' },
+      author: [{ reference: 'Practitioner/prac1' }],
       section: [{
         title: '保險資訊',
         code: { coding: [{ system: 'http://loinc.org', code: '29762-2', display: 'Social history note' }] },

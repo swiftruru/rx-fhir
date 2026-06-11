@@ -4,6 +4,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import type {
   BundleJsonSavePayload,
   BundleJsonSaveResult,
+  CaptureScreenshotPayload,
   FileSavePayload,
   PreferencesJsonSavePayload,
   RecentBundleFileEntry,
@@ -173,6 +174,35 @@ export function registerDesktopIpc(): void {
       }
 
       await writeFile(filePath, payload.content, 'utf8')
+
+      return {
+        canceled: false,
+        filePath,
+        fileName: basename(filePath)
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'capture:screenshot',
+    async (event, payload: CaptureScreenshotPayload): Promise<SaveFileResult> => {
+      // Capture the renderer view that issued the request, then let the user save it.
+      const image = await event.sender.capturePage()
+      const targetWindow = getTargetWindow()
+      const saveOptions = {
+        title: 'Save screenshot',
+        defaultPath: payload.defaultFileName ?? `rxfhir-screenshot-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.png`,
+        filters: [{ name: 'PNG', extensions: ['png'] }]
+      }
+      const { canceled, filePath } = targetWindow
+        ? await dialog.showSaveDialog(targetWindow, saveOptions)
+        : await dialog.showSaveDialog(saveOptions)
+
+      if (canceled || !filePath) {
+        return { canceled: true }
+      }
+
+      await writeFile(filePath, image.toPNG())
 
       return {
         canceled: false,

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Repeat2, CheckCircle2, AlertCircle, Wand2, Upload, Send, Loader2, Trash2 } from 'lucide-react'
+import { Repeat2, CheckCircle2, AlertCircle, Wand2, Upload, Send, Loader2, Trash2, Download, Eye, EyeOff, XCircle, Camera, FileText } from 'lucide-react'
 import { Button } from '../../shared/components/ui/button'
 import { Label } from '../../shared/components/ui/label'
 import { Badge } from '../../shared/components/ui/badge'
@@ -8,8 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../shared/component
 import { Alert, AlertDescription } from '../../shared/components/ui/alert'
 import JsonViewer from '../../shared/components/JsonViewer'
 import JsonCodeEditor from '../../shared/components/JsonCodeEditor'
+import FhirRequestInspector from '../creator/components/FhirRequestInspector'
+import { useFhirInspectorStore } from '../creator/store/fhirInspectorStore'
 import { useToastStore } from '../../shared/stores/toastStore'
 import { convertCompetitionProblem, type CompetitionProblem, type ProvenanceEntry } from '../../domain/fhir/twcore/competitionConverter'
+import { checkBundleConformance, parseExpectedCounts } from '../../domain/fhir/twcore/conformanceCheck'
+import { buildCodeMappingTable } from '../../domain/fhir/twcore/codeMapping'
 import {
   getCodeOverrides,
   saveCodeOverrides,
@@ -24,6 +28,8 @@ import {
   type ResourceValidation,
   type TransactionResult
 } from '../../services/twcoreCompetitionService'
+import { saveFile, captureScreenshot } from '../../services/bundleFileService'
+import { buildProofReportHtml } from './proofReport'
 
 const SAMPLE_PROBLEM: CompetitionProblem = {
   patients: [{
@@ -59,6 +65,27 @@ const SAMPLE_PROBLEM: CompetitionProblem = {
 
 type BundleType = 'transaction' | 'collection'
 
+function shortSystem(url?: string): string {
+  if (!url) return ''
+  if (url.includes('snomed')) return 'SNOMED'
+  if (url.includes('loinc')) return 'LOINC'
+  if (url.includes('GTSAbbreviation')) return 'GTS'
+  if (url.includes('service-type')) return 'service-type'
+  if (url.includes('unitsofmeasure')) return 'UCUM'
+  return url.split('/').pop() ?? url
+}
+
+function CheckRow({ ok, label }: { ok: boolean; label: string }): React.JSX.Element {
+  return (
+    <li className="flex items-start gap-1.5">
+      {ok
+        ? <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" />
+        : <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />}
+      <span className={ok ? '' : 'text-destructive'}>{label}</span>
+    </li>
+  )
+}
+
 export default function ConverterPage(): React.JSX.Element {
   const { t } = useTranslation('converter')
   const pushToast = useToastStore((state) => state.pushToast)
@@ -75,6 +102,18 @@ export default function ConverterPage(): React.JSX.Element {
   const [provenance, setProvenance] = useState<ProvenanceEntry[]>([])
   const [learnText, setLearnText] = useState('')
   const [dictSize, setDictSize] = useState(() => countOverrides(getCodeOverrides()))
+  const [revealSecrets, setRevealSecrets] = useState(false)
+  const [expectedCountsText, setExpectedCountsText] = useState('')
+
+  // Only this page's own requests (submit / $validate / token exchange).
+  const inspectorHistory = useFhirInspectorStore((s) => s.history)
+  const converterRequests = useMemo(() => inspectorHistory.filter((e) => e.module === 'converter'), [inspectorHistory])
+
+  const conformance = useMemo(
+    () => (bundle ? checkBundleConformance(bundle, expectedCountsText.trim() ? parseExpectedCounts(expectedCountsText) : undefined) : null),
+    [bundle, expectedCountsText]
+  )
+  const codeMap = useMemo(() => buildCodeMappingTable(provenance), [provenance])
 
   function resetResults(): void {
     setValidations(null)
@@ -209,6 +248,43 @@ export default function ConverterPage(): React.JSX.Element {
     setCounts({})
   }
 
+  async function handleDownload(): Promise<void> {
+    if (!bundle) return
+    try {
+      // Save the bundle exactly as converted (no EMR self-contained transform).
+      const result = await saveFile(JSON.stringify(bundle, null, 2), 'rxfhir-twcore-bundle.json', [{ name: 'JSON', extensions: ['json'] }])
+      if (!result.canceled) pushToast({ variant: 'success', description: t('downloadSaved') })
+    } catch (e) {
+      pushToast({ variant: 'error', description: e instanceof Error ? e.message : String(e) })
+    }
+  }
+
+  async function handleScreenshot(): Promise<void> {
+    try {
+      const result = await captureScreenshot()
+      if (!result.canceled) pushToast({ variant: 'success', description: t('screenshotSaved') })
+    } catch (e) {
+      pushToast({ variant: 'error', description: e instanceof Error ? e.message : String(e) })
+    }
+  }
+
+  async function handleExportReport(): Promise<void> {
+    if (!bundle) return
+    try {
+      const html = buildProofReportHtml({
+        generatedAt: new Date().toLocaleString(),
+        counts,
+        conformance,
+        codeMap,
+        submit: submitResult ? { httpStatus: submitResult.httpStatus, location: submitResult.entries[0]?.location, reachedPrism: submittedAs === 'collection' } : null
+      })
+      const result = await saveFile(html, 'rxfhir-proof-report.html', [{ name: 'HTML', extensions: ['html'] }])
+      if (!result.canceled) pushToast({ variant: 'success', description: t('reportSaved') })
+    } catch (e) {
+      pushToast({ variant: 'error', description: e instanceof Error ? e.message : String(e) })
+    }
+  }
+
   const totalErrors = validations?.reduce((sum, r) => sum + r.errors.length, 0) ?? 0
 
   return (
@@ -282,6 +358,82 @@ export default function ConverterPage(): React.JSX.Element {
                     <Badge key={type} variant="outline" className="font-mono text-[11px]">{type} × {n}</Badge>
                   ))}
                 </div>
+
+                {conformance && (
+                  <div className="space-y-2 rounded-lg border border-border bg-background/40 p-3">
+                    <p className="flex items-center gap-1.5 text-xs font-medium">
+                      {conformance.allPass && <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />}
+                      {t('conformanceTitle')}
+                    </p>
+                    <ul className="space-y-1 text-xs">
+                      <CheckRow ok={conformance.isCollection} label={t('checkCollection', { type: conformance.bundleType ?? '—' })} />
+                      <CheckRow ok={conformance.bundleHasProfile} label={t('checkBundleProfile')} />
+                      <CheckRow
+                        ok={conformance.entriesMissingProfile.length === 0}
+                        label={conformance.entriesMissingProfile.length === 0
+                          ? t('checkEntryProfiles')
+                          : t('checkEntryProfilesMissing', { types: [...new Set(conformance.entriesMissingProfile)].join(', ') })}
+                      />
+                    </ul>
+                    {conformance.countDiff && (
+                      <ul className="space-y-0.5 pl-1 text-[11px] font-mono">
+                        {conformance.countDiff.map((r) => (
+                          <li key={r.type} className={r.ok ? 'text-green-600 dark:text-green-400' : 'text-destructive'}>
+                            {r.ok ? '✓' : '✗'} {r.type} {r.actual}/{r.expected}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="expected-counts" className="whitespace-nowrap text-[11px] text-muted-foreground">{t('expectedCountsLabel')}</Label>
+                      <input
+                        id="expected-counts"
+                        data-testid="converter.expected-counts"
+                        value={expectedCountsText}
+                        onChange={(e) => setExpectedCountsText(e.target.value)}
+                        placeholder={t('expectedCountsPlaceholder')}
+                        spellCheck={false}
+                        className="flex-1 rounded-md border border-border bg-background/70 px-2 py-1 font-mono text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {codeMap.length > 0 && (
+                  <div className="space-y-2 rounded-lg border border-border bg-background/40 p-3">
+                    <p className="flex flex-wrap items-center gap-2 text-xs font-medium">
+                      {t('codeMappingTitle')}
+                      {codeMap.some((r) => !r.mapped) && (
+                        <span className="text-[11px] font-normal text-amber-600 dark:text-amber-400">
+                          {t('codeMappingUnmapped', { count: codeMap.filter((r) => !r.mapped).length })}
+                        </span>
+                      )}
+                    </p>
+                    <div className="max-h-56 overflow-auto rounded border border-border/60">
+                      <table className="w-full text-[11px]">
+                        <thead className="sticky top-0 bg-muted/60 text-muted-foreground">
+                          <tr>
+                            <th className="px-2 py-1 text-left font-medium">{t('codeMappingCategory')}</th>
+                            <th className="px-2 py-1 text-left font-medium">{t('codeMappingLocal')}</th>
+                            <th className="px-2 py-1 text-left font-medium">{t('codeMappingStandard')}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="font-mono">
+                          {codeMap.map((r) => (
+                            <tr key={`${r.category}-${r.competitionCode}`} className="border-t border-border/40">
+                              <td className="px-2 py-1">{r.category}</td>
+                              <td className="px-2 py-1">{r.competitionCode}</td>
+                              <td className={`px-2 py-1 ${r.mapped ? '' : 'text-amber-600 dark:text-amber-400'}`}>
+                                {r.mapped ? `${shortSystem(r.system)} | ${r.standardCode}` : t('codeMappingTextFallback')}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" variant="outline" size="sm" onClick={handleValidate} disabled={busy !== 'idle'}>
                     {busy === 'validating' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
@@ -290,6 +442,15 @@ export default function ConverterPage(): React.JSX.Element {
                   <Button type="button" size="sm" onClick={handleSubmit} disabled={busy !== 'idle'}>
                     {busy === 'submitting' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     {bundleType === 'collection' ? t('submitToServer') : t('submitTransaction')}
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={handleDownload}>
+                    <Download className="h-4 w-4" />{t('download')}
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={handleScreenshot}>
+                    <Camera className="h-4 w-4" />{t('screenshot')}
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={handleExportReport}>
+                    <FileText className="h-4 w-4" />{t('exportReport')}
                   </Button>
                 </div>
 
@@ -365,6 +526,25 @@ export default function ConverterPage(): React.JSX.Element {
           </CardContent>
         </Card>
       </div>
+
+      {/* Request inspector — submit / $validate / OAuth token exchange */}
+      {converterRequests.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="text-base">{t('inspectorTitle')}</CardTitle>
+              <Button type="button" variant={revealSecrets ? 'secondary' : 'outline'} size="sm" onClick={() => setRevealSecrets((v) => !v)}>
+                {revealSecrets ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {revealSecrets ? t('hideToken') : t('revealToken')}
+              </Button>
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">{t('inspectorSubtitle')}</p>
+          </CardHeader>
+          <CardContent>
+            <FhirRequestInspector request={converterRequests[0]} history={converterRequests} revealSecrets={revealSecrets} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Learn-from-errors */}
       <Card>

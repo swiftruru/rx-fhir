@@ -46,6 +46,10 @@ export interface SaveFileResult {
   fileName?: string
 }
 
+export interface CaptureScreenshotPayload {
+  defaultFileName?: string
+}
+
 export interface ZoomFactorResult {
   zoomFactor: number
 }
@@ -78,6 +82,7 @@ export interface RxFhirDesktopBridge {
   savePreferencesJson: (payload: PreferencesJsonSavePayload) => Promise<PreferencesJsonSaveResult>
   openPreferencesJson: () => Promise<PreferencesJsonOpenResult>
   saveFile: (payload: FileSavePayload) => Promise<SaveFileResult>
+  captureScreenshot: (payload: CaptureScreenshotPayload) => Promise<SaveFileResult>
   openExternalUrl: (url: string) => Promise<{ opened: boolean }>
   setAppZoomFactor: (zoomFactor: number) => Promise<ZoomFactorResult>
   checkForUpdates: () => Promise<UpdateCheckResult>

@@ -8,6 +8,17 @@
  * custom-header requests survive Chromium's preflight.
  */
 
+import { useFhirInspectorStore } from '../../features/creator/store/fhirInspectorStore'
+
+/** Tag the token-exchange log with the active route (inlined to avoid a cycle with requestLogger). */
+function currentModule(): string {
+  const hash = window.location.hash
+  if (hash.includes('/converter')) return 'converter'
+  if (hash.includes('/creator')) return 'creator'
+  if (hash.includes('/settings')) return 'settings'
+  return 'app'
+}
+
 export interface OAuthConfig {
   enabled: boolean
   /** Token endpoint, e.g. https://.../realms/twcat2026/protocol/openid-connect/token */
@@ -122,16 +133,45 @@ async function requestAccessToken(config: OAuthConfig): Promise<string> {
     headers['X-Participant-Token'] = config.participantToken.trim()
   }
 
-  const response = await fetch(config.tokenUrl, {
+  // Log the token exchange into the request inspector so the "obtain token from
+  // Keycloak" step is visible/screenshottable in-app. We push directly (not via
+  // performLoggedRequest, which would recurse through getAuthHeaders). The
+  // client_secret is masked in the logged body; the X-Participant-Token header
+  // follows the inspector's normal reveal toggle.
+  const requestId = useFhirInspectorStore.getState().startRequest({
     method: 'POST',
-    headers,
-    body,
-    signal: AbortSignal.timeout(15_000)
+    url: config.tokenUrl,
+    requestHeaders: headers,
+    requestBody: { grant_type: 'client_credentials', client_id: config.clientId, client_secret: config.clientSecret ? '••••••' : '' }
+  }, currentModule())
+
+  let response: Response
+  try {
+    response = await fetch(config.tokenUrl, {
+      method: 'POST',
+      headers,
+      body,
+      signal: AbortSignal.timeout(15_000)
+    })
+  } catch (error) {
+    useFhirInspectorStore.getState().finishRequest(requestId, {
+      ok: false,
+      errorMessage: error instanceof Error ? error.message : String(error)
+    })
+    throw error
+  }
+
+  const rawText = await response.clone().text().catch(() => '')
+  useFhirInspectorStore.getState().finishRequest(requestId, {
+    ok: response.ok,
+    responseStatus: response.status,
+    responseStatusText: response.statusText,
+    responseHeaders: Object.fromEntries(response.headers.entries()),
+    responseBody: (() => { try { return JSON.parse(rawText) } catch { return rawText } })()
   })
 
   if (!response.ok) {
-    const detail = await response.text().catch(() => '')
-    throw new Error(`OAuth token request failed (${response.status}): ${detail.slice(0, 300)}`)
+    throw new Error(`OAuth token request failed (${response.status}): ${rawText.slice(0, 300)}`)
   }
 
   const json = (await response.json()) as { access_token?: string; expires_in?: number }

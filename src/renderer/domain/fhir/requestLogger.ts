@@ -1,10 +1,11 @@
 import { useFhirInspectorStore } from '../../features/creator/store/fhirInspectorStore'
 import { getAuthHeaders } from './fhirAuth'
 
-function getCurrentModule(): string {
+export function getCurrentModule(): string {
   const hash = window.location.hash
   if (hash.includes('/creator')) return 'creator'
   if (hash.includes('/consumer')) return 'consumer'
+  if (hash.includes('/converter')) return 'converter'
   if (hash.includes('/settings')) return 'settings'
   return 'app'
 }
@@ -34,8 +35,12 @@ function headersToObject(headers?: HeadersInit): Record<string, string> {
   )
 }
 
-/** Mask sensitive header values before they reach the request inspector. */
-function maskSensitiveHeaders(headers: Record<string, string>): Record<string, string> {
+/**
+ * Mask sensitive header values for display. Applied at RENDER time by the request
+ * inspector (not at store time) so the inspector can optionally reveal the real
+ * values for competition proof screenshots via its `revealSecrets` toggle.
+ */
+export function maskSensitiveHeaders(headers: Record<string, string>): Record<string, string> {
   const masked: Record<string, string> = {}
   for (const [key, value] of Object.entries(headers)) {
     if (/^(authorization|x-participant-token)$/i.test(key) && value) {
@@ -77,7 +82,9 @@ export async function performLoggedRequest(
     url,
     resourceType: init.resourceType,
     reasonCode: init.reasonCode,
-    requestHeaders: maskSensitiveHeaders(mergedHeaders),
+    // Store raw headers; the inspector masks at render time (and can reveal them
+    // for proof). The store is in-memory only (never persisted to disk).
+    requestHeaders: mergedHeaders,
     requestBody: init.body
   }, getCurrentModule())
 

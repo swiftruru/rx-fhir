@@ -5,11 +5,17 @@ import { ScrollArea } from '../../../shared/components/ui/scroll-area'
 import JsonViewer from '../../../shared/components/JsonViewer'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../shared/components/ui/tooltip'
 import ExternalUrlLink from '../../../shared/components/ExternalUrlLink'
+import { maskSensitiveHeaders } from '../../../domain/fhir/requestLogger'
 import type { FhirRequestEntry } from '../store/fhirInspectorStore'
 
 interface Props {
   request?: FhirRequestEntry
   history?: FhirRequestEntry[]
+  /**
+   * When false (default) Authorization / X-Participant-Token header values are
+   * masked. Set true to reveal them (e.g. competition proof screenshots).
+   */
+  revealSecrets?: boolean
 }
 
 function formatDateTime(value?: string): string | undefined {
@@ -140,7 +146,7 @@ function getFlowNote(
   }
 }
 
-export default function FhirRequestInspector({ request, history }: Props): React.JSX.Element {
+export default function FhirRequestInspector({ request, history, revealSecrets = false }: Props): React.JSX.Element {
   const { t } = useTranslation('creator')
   const emptyLabel = t('stepper.requestNoContent')
   const flowEntries = history?.length ? [...history].reverse() : request ? [request] : []
@@ -348,7 +354,7 @@ export default function FhirRequestInspector({ request, history }: Props): React
       </div>
 
       <div className="grid gap-3">
-        {renderPayload(t('stepper.requestHeadersTitle'), request.requestHeaders, emptyLabel)}
+        {renderPayload(t('stepper.requestHeadersTitle'), revealSecrets ? request.requestHeaders : maskSensitiveHeaders(request.requestHeaders), emptyLabel)}
         {renderPayload(t('stepper.requestBodyTitle'), request.requestBody, emptyLabel, 'raw')}
         {renderPayload(t('stepper.responseHeadersTitle'), request.responseHeaders, emptyLabel)}
         {renderPayload(t('stepper.responseBodyTitle'), request.responseBody, emptyLabel, 'raw')}

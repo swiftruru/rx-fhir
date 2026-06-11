@@ -239,6 +239,25 @@ Electron 原生相關的邏輯維持在 `src/main`；跨 process 穩定契約放
 - **從錯誤學習**：貼上 Gazelle 驗證錯誤，轉換器會自動推導新的「競賽代碼 → 標準代碼」對應（透過產生 bundle 的 provenance 對回），保存在本機並重新轉換 —— 每題都在教字典。另有「清除字典」可重置學習內容
 - 輸入框與 Bundle 預覽皆有語法凸顯；一鍵將 bundle 送至所設定的 server（Prism 會擷取轉給 Gazelle），驗證連結則從 Prism connection 頁取得
 
+Converter 同時是**競賽證明工作區**，讓聯測證據可在 App 內取得，不必跳到瀏覽器 DevTools：
+
+- **送出前合規檢查清單**：確認 `Bundle.type = collection`、Bundle 與每個 entry 都有 `meta.profile`、以及資源數量/種類；可選填案例摘要期望數量自動對照、不符標紅
+- **院內碼 → 國際碼對照表**：列出用到的每個競賽碼及其轉成的 SNOMED/LOINC/HL7 碼（未對應會標示），由 bundle 的 provenance 產生
+- **App 內 FHIR 請求檢視**：顯示 Converter 的送出 / `$validate` / OAuth 換 token 請求，附「顯示完整 token」切換鈕，方便截圖 `Authorization: Bearer …` 與 `X-Participant-Token`
+- **一鍵證明產出**：下載轉換後 Bundle JSON、擷取目前畫面 PNG、或匯出單一案例的 HTML 證明報告（數量＋合規＋對照表＋送出結果），可用瀏覽器列印成 PDF
+- 針對閘道後的聯測伺服器提供 OAuth 2.0（client_credentials）驗證，token 自動取得/快取/刷新，每次請求都帶 participant token
+
+### 聯測輔助工具（CLI）
+
+`tools/connectathon-helper/` 是獨立的 TypeScript/Node CLI，把 FHIR 聯測（TWCAT / Gazelle）的證明流程自動化，並重用 App 的純領域邏輯（轉換器、合規檢查、代碼對照）：
+
+- `token` — 取得 `X-Participant-Token` 與 Keycloak OAuth `access_token`（`client_credentials` 與 `password` 兩種 grant，依 `.env` 切換）
+- `convert` / `upload` — 把題目 JSON 轉成 `collection` Bundle、跑合規/數量檢查、帶憑證 POST 到大會 FHIR 主機
+- `codemap` — 輸出院內碼 → 國際碼對照表
+- `screenshot` / `record` / `report` — 截某 URL、收錄各步驟（Step 10–300）連結/截圖/備註、匯出 Markdown + PDF 報告。Gazelle/FHIRfox 網頁步驟採**純紀錄**（不自動操作平台）
+
+憑證放在 gitignored 的 `.env`，詳見 `tools/connectathon-helper/README.md`。註冊用的 FHIR R4 `CapabilityStatement` 與書面 System Summary 在 [docs/conformance/](docs/conformance/)。
+
 ### Settings 與 App Shell
 
 - FHIR Server URL 設定，附預設 server

@@ -1,0 +1,251 @@
+{
+  "resourceType": "CapabilityStatement",
+  "id": "rxfhir",
+  "url": "https://github.com/swiftruru/rx-fhir/CapabilityStatement/rxfhir",
+  "version": "1.1.0",
+  "name": "RxFHIR",
+  "title": "RxFHIR — TW Core Electronic Prescription & Interoperability Client",
+  "status": "active",
+  "experimental": false,
+  "date": "2026-06-11",
+  "publisher": "National Taipei University of Nursing and Health Sciences — Department of Information Management",
+  "contact": [
+    {
+      "name": "Yu-Ru Pan (潘昱如)",
+      "telecom": [{ "system": "email", "value": "swiftruru@gmail.com" }]
+    }
+  ],
+  "description": "RxFHIR is a cross-platform Electron desktop client for creating, validating, and submitting Taiwan Core (TW Core) FHIR R4 resources. It assembles electronic-prescription Document Bundles and converts flat interoperability problem sets into TW Core compliant collection Bundles, then submits them to a FHIR server through an OAuth 2.0 authorization gateway. It acts purely as a FHIR client.",
+  "kind": "capability",
+  "software": {
+    "name": "RxFHIR",
+    "version": "1.1.0",
+    "releaseDate": "2026-06-11"
+  },
+  "fhirVersion": "4.0.1",
+  "format": ["application/fhir+json", "json"],
+  "implementationGuide": [
+    "https://twcore.mohw.gov.tw/ig/twcore",
+    "https://twcore.mohw.gov.tw/ig/emr"
+  ],
+  "rest": [
+    {
+      "mode": "client",
+      "documentation": "RxFHIR is a FHIR client. It obtains an access token from the conference Keycloak authorization server using the OAuth 2.0 client-credentials grant, then sends the Bearer access token in the Authorization header together with a participant token in the X-Participant-Token header on every transaction. Every generated resource carries its TW Core profile in meta.profile and uses urn:uuid references resolving to each entry's fullUrl.",
+      "security": {
+        "cors": true,
+        "service": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/restful-security-service",
+                "code": "OAuth",
+                "display": "OAuth"
+              }
+            ],
+            "text": "OAuth 2.0 client_credentials (Keycloak) + X-Participant-Token"
+          }
+        ],
+        "description": "OAuth 2.0 client_credentials grant against the TW CAT Keycloak authorization server (realm twcat2026). The Bearer access token is sent in the Authorization header and the conference-issued participant token in the X-Participant-Token header on every request, including the token exchange."
+      },
+      "resource": [
+        {
+          "type": "Patient",
+          "supportedProfile": [
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Patient-twcore",
+            "https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Patient-EP"
+          ],
+          "interaction": [
+            { "code": "create" },
+            { "code": "read" },
+            { "code": "search-type" },
+            { "code": "update" }
+          ]
+        },
+        {
+          "type": "Organization",
+          "supportedProfile": [
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Organization-twcore",
+            "https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Organization-EP"
+          ],
+          "interaction": [
+            { "code": "create" },
+            { "code": "read" },
+            { "code": "search-type" },
+            { "code": "update" }
+          ]
+        },
+        {
+          "type": "Practitioner",
+          "supportedProfile": [
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Practitioner-twcore",
+            "https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Practitioner-EP"
+          ],
+          "interaction": [
+            { "code": "create" },
+            { "code": "read" },
+            { "code": "search-type" },
+            { "code": "update" }
+          ]
+        },
+        {
+          "type": "PractitionerRole",
+          "supportedProfile": [
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/PractitionerRole-twcore"
+          ],
+          "interaction": [
+            { "code": "create" },
+            { "code": "read" },
+            { "code": "search-type" },
+            { "code": "update" }
+          ]
+        },
+        {
+          "type": "Encounter",
+          "supportedProfile": [
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Encounter-twcore",
+            "https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Encounter-EP"
+          ],
+          "interaction": [
+            { "code": "create" },
+            { "code": "read" },
+            { "code": "search-type" },
+            { "code": "update" }
+          ]
+        },
+        {
+          "type": "Condition",
+          "supportedProfile": [
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Condition-twcore",
+            "https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Condition-EP"
+          ],
+          "interaction": [
+            { "code": "create" },
+            { "code": "read" },
+            { "code": "search-type" },
+            { "code": "update" }
+          ]
+        },
+        {
+          "type": "Observation",
+          "supportedProfile": [
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Observation-vital-signs-twcore",
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Observation-heart-rate-twcore",
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Observation-body-temperature-twcore",
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Observation-body-weight-twcore",
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Observation-respiratory-rate-twcore",
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Observation-bloodPressure-twcore",
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Observation-pulse-oximetry-twcore",
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Observation-laboratoryResult-twcore"
+          ],
+          "interaction": [
+            { "code": "create" },
+            { "code": "read" },
+            { "code": "search-type" },
+            { "code": "update" }
+          ]
+        },
+        {
+          "type": "AllergyIntolerance",
+          "supportedProfile": [
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/AllergyIntolerance-twcore"
+          ],
+          "interaction": [
+            { "code": "create" },
+            { "code": "read" },
+            { "code": "search-type" },
+            { "code": "update" }
+          ]
+        },
+        {
+          "type": "Procedure",
+          "supportedProfile": [
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Procedure-twcore"
+          ],
+          "interaction": [
+            { "code": "create" },
+            { "code": "read" },
+            { "code": "search-type" },
+            { "code": "update" }
+          ]
+        },
+        {
+          "type": "DiagnosticReport",
+          "supportedProfile": [
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/DiagnosticReport-twcore"
+          ],
+          "interaction": [
+            { "code": "create" },
+            { "code": "read" },
+            { "code": "search-type" },
+            { "code": "update" }
+          ]
+        },
+        {
+          "type": "Medication",
+          "supportedProfile": [
+            "https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Medication-EP"
+          ],
+          "interaction": [
+            { "code": "create" },
+            { "code": "read" },
+            { "code": "search-type" },
+            { "code": "update" }
+          ]
+        },
+        {
+          "type": "MedicationRequest",
+          "supportedProfile": [
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/MedicationRequest-twcore",
+            "https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/MedicationRequest-EP"
+          ],
+          "interaction": [
+            { "code": "create" },
+            { "code": "read" },
+            { "code": "search-type" },
+            { "code": "update" }
+          ]
+        },
+        {
+          "type": "Coverage",
+          "supportedProfile": [
+            "https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Coverage-EP"
+          ],
+          "interaction": [
+            { "code": "create" },
+            { "code": "read" },
+            { "code": "search-type" },
+            { "code": "update" }
+          ]
+        },
+        {
+          "type": "Composition",
+          "supportedProfile": [
+            "https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Composition-EP"
+          ],
+          "interaction": [
+            { "code": "create" },
+            { "code": "read" },
+            { "code": "search-type" }
+          ]
+        },
+        {
+          "type": "Bundle",
+          "supportedProfile": [
+            "https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Bundle-twcore",
+            "https://twcore.mohw.gov.tw/ig/emr/StructureDefinition/Bundle-EP"
+          ],
+          "interaction": [
+            { "code": "create" },
+            { "code": "read" },
+            { "code": "search-type" }
+          ]
+        }
+      ],
+      "interaction": [
+        { "code": "transaction" },
+        { "code": "batch" }
+      ]
+    }
+  ]
+}

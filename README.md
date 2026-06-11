@@ -241,6 +241,25 @@ A dedicated **Converter** workspace (sidebar page) turns a flat, FHIRfox-style c
 - **Learn-from-errors**: paste the Gazelle validation errors and the converter auto-derives new `competition-code → standard-code` mappings (correlated via the generated bundle's provenance), persists them locally, and re-converts — so each problem teaches the dictionary. A "clear dictionary" action resets learned entries
 - Syntax-highlighted JSON editor for input and a color-highlighted Bundle preview; one click submits the bundle to the configured server (Prism captures it for Gazelle), with the Gazelle share link retrieved from the Prism connection view
 
+The Converter doubles as a **competition-proof workspace** so the conference evidence can be captured in-app instead of via browser DevTools:
+
+- **Pre-submit conformance checklist**: confirms `Bundle.type = collection`, that the Bundle and every entry carry `meta.profile`, and the resource counts/types — with an optional case-summary expected-count comparison that flags mismatches
+- **Local-code → standard-code table**: lists every competition code used and the SNOMED/LOINC/HL7 code it converted to (unmapped codes flagged), built from the bundle's provenance
+- **In-app FHIR request inspector** for the Converter's submit / `$validate` / OAuth token-exchange calls, with a "reveal full token" toggle so `Authorization: Bearer …` and `X-Participant-Token` can be screenshotted for proof
+- **One-click proof artifacts**: download the converted Bundle JSON, capture a PNG screenshot of the current view, or export a per-case HTML proof report (counts + conformance + code table + submit result) that prints to PDF
+- OAuth 2.0 (client-credentials) authentication for the gateway-protected conference server, with token fetch/cache/refresh and a participant token on every call
+
+### Connectathon helper (CLI)
+
+`tools/connectathon-helper/` is a standalone TypeScript/Node CLI that automates the FHIR connectathon (TWCAT / Gazelle) proof loop and reuses the App's pure domain logic (converter, conformance check, code map):
+
+- `token` — obtain the `X-Participant-Token` and a Keycloak OAuth `access_token` (both `client_credentials` and `password` grants, `.env`-switchable)
+- `convert` / `upload` — convert a problem JSON to a `collection` Bundle, run the conformance/count checks, and POST it to the conference FHIR host with the auth headers
+- `codemap` — emit the local-code → standard-code table
+- `screenshot` / `record` / `report` — capture a URL, record per-step links/screenshots/notes (Step 10–300), and export a Markdown + PDF report. Gazelle/FHIRfox web steps are **record-only** (no platform automation)
+
+Credentials live in a gitignored `.env`; see `tools/connectathon-helper/README.md`. A FHIR R4 `CapabilityStatement` and a written System Summary for registration are in [docs/conformance/](docs/conformance/).
+
 ### Settings and App Shell
 
 - FHIR Server URL configuration with preset servers

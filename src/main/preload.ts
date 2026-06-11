@@ -3,6 +3,7 @@ import type {
   BundleJsonOpenResult,
   BundleJsonSavePayload,
   BundleJsonSaveResult,
+  CaptureScreenshotPayload,
   FileSavePayload,
   PreferencesJsonOpenResult,
   PreferencesJsonSavePayload,
@@ -72,6 +73,8 @@ const bundleJsonBridge = {
     ipcRenderer.invoke('preferences-json:open') as Promise<PreferencesJsonOpenResult>,
   saveFile: (payload: FileSavePayload) =>
     ipcRenderer.invoke('file:save', payload) as Promise<SaveFileResult>,
+  captureScreenshot: (payload: CaptureScreenshotPayload) =>
+    ipcRenderer.invoke('capture:screenshot', payload) as Promise<SaveFileResult>,
   openExternalUrl: (url: string) =>
     isE2E
       ? Promise.resolve().then(() => {

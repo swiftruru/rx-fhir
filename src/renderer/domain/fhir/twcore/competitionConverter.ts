@@ -94,7 +94,7 @@ const ENCOUNTER_CLASS_DISPLAY: Record<string, string> = {
  * `system` is the target CodeSystem; lookups fall back to `.text` when a code is
  * not present here.
  */
-const COMPETITION_CODE_MAP: Record<string, Record<string, { system: string; code: string }>> = {
+export const COMPETITION_CODE_MAP: Record<string, Record<string, { system: string; code: string }>> = {
   condition: {
     'Cond-0012': { system: SNOMED, code: '363746003' },
     'Cond-0014': { system: SNOMED, code: '10509002' },

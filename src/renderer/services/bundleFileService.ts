@@ -48,6 +48,12 @@ export async function saveFile(
   return bridge.saveFile({ content, defaultFileName, filters })
 }
 
+/** Capture the current app view and let the user save it as a PNG. */
+export async function captureScreenshot(defaultFileName?: string): Promise<SaveFileResult> {
+  const bridge = requireDesktopBridge()
+  return bridge.captureScreenshot({ defaultFileName })
+}
+
 export async function exportBundlePostman(
   bundle: fhir4.Bundle,
   fhirBaseUrl: string,
